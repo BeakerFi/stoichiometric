@@ -204,5 +204,17 @@ mod pool_step {
 
             (input, output)
         }
+
+        pub fn pool_step_state(&self) -> Vec<Decimal> {
+            vec![
+                self.x_vault.amount(),
+                self.y_vault.amount(),
+                self.rate,
+                self.x_fees_per_liq,
+                self.y_fees_per_liq,
+                self.x_fees_vault.amount(),
+                self.y_fees_vault.amount(),
+            ]
+        }
     }
 }

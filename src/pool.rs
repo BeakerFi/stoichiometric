@@ -243,6 +243,31 @@ mod pool {
             (x_ret, y_ret)
         }
 
+        pub fn pool_state(
+            &self,
+        ) -> (
+            Decimal,
+            u16,
+            Decimal,
+            (Decimal, Decimal),
+            Vec<(u16, Vec<Decimal>)>,
+        ) {
+            let mut pool_steps_state = vec![];
+
+            for (step_id, pool_step) in &self.steps {
+                let state = pool_step.pool_step_state();
+
+                pool_steps_state.push((*step_id, state));
+            }
+
+
+            (self.rate_step,
+             self.current_step,
+             self.min_rate,
+             (self.x_protocol_fees.amount(), self.y_protocol_fees.amount()),
+             pool_steps_state)
+        }
+
         #[inline]
         pub fn rate_at_step(&self, step_id: u16) -> Decimal {
             self.min_rate * (Decimal::ONE + self.rate_step).powi(step_id.into())
