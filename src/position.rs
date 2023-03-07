@@ -18,14 +18,6 @@ pub struct StepPosition {
 }
 
 impl StepPosition {
-    pub fn new() -> Self {
-        Self {
-            step: 0,
-            liquidity: Decimal::zero(),
-            last_x_fees_per_liq: Decimal::zero(),
-            last_y_fees_per_liq: Decimal::zero(),
-        }
-    }
 
     pub fn from(step: u16) -> Self {
         Self {
@@ -37,7 +29,7 @@ impl StepPosition {
     }
 }
 
-#[derive(NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode)]
+#[derive(NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct Position {
     /// First token of the position
     pub token_x: ResourceAddress,
@@ -51,7 +43,7 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn new(token_x: ResourceAddress, token_y: ResourceAddress) -> Self {
+    pub fn from(token_x: ResourceAddress, token_y: ResourceAddress) -> Self {
         Self {
             token_x,
             token_y,
@@ -69,5 +61,12 @@ impl Position {
     pub fn insert_step(&mut self, pool_step: StepPosition) {
         let id = pool_step.step;
         self.step_positions.insert(id, pool_step);
+    }
+
+    pub fn remove_step(&mut self, step: u16) -> StepPosition {
+        match self.step_positions.remove(&step) {
+            None => StepPosition::from(step),
+            Some(step_position) => step_position,
+        }
     }
 }

@@ -1,9 +1,10 @@
+use scrypto::math::BnumI256;
+use scrypto::prelude::Decimal;
+
 pub const NB_STEP: u16 = 65535;
 
-pub const LN_NB_STEP: u64 = 11090339630053645952;
+pub const LP_FEE: Decimal = Decimal(BnumI256::from_digits([2500000000000000, 0, 0, 0]));
 
-pub const LP_FEE: u64 = 2500000000000000;
+pub const PROTOCOL_FEE: Decimal = Decimal(BnumI256::from_digits([500000000000000, 0, 0, 0]));
 
-pub const PROTOCOL_FEE: u64 = 500000000000000;
-
-pub const TRADED: u64 = 997500000000000000;
+pub const TRADED: Decimal = Decimal(BnumI256::from_digits([997500000000000000, 0, 0, 0]));

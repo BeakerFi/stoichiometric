@@ -4,7 +4,7 @@ use std::fmt;
 use std::ops::Neg;
 
 /// A constant equal to `e = exp(1)` also known as Euler number.
-pub const EULER_NUMBER: u64 = 2718281828459045235;
+pub const EULER_NUMBER: Decimal = Decimal(BnumI256::from_digits([2718281828459045235, 0, 0, 0]));
 
 /// Returns the exponential of a [`Decimal`] using Taylor series
 ///
@@ -95,9 +95,8 @@ where
     // Therefore, ln(y) = ln(a) + n
 
     let mut n = 0;
-    let euler_number = Decimal(BnumI256::from(EULER_NUMBER));
-    while value > euler_number {
-        value = value / euler_number;
+    while value > EULER_NUMBER {
+        value = value / EULER_NUMBER;
         n += 1;
     }
 
@@ -145,7 +144,7 @@ where
 mod tests {
     use crate::decimal_maths::{exp, ln, EULER_NUMBER};
     use rand::Rng;
-    use scrypto::math::Decimal;
+    use scrypto::math::{BnumI256, Decimal};
     use scrypto::prelude::dec;
 
     #[test]
@@ -215,9 +214,6 @@ mod tests {
 
     #[test]
     fn test_ln_random() {
-        let dec_1 = dec!("0.0025");
-        let dec_2 = dec!("0.0005");
-        let dec_3 = dec!("0.997");
         let num: f64 = rand::thread_rng().gen_range(0.0..10000.0);
         let dec_num = Decimal::from(num.to_string());
         let res = ln(dec_num);
