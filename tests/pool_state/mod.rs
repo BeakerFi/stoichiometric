@@ -12,29 +12,27 @@ pub struct StepState {
     y_fees: Decimal
 }
 
-impl StepState {
-    pub fn from_str(string: &str) -> PoolState {
-
-    }
-}
+impl StepState {}
 
 pub struct PoolState {
-    token_a: String,
-    token_b: String,
+    router_address: String,
+    token_x: String,
+    token_y: String,
     rate_step: Decimal,
     current_step: u16,
     min_rate: Decimal,
     steps: HashMap<u16, StepState>,
     x_protocol: Decimal,
-    y_protocol: Deicmal,
+    y_protocol: Decimal,
 }
 
 impl PoolState {
 
-    pub fn from(token_a: String, token_b: String) -> Self {
+    pub fn from(router_address: String, token_x: String, token_y: String) -> Self {
         PoolState {
-            token_a,
-            token_b,
+            router_address,
+            token_x,
+            token_y,
             rate_step: Decimal::ZERO,
             current_step: 0,
             min_rate: Decimal::ZERO,
@@ -44,9 +42,6 @@ impl PoolState {
         }
     }
 
-    pub fn update(&mut self) {
-
-    }
 }
 
 pub fn run_command(command: &mut Command) -> String {
