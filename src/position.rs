@@ -10,11 +10,11 @@ pub struct StepPosition {
 
     /// Value of the `y_fees_per_liq` variable of the PoolStep
     /// last time that the position collected fees
-    pub last_x_fees_per_liq: Decimal,
+    pub last_stable_fees_per_liq: Decimal,
 
     /// Value of the `y_fees_per_liq` variable of the PoolStep
     /// last time that the position collected fees
-    pub last_y_fees_per_liq: Decimal,
+    pub last_other_fees_per_liq: Decimal,
 }
 
 impl StepPosition {
@@ -23,19 +23,17 @@ impl StepPosition {
         Self {
             step,
             liquidity: Decimal::zero(),
-            last_x_fees_per_liq: Decimal::zero(),
-            last_y_fees_per_liq: Decimal::zero(),
+            last_stable_fees_per_liq: Decimal::zero(),
+            last_other_fees_per_liq: Decimal::zero(),
         }
     }
 }
 
 #[derive(NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct Position {
-    /// First token of the position
-    pub token_x: ResourceAddress,
 
-    /// Second token of the position
-    pub token_y: ResourceAddress,
+    /// Token of the position
+    pub token: ResourceAddress,
 
     /// Second token of the position
     #[mutable]
@@ -43,10 +41,9 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn from(token_x: ResourceAddress, token_y: ResourceAddress) -> Self {
+    pub fn from(token: ResourceAddress) -> Self {
         Self {
-            token_x,
-            token_y,
+            token,
             step_positions: HashMap::new(),
         }
     }

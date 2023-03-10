@@ -10,26 +10,27 @@ mod pool_step {
     use crate::position::StepPosition;
 
     pub struct PoolStep {
-        /// Vault containing X tokens as liquidity
-        x_vault: Vault,
 
         /// Vault containing Y tokens as liquidity
-        y_vault: Vault,
+        stable_vault: Vault,
+
+        /// Vault containing X tokens as liquidity
+        other_vault: Vault,
 
         /// Price of the pool step
         rate: Decimal,
 
         /// Accrued fees in token X per liquidity unit
-        x_fees_per_liq: Decimal,
+        stable_fees_per_liq: Decimal,
 
         /// Accrued fees in token Y per liquidity unit
-        y_fees_per_liq: Decimal,
+        other_fees_per_liq: Decimal,
 
         /// Vault containing fees in token X
-        x_fees_vault: Vault,
+        stable_fees_vault: Vault,
 
         /// Vault containing fees in token Y
-        y_fees_vault: Vault,
+        other_fees_vault: Vault,
     }
 
     impl PoolStep {
@@ -40,19 +41,19 @@ mod pool_step {
         /// * `token_y` - Address of the Y token that will be traded by the beaker
         /// * `rate` - Fixed rate for this PoolStep
         pub fn new(
-            token_x: ResourceAddress,
-            token_y: ResourceAddress,
+            token_stable: ResourceAddress,
+            token_other: ResourceAddress,
             rate: Decimal,
         ) -> PoolStepComponent {
             // Create the component
             let component = Self {
-                x_vault: Vault::new(token_x.clone()),
-                y_vault: Vault::new(token_y.clone()),
+                stable_vault: Vault::new(token_stable.clone()),
+                other_vault: Vault::new(token_other.clone()),
                 rate: rate,
-                x_fees_per_liq: Decimal::ZERO,
-                y_fees_per_liq: Decimal::ZERO,
-                x_fees_vault: Vault::new(token_x.clone()),
-                y_fees_vault: Vault::new(token_y.clone()),
+                stable_fees_per_liq: Decimal::ZERO,
+                other_fees_per_liq: Decimal::ZERO,
+                stable_fees_vault: Vault::new(token_stable.clone()),
+                other_fees_vault: Vault::new(token_other.clone()),
             }
             .instantiate();
 
@@ -67,38 +68,54 @@ mod pool_step {
         /// * `step_position` - StepPosition already held by the user
         pub fn add_liquidity(
             &mut self,
-            mut bucket_x: Bucket,
-            mut bucket_y: Bucket,
+            mut bucket_stable: Bucket,
+            mut bucket_other: Bucket,
+            current_step_is_lower: bool,
             step_position: StepPosition,
         ) -> (Bucket, Bucket, StepPosition) {
             // Start by claiming_fees and adding them as potential liquidity
-            let (fees_x, fees_y, mut new_step_position) = self.claim_fees(step_position);
-            bucket_x.put(fees_x);
-            bucket_y.put(fees_y);
-
-            let buckets_rate = bucket_x.amount() / bucket_y.amount();
+            let (fees_stable, fees_other, mut new_step_position) = self.claim_fees(step_position);
+            bucket_other.put(fees_other);
+            bucket_stable.put(fees_stable);
 
             // Right amount of tokens to take from the given buckets
-            let right_x;
-            let right_y;
+            let right_stable;
+            let right_other;
 
-            if buckets_rate > self.rate {
-                // In this case, there is an excess of x token input
-                right_y = bucket_y.amount();
-                right_x = bucket_y.amount() * self.rate;
-            } else {
-                // In this case, there is an excess of y token input
-                right_x = bucket_x.amount();
-                right_y = bucket_x.amount() / self.rate;
+            if self.stable_vault.amount().is_zero() || self.other_vault.amount().is_zero()
+            {
+                if self.stable_vault.amount().is_zero() || current_step_is_lower
+                {
+                    right_stable = Decimal::ZERO;
+                    right_other = bucket_other.amount();
+                }
+                else
+                {
+                    right_stable = bucket_stable.amount();
+                    right_other = Decimal::ZERO;
+                }
+            }
+            else
+            {
+                let buckets_rate = bucket_other.amount() / bucket_stable.amount();
+                if buckets_rate > self.rate {
+                    // In this case, there is an excess of x token input
+                    right_other = bucket_stable.amount();
+                    right_stable = bucket_stable.amount() * self.rate;
+                } else {
+                    // In this case, there is an excess of y token input
+                    right_stable = bucket_other.amount();
+                    right_other = bucket_other.amount() / self.rate;
+                }
             }
 
-            self.x_vault.put(bucket_x.take(right_x));
-            self.y_vault.put(bucket_y.take(right_y));
+            self.stable_vault.put(bucket_other.take(right_stable));
+            self.other_vault.put(bucket_stable.take(right_other));
 
             // Update the StepPosition
-            new_step_position.liquidity += right_x + right_y*self.rate;
+            new_step_position.liquidity += right_stable + right_other *self.rate;
 
-            (bucket_x, bucket_y, new_step_position)
+            (bucket_stable, bucket_other, new_step_position)
         }
 
         /// Removes liquidity from a PoolStep.
@@ -115,19 +132,19 @@ mod pool_step {
             let liquidity = step_position.liquidity;
 
             // Start by claiming fees
-            let (mut bucket_x, mut bucket_y, _) = self.claim_fees(step_position);
+            let (mut fees_stable, mut fees_other, _) = self.claim_fees(step_position);
 
             // Compute amount of tokens to return and put them in the buckets
-            let x = self.x_vault.amount();
-            let y = self.y_vault.amount();
-            let l = x + y*self.rate;
-            let x_fraction = x / l;
-            bucket_x.put(self.x_vault.take(x_fraction * liquidity));
-            let y_take = (Decimal::ONE - x_fraction) * l / self.rate;
-            bucket_y.put(self.x_vault.take(y_take));
+            let other = self.other_vault.amount();
+            let stable = self.stable_vault.amount();
+            let l = other + stable*self.rate;
+            let other_fraction = other / l;
+            fees_other.put(self.other_vault.take(other_fraction * liquidity));
+            let stable_take = (Decimal::ONE - other_fraction) * l / self.rate;
+            fees_stable.put(self.stable_vault.take(stable_take));
 
 
-            (bucket_x, bucket_y)
+            (fees_stable, fees_other)
         }
 
         pub fn claim_fees(
@@ -135,21 +152,21 @@ mod pool_step {
             step_position: StepPosition,
         ) -> (Bucket, Bucket, StepPosition) {
             // Compute the fees to give
-            let x_fees =
-                (self.x_fees_per_liq - step_position.last_x_fees_per_liq) * step_position.liquidity;
-            let y_fees =
-                (self.y_fees_per_liq - step_position.last_y_fees_per_liq) * step_position.liquidity;
+            let other_fees =
+                (self.other_fees_per_liq - step_position.last_other_fees_per_liq) * step_position.liquidity;
+            let stable_fees =
+                (self.stable_fees_per_liq - step_position.last_stable_fees_per_liq) * step_position.liquidity;
 
             // Put the fees in buckets
-            let bucket_x = self.x_fees_vault.take(x_fees);
-            let bucket_y = self.y_fees_vault.take(y_fees);
+            let bucket_other = self.other_fees_vault.take(other_fees);
+            let bucket_stable = self.stable_fees_vault.take(stable_fees);
 
             //
             let mut new_step_position = step_position.clone();
-            new_step_position.last_x_fees_per_liq = self.x_fees_per_liq;
-            new_step_position.last_y_fees_per_liq = self.y_fees_per_liq;
+            new_step_position.last_stable_fees_per_liq = self.stable_fees_per_liq;
+            new_step_position.last_other_fees_per_liq = self.other_fees_per_liq;
 
-            (bucket_x, bucket_y, new_step_position)
+            (bucket_stable, bucket_other, new_step_position)
         }
 
         /// Swaps X tokens for Y tokens
@@ -157,22 +174,22 @@ mod pool_step {
         /// # Arguments
         /// * `input_tokens` - bucket containing X tokens to be swapped for Y tokens.
         /// * `fees` - bucket containing fees in X tokens
-        pub fn swap_for_y(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
+        pub fn swap_for_stable(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
 
             // Compute the real amount of tokens to be traded
-            let max_y = input.amount() * self.rate / (Decimal::ONE + LP_FEE);
-            let real_y = max_y.min(self.y_vault.amount());
-            let real_x = self.rate / real_y;
+            let max_stable = input.amount() * self.rate / (Decimal::ONE + LP_FEE);
+            let real_stable = max_stable.min(self.stable_vault.amount());
+            let real_other = self.rate / real_stable;
 
             // Take fees
-            let fees = real_x * LP_FEE;
-            let l = self.x_vault.amount() + self.rate * self.y_vault.amount();
-            self.x_fees_per_liq += fees / l;
-            self.x_fees_vault.put(input.take(fees));
+            let fees = real_other * LP_FEE;
+            let l = self.other_vault.amount() + self.rate * self.stable_vault.amount();
+            self.other_fees_per_liq += fees / l;
+            self.other_fees_vault.put(input.take(fees));
 
             // Make the swap
-            self.x_vault.put(input.take(real_x * TRADED));
-            let output = self.y_vault.take(real_y * TRADED);
+            self.other_vault.put(input.take(real_other * TRADED));
+            let output = self.stable_vault.take(real_stable * TRADED);
 
             (input, output)
         }
@@ -182,35 +199,35 @@ mod pool_step {
         /// # Arguments
         /// * `input_tokens` - bucket containing Y tokens to be swapped for X tokens.
         /// * `fees` - bucket containing fees in Y tokens
-        pub fn swap_for_x(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
+        pub fn swap_for_other(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
 
             // Compute the real amount of tokens to be traded
-            let max_x = input.amount() / self.rate / (Decimal::ONE + LP_FEE);
-            let real_x = max_x.min(self.x_vault.amount());
-            let real_y = real_x * self.rate;
+            let max_other = input.amount() / self.rate / (Decimal::ONE + LP_FEE);
+            let real_other = max_other.min(self.other_vault.amount());
+            let real_stable = real_other * self.rate;
 
             // Take fees
-            let fees = real_y * LP_FEE;
-            let l = self.x_vault.amount() + self.rate * self.y_vault.amount();
-            self.y_fees_per_liq += fees / l;
-            self.y_fees_vault.put(input.take(fees));
+            let fees = real_stable * LP_FEE;
+            let l = self.other_vault.amount() + self.rate * self.stable_vault.amount();
+            self.stable_fees_per_liq += fees / l;
+            self.stable_fees_vault.put(input.take(fees));
 
             // Make the swap
-            let output = self.x_vault.take(real_x * TRADED);
-            self.y_vault.put(input.take(real_y * TRADED));
+            let output = self.other_vault.take(real_other * TRADED);
+            self.stable_vault.put(input.take(real_stable * TRADED));
 
             (input, output)
         }
 
         pub fn pool_step_state(&self) -> Vec<Decimal> {
             vec![
-                self.x_vault.amount(),
-                self.y_vault.amount(),
+                self.stable_vault.amount(),
+                self.other_vault.amount(),
                 self.rate,
-                self.x_fees_per_liq,
-                self.y_fees_per_liq,
-                self.x_fees_vault.amount(),
-                self.y_fees_vault.amount(),
+                self.stable_fees_per_liq,
+                self.other_fees_per_liq,
+                self.stable_fees_vault.amount(),
+                self.other_fees_vault.amount(),
             ]
         }
     }

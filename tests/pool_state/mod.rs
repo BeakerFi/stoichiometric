@@ -17,7 +17,19 @@ pub struct StepState {
 
 impl StepState {
 
-    pub fn from(str_output: &str) -> HashMap<u16, Self>
+    pub fn from(x: Decimal, y: Decimal, rate: Decimal, x_fees_per_liq: Decimal, y_fees_per_liq: Decimal, x_fees: Decimal, y_fees: Decimal) -> Self {
+        Self {
+            x,
+            y,
+            rate,
+            x_fees_per_liq,
+            y_fees_per_liq,
+            x_fees,
+            y_fees
+        }
+    }
+
+    pub fn from_output(str_output: &str) -> HashMap<u16, Self>
     {
         let mut steps = HashMap::new();
 
@@ -27,7 +39,7 @@ impl StepState {
 
         for step_cap in STEP_STATE_RE.captures_iter(str_output)
         {
-            let step = String::from(&capture[1]).parse::<u16>().unwrap();
+            let step = String::from(&step_cap[1]).parse::<u16>().unwrap();
             let step_state = StepState {
                 x: Decimal::from(&step_cap[2]),
                 y: Decimal::from(&step_cap[3]),
@@ -119,16 +131,16 @@ impl PoolState {
         self.min_rate = Decimal::from(&capture[3]);
         self.x_protocol = Decimal::from(&capture[4]);
         self.y_protocol = Decimal::from(&capture[5]);
-        self.steps = StepState::from(&capture[6]);
+        self.steps = StepState::from_output(&capture[6]);
     }
 
     pub fn assert_state_is(&self, rate_step: Decimal, current_step : u16, min_rate: Decimal, steps: HashMap<u16, StepState>, a_protocol: Decimal, b_protocol: Decimal) {
         assert_eq!(self.rate_step, rate_step);
-        assert_eq!(self.current_step, current_step);
         assert_eq!(self.min_rate, min_rate);
-        StepState::assert_step_states(&self.steps, &steps, inverted);
+        StepState::assert_step_states(&self.steps, &steps, self.inverted);
 
         if !self.inverted {
+            assert_eq!(self.current_step, current_step);
             assert_eq!(self.x_protocol, a_protocol);
             assert_eq!(self.y_protocol, b_protocol);
         }
