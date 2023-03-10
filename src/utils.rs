@@ -15,6 +15,7 @@ pub fn sort(
 }
 
 /// Sorts two buckets
+#[inline]
 pub fn sort_buckets(bucket_a: Bucket, bucket_b: Bucket) -> (Bucket, Bucket) {
     if bucket_a.resource_address() > bucket_b.resource_address() {
         (bucket_a, bucket_b)

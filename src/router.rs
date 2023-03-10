@@ -82,10 +82,14 @@ mod router {
         {
             assert!(bucket_a.resource_address() != bucket_b.resource_address(), "Two pools cannot trade the same token");
 
-            let (bucket_x, bucket_y) = sort_buckets(bucket_a, bucket_b);
+            let (bucket_x, bucket_y, rate_min, rate_max) = if bucket_a.resource_address() > bucket_b.resource_address() {
+                (bucket_a, bucket_b, min_rate, max_rate)
+            } else {
+                (bucket_b, bucket_a, Decimal::ONE/ max_rate, Decimal::ONE / min_rate)
+            };
             assert!(self.pools.get(&(bucket_x.resource_address(), bucket_y.resource_address())).is_none(), "A pool trading these tokens already exists");
 
-            let (pool, ret_x, ret_y, position) = PoolComponent::new(bucket_x, bucket_y, min_rate, max_rate);
+            let (pool, ret_x, ret_y, position) = PoolComponent::new(bucket_x, bucket_y, rate_min, rate_max);
             self.pools.insert((ret_x.resource_address(), ret_y.resource_address()), pool);
             let ret_pos = self.position_minter.authorize(|| {
                 borrow_resource_manager!(self.position_address).mint_non_fungible(

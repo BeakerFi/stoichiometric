@@ -14,5 +14,4 @@ fn test_instantiate() {
 fn test_create_pool() {
     let mut test_env = instantiate();
     let pool_usd_btc = create_pool(&mut test_env, "usd", dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
-    let ok = 5;
 }

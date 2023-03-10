@@ -155,26 +155,20 @@ pub fn create_pool(test_env: &mut TestEnvironment, token_a: &str, token_a_amount
     let token_a_address = test_env.get_resource(token_a).clone();
     let token_b_address = test_env.get_resource(token_b).clone();
 
-    let output = run_command(Command::new("resim").arg("show").arg("router_address"));
+    let output = run_command(Command::new("resim").arg("show").arg(router_address));
 
     lazy_static! {
-        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<Tuple, Tuple>\((\w*)\)"#).unwrap();
+        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<Tuple, Tuple>\((.*), Tuple\(Own"#).unwrap();
     }
 
     let pools_list_cap = &POOLS_LIST_RE.captures(&output).expect("Could not find pools list");
     let pools_list = &pools_list_cap[1];
 
     lazy_static! {
-        static ref POOLS_RE: Regex = Regex::new(r#"Tuple\((\w*)\)"#).unwrap();
+        static ref POOLS_RE: Regex = Regex::new(r#"Tuple\(ResourceAddress\("(\w*)"\), ResourceAddress\("(\w*)"\)\)"#).unwrap();
     }
 
-    let pools_cap = &POOLS_RE.captures(pools_list).expect("Could not find pools")[1];
-
-    lazy_static! {
-        static ref RESOURCE_PAIR_RE: Regex = Regex::new(r#"ResourceAddress\("(\w*)"\), ResourceAddress\("(\w*)"\)"#).unwrap();
-    }
-
-    for cap in RESOURCE_PAIR_RE.captures_iter(pools_cap) {
+    for cap in POOLS_RE.captures_iter(pools_list) {
 
         let first_res = String::from(&cap[1]);
         let second_res = String::from(&cap[2]);
