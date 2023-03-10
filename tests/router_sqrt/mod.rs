@@ -149,7 +149,7 @@ pub fn create_pool(test_env: &mut TestEnvironment, token_a: &str, token_a_amount
         max_rate
     )).run();
 
-    let mut pool_state: PoolState = PoolState::from(String::new(), String::new(), String::new());
+    let mut pool_state: PoolState = PoolState::from(String::new(), String::new(), String::new(), false);
 
     let router_address = test_env.get_component("router_comp").unwrap();
     let token_a_address = test_env.get_resource(token_a).clone();
@@ -175,17 +175,17 @@ pub fn create_pool(test_env: &mut TestEnvironment, token_a: &str, token_a_amount
 
         if first_res == token_a_address && second_res == token_b_address
         {
-            pool_state = PoolState::from(router_address.to_string(), token_a_address, token_b_address);
+            pool_state = PoolState::from(router_address.to_string(), token_a_address, token_b_address, false);
             break;
         }
         else if first_res == token_b_address && second_res == token_a_address
         {
-            pool_state = PoolState::from(router_address.to_string(), token_b_address, token_a_address);
+            pool_state = PoolState::from(router_address.to_string(), token_b_address, token_a_address, true);
             break;
         }
     }
 
-    //pool_state.update();
+    pool_state.update();
     pool_state
 }
 
