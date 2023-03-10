@@ -36,7 +36,7 @@ mod pool {
             let rate_step = pow::<Decimal, Decimal>(max_rate / min_rate, exponent) - Decimal::ONE;
 
             // Computes the current pool step from input tokens
-            let rate = bucket_other.amount() / bucket_stable.amount();
+            let rate = bucket_stable.amount() / bucket_other.amount();
             let dec_step = ln(rate / min_rate) / ln(Decimal::ONE + rate_step);
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
@@ -60,8 +60,8 @@ mod pool {
 
         pub fn add_liquidity(
             &mut self,
-            bucket_other: Bucket,
             bucket_stable: Bucket,
+            bucket_other: Bucket,
             rate: Decimal,
             position: Position,
         ) -> (Bucket, Bucket, Position) {

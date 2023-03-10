@@ -94,6 +94,10 @@ where
     // Because, exp overflows very quickly, we rewrite y = a*e^n with a<e
     // Therefore, ln(y) = ln(a) + n
 
+    if value < Decimal::ONE {
+        return -ln(Decimal::ONE / value)
+    }
+
     let mut n = 0;
     while value > EULER_NUMBER {
         value = value / EULER_NUMBER;

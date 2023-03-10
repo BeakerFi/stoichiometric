@@ -134,53 +134,46 @@ pub fn instantiate() -> TestEnvironment {
     test_env.publish_package("router", router_package);
     test_env.create_fixed_supply_token("usd", dec!(10000000));
     test_env.create_fixed_supply_token("btc", dec!(10000000));
-    test_env.new_component("router_comp", "router_bp", vec![]);
+    test_env.new_component("router_comp", "router_bp", vec![ResourceAddressArg("usd".to_string())]);
     test_env
 }
 
-pub fn create_pool(test_env: &mut TestEnvironment, token_a: &str, token_a_amount: Decimal, token_b: &str, token_b_amount: Decimal, min_rate: Decimal, max_rate: Decimal) -> PoolState
+pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other: &str, other_amount: Decimal, min_rate: Decimal, max_rate: Decimal) -> PoolState
 {
     test_env.call_method( RouterMethods::CreatePool(
-        token_a.to_string(),
-        token_a_amount,
-        token_b.to_string(),
-        token_b_amount,
+        "usd".to_string(),
+        stable_amount,
+        other.to_string(),
+        other_amount,
         min_rate,
         max_rate
     )).run();
 
-    let mut pool_state: PoolState = PoolState::from(String::new(), String::new(), String::new(), false);
+    let mut pool_state: PoolState = PoolState::from(String::new(), String::new(), String::new());
 
     let router_address = test_env.get_component("router_comp").unwrap();
-    let token_a_address = test_env.get_resource(token_a).clone();
-    let token_b_address = test_env.get_resource(token_b).clone();
+    let stable_address = test_env.get_resource("usd").clone();
+    let other_address = test_env.get_resource(other).clone();
 
     let output = run_command(Command::new("resim").arg("show").arg(router_address));
 
     lazy_static! {
-        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<Tuple, Tuple>\((.*), Tuple\(Own"#).unwrap();
+        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<ResourceAddress, Tuple>\((.*), Tuple\(Own"#).unwrap();
     }
 
     let pools_list_cap = &POOLS_LIST_RE.captures(&output).expect("Could not find pools list");
     let pools_list = &pools_list_cap[1];
 
     lazy_static! {
-        static ref POOLS_RE: Regex = Regex::new(r#"Tuple\(ResourceAddress\("(\w*)"\), ResourceAddress\("(\w*)"\)\)"#).unwrap();
+        static ref POOLS_RE: Regex = Regex::new(r#"ResourceAddress\("(\w*)"\)"#).unwrap();
     }
 
     for cap in POOLS_RE.captures_iter(pools_list) {
 
-        let first_res = String::from(&cap[1]);
-        let second_res = String::from(&cap[2]);
-
-        if first_res == token_a_address && second_res == token_b_address
+        let resource = String::from(&cap[1]);
+        if resource == other_address
         {
-            pool_state = PoolState::from(router_address.to_string(), token_a_address, token_b_address, false);
-            break;
-        }
-        else if first_res == token_b_address && second_res == token_a_address
-        {
-            pool_state = PoolState::from(router_address.to_string(), token_b_address, token_a_address, true);
+            pool_state = PoolState::from(router_address.to_string(), stable_address, other_address);
             break;
         }
     }
