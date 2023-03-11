@@ -30,7 +30,7 @@ impl Blueprint for RouterBlueprint {
 }
 
 pub enum RouterMethods {
-    CreatePool(String, Decimal, String, Decimal, Decimal, Decimal),
+    CreatePool(String, Decimal, String, Decimal, Decimal, Decimal, Decimal),
     RemoveLiquidityAtStep(String, String, u16),
     RemoveLiquidityAtSteps(String, String, u16, u16),
     RemoveLiquidityAtRate(String, String, Decimal),
@@ -44,7 +44,7 @@ impl Method for RouterMethods {
 
     fn name(&self) -> &str {
         match self {
-            RouterMethods::CreatePool(_, _, _, _, _, _) => { "create_pool" }
+            RouterMethods::CreatePool(_, _, _, _, _, _, _) => { "create_pool" }
             RouterMethods::RemoveLiquidityAtStep(_, _, _) => { "remove_liquidity_at_step" }
             RouterMethods::RemoveLiquidityAtSteps(_, _, _, _) => { "remove_liquidity_at_steps" }
             RouterMethods::RemoveLiquidityAtRate(_, _, _) => { "remove_liquidity_at_rate" }
@@ -57,11 +57,12 @@ impl Method for RouterMethods {
 
     fn args(&self) -> Option<Vec<Arg>> {
         match self {
-            RouterMethods::CreatePool(token_a, token_a_amount, token_b, token_b_amount, min_rate, max_rate) =>
+            RouterMethods::CreatePool(token_a, token_a_amount, token_b, token_b_amount, initial_rate, min_rate, max_rate) =>
                 {
                     method_args!(
                         FungibleBucketArg(token_a.clone(), token_a_amount.clone()),
                         FungibleBucketArg(token_b.clone(), token_b_amount.clone()),
+                        DecimalArg(initial_rate.clone()),
                         DecimalArg(min_rate.clone()),
                         DecimalArg(max_rate.clone())
                     )
@@ -120,7 +121,7 @@ impl Method for RouterMethods {
 
     fn needs_admin_badge(&self) -> bool {
         match self {
-            RouterMethods::CreatePool(_,_,_,_, _, _) => true,
+            RouterMethods::CreatePool(_,_,_,_, _, _, _) => true,
             _ => false
         }
     }
@@ -145,14 +146,14 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
         stable_amount,
         other.to_string(),
         other_amount,
+        stable_amount / other_amount,
         min_rate,
         max_rate
     )).run();
 
-    let mut pool_state: PoolState = PoolState::from(String::new(), String::new(), String::new());
+    let mut pool_state: PoolState = PoolState::from(String::new(), String::new());
 
     let router_address = test_env.get_component("router_comp").unwrap();
-    let stable_address = test_env.get_resource("usd").clone();
     let other_address = test_env.get_resource(other).clone();
 
     let output = run_command(Command::new("resim").arg("show").arg(router_address));
@@ -173,7 +174,7 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
         let resource = String::from(&cap[1]);
         if resource == other_address
         {
-            pool_state = PoolState::from(router_address.to_string(), stable_address, other_address);
+            pool_state = PoolState::from(router_address.to_string(),other_address);
             break;
         }
     }

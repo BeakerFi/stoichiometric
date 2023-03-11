@@ -79,20 +79,20 @@ mod router {
             (component, admin_badge)
         }
 
-        pub fn create_pool(&mut self, bucket_a: Bucket, bucket_b: Bucket, min_rate: Decimal, max_rate: Decimal) ->(Bucket, Bucket, Bucket)
+        pub fn create_pool(&mut self, bucket_a: Bucket, bucket_b: Bucket, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal) ->(Bucket, Bucket, Bucket)
         {
             assert!(bucket_a.resource_address() != bucket_b.resource_address(), "Two pools cannot trade the same token");
             assert!(bucket_a.resource_address() == self.stablecoin_address || bucket_b.resource_address() == self.stablecoin_address, "Every pool should be Stablecoin/Other");
 
-            let (bucket_stable, bucket_other, rate_min, rate_max) = if bucket_a.resource_address() == self.stablecoin_address {
-                (bucket_a, bucket_b, min_rate, max_rate)
+            let (bucket_stable, bucket_other, rate_init, rate_min, rate_max) = if bucket_a.resource_address() == self.stablecoin_address {
+                (bucket_a, bucket_b, initial_rate, min_rate, max_rate)
             } else {
-                (bucket_b, bucket_a, Decimal::ONE/ max_rate, Decimal::ONE / min_rate)
+                (bucket_b, bucket_a, Decimal::ONE / initial_rate, Decimal::ONE/ max_rate, Decimal::ONE / min_rate)
             };
 
             assert!(self.pools.get(&bucket_other.resource_address()).is_none(), "A pool trading these tokens already exists");
 
-            let (pool, ret_stable, ret_other, position) = PoolComponent::new(bucket_stable, bucket_other, rate_min, rate_max);
+            let (pool, ret_stable, ret_other, position) = PoolComponent::new(bucket_stable, bucket_other, rate_init, rate_min, rate_max);
             self.pools.insert(ret_other.resource_address(), pool);
             let ret_pos = self.position_minter.authorize(|| {
                 borrow_resource_manager!(self.position_address).mint_non_fungible(

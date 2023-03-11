@@ -28,16 +28,20 @@ mod pool {
         pub fn new(
             bucket_stable: Bucket,
             bucket_other: Bucket,
+            initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
         ) -> (PoolComponent, Bucket, Bucket, Position) {
+            assert!(min_rate > Decimal::ZERO, "The minimum rate should be positive");
+            assert!(max_rate > min_rate, "The maximum rate should be greater than the minimum rate");
+            assert!(initial_rate >= min_rate && initial_rate <= max_rate, "The initial rate should be included in the given rate range");
+
             // Computes the rate % change between each steps
             let exponent = Decimal::ONE / NB_STEP;
             let rate_step = pow::<Decimal, Decimal>(max_rate / min_rate, exponent) - Decimal::ONE;
 
             // Computes the current pool step from input tokens
-            let rate = bucket_stable.amount() / bucket_other.amount();
-            let dec_step = ln(rate / min_rate) / ln(Decimal::ONE + rate_step);
+            let dec_step = ln(initial_rate / min_rate) / ln(Decimal::ONE + rate_step);
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
@@ -102,7 +106,7 @@ mod pool {
             // Add liquidity to step and return
             let (stable_return, other_return, new_step) =
                 pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step_id, step_position);
-            position.insert_step(new_step);
+            position.insert_step(step_id, new_step);
 
             (stable_return, other_return, position)
         }
@@ -174,8 +178,8 @@ mod pool {
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
 
-            for (_, step_position) in step_positions {
-                let pool_step = self.steps.get(&step_position.step).unwrap();
+            for (step, step_position) in step_positions {
+                let pool_step = self.steps.get(&step).unwrap();
                 let (tmp_stable, tmp_other) =
                     pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
@@ -190,12 +194,12 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             let mut new_position = Position::from(position.token);
-            for (_, step_position) in step_positions {
-                let pool_step = self.steps.get(&step_position.step).unwrap();
+            for (step, step_position) in step_positions {
+                let pool_step = self.steps.get(&step).unwrap();
                 let (tmp_stable, tmp_other, step_position) = pool_step.claim_fees(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
-                new_position.insert_step(step_position);
+                new_position.insert_step(step, step_position);
             }
 
             (bucket_stable, bucket_other, new_position)

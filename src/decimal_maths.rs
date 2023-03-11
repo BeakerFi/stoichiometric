@@ -99,9 +99,14 @@ where
     }
 
     let mut n = 0;
-    while value > EULER_NUMBER {
+    while value >= EULER_NUMBER {
         value = value / EULER_NUMBER;
         n += 1;
+    }
+
+    if value  == Decimal::ONE
+    {
+        return Decimal::from(n)
     }
 
     // Start with an arbitrary number as the first guess
@@ -148,7 +153,7 @@ where
 mod tests {
     use crate::decimal_maths::{exp, ln, EULER_NUMBER};
     use rand::Rng;
-    use scrypto::math::{BnumI256, Decimal};
+    use scrypto::math::{Decimal};
     use scrypto::prelude::dec;
 
     #[test]

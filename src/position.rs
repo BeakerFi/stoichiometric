@@ -2,9 +2,6 @@ use scrypto::prelude::*;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct StepPosition {
-    /// Step of the position
-    pub step: u16,
-
     /// Liquidity of the position
     pub liquidity: Decimal,
 
@@ -19,9 +16,8 @@ pub struct StepPosition {
 
 impl StepPosition {
 
-    pub fn from(step: u16) -> Self {
+    pub fn new() -> Self {
         Self {
-            step,
             liquidity: Decimal::zero(),
             last_stable_fees_per_liq: Decimal::zero(),
             last_other_fees_per_liq: Decimal::zero(),
@@ -50,19 +46,18 @@ impl Position {
 
     pub fn get_step(&self, step: u16) -> StepPosition {
         match self.step_positions.get(&step) {
-            None => StepPosition::from(step),
+            None => StepPosition::new(),
             Some(step_position) => step_position.clone(),
         }
     }
 
-    pub fn insert_step(&mut self, pool_step: StepPosition) {
-        let id = pool_step.step;
-        self.step_positions.insert(id, pool_step);
+    pub fn insert_step(&mut self, step: u16, pool_step: StepPosition) {
+        self.step_positions.insert(step, pool_step);
     }
 
     pub fn remove_step(&mut self, step: u16) -> StepPosition {
         match self.step_positions.remove(&step) {
-            None => StepPosition::from(step),
+            None => StepPosition::new(),
             Some(step_position) => step_position,
         }
     }

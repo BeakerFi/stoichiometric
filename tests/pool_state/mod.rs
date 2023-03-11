@@ -1,9 +1,9 @@
-use std::cmp::min;
 use std::collections::HashMap;
 use std::process::Command;
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{Decimal};
+use sqrt::test_environment::TestEnvironment;
 
 pub struct StepState {
     stable: Decimal,
@@ -80,7 +80,6 @@ impl StepState {
 
 pub struct PoolState {
     router_address: String,
-    stablecoin: String,
     other: String,
     rate_step: Decimal,
     current_step: u16,
@@ -92,10 +91,9 @@ pub struct PoolState {
 
 impl PoolState {
 
-    pub fn from(router_address: String, stablecoin:String, other: String) -> Self {
+    pub fn from(router_address: String, other: String) -> Self {
         PoolState {
             router_address,
-            stablecoin,
             other,
             rate_step: Decimal::ZERO,
             current_step: 0,
@@ -140,4 +138,52 @@ pub fn run_command(command: &mut Command) -> String {
         panic!("{}", stderr);
     }
     stdout
+}
+
+pub fn assert_current_position(test_env: &TestEnvironment, token: &str, step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>)
+{
+    let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
+
+    lazy_static!{
+        static ref POSITIONS_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\)\), mutable_data: Tuple\(Map<U16, Tuple>\((.*)\) \}"#).unwrap();
+    }
+
+    let mut position_found = false;
+    for position_cap in POSITIONS_RE.captures_iter(&output)
+    {
+        let token_address = String::from(&position_cap[2]);
+        if &token_address == test_env.get_resource(token)
+        {
+            position_found = true;
+            assert_step_positions(&position_cap[3], step_positions);
+        }
+    }
+
+    assert!(position_found);
+}
+
+fn assert_step_positions(output_str: &str, step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>)
+{
+    lazy_static!{
+        static ref STEP_POSITION_RE: Regex = Regex::new(r#"(\w*)u16, Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)"#).unwrap();
+    }
+
+    let mut new_hashmap = HashMap::new();
+
+    for step_position_cap in STEP_POSITION_RE.captures_iter(output_str)
+    {
+        let step_id: u16 = String::from(&step_position_cap[1]).parse::<u16>().unwrap();
+        let liquidity = Decimal::from(&step_position_cap[2]);
+        let last_stable_fees_per_liq = Decimal::from(&step_position_cap[3]);
+        let last_other_fees_per_liq = Decimal::from(&step_position_cap[4]);
+        new_hashmap.insert(step_id, (liquidity, last_stable_fees_per_liq, last_other_fees_per_liq));
+    }
+
+    assert!(new_hashmap.len() == step_positions.len() && new_hashmap.keys().all(|k| step_positions.contains_key(k)));
+
+    for (key, value) in new_hashmap
+    {
+        let value_2 = step_positions.get(&key).unwrap();
+        assert_eq!(value, *value_2);
+    }
 }
