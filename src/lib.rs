@@ -1,5 +1,5 @@
 mod constants;
-mod decimal_maths;
+pub mod decimal_maths;
 mod pool;
 mod pool_step;
 mod position;

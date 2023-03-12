@@ -4,11 +4,13 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::error::Error;
-use crate::pool_state::{assert_current_position, PoolState, run_command, StepState};
-use crate::router_sqrt::{ADMIN_BADGE_NAME, create_pool, instantiate, RouterMethods};
+use crate::pool_state::{PoolState, StepState};
+use crate::router_sqrt::{ADMIN_BADGE_NAME, RouterMethods};
+use crate::utils::{assert_current_position, create_pool, instantiate, run_command};
 
 mod pool_state;
 mod router_sqrt;
+mod utils;
 
 #[test]
 fn test_instantiate() {

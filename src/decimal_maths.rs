@@ -15,6 +15,8 @@ pub const EULER_NUMBER: Decimal = Decimal(BnumI256::from_digits([271828182845904
 ///
 /// ```
 /// use scrypto::prelude::Decimal;
+/// use stoichiometric::decimal_maths::exp;
+///
 /// let res = exp(Decimal::one());
 /// let true_res = Decimal::from(1.0_f64.exp().to_string());
 /// let diff = res - true_res;
@@ -70,7 +72,7 @@ where
 ///
 /// ```
 /// use scrypto::prelude::Decimal;
-/// use stoechiometric::ln;
+/// use stoichiometric::decimal_maths::ln;
 ///
 /// let res = ln(100);
 /// let true_res = Decimal::from(100.0_f64.ln().to_string());

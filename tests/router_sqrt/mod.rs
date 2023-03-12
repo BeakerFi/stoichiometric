@@ -1,14 +1,9 @@
-use std::process::Command;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::blueprint::Blueprint;
 use sqrt::method::{Arg, Method};
 use sqrt::method::Arg::{DecimalArg, FungibleBucketArg, NonFungibleProofArg, ResourceAddressArg, U16};
 use sqrt::method_args;
-use sqrt::package::Package;
-use sqrt::test_environment::TestEnvironment;
-use crate::pool_state::{PoolState, run_command};
-use lazy_static::lazy_static;
-use regex::Regex;
+
 
 pub(crate) const POSITION_NAME: &str = "Stoichiometric Position";
 pub(crate) const ADMIN_BADGE_NAME: &str = "Router admin badge";
@@ -126,60 +121,3 @@ impl Method for RouterMethods {
         }
     }
 }
-
-pub fn instantiate() -> TestEnvironment {
-    let mut test_env = TestEnvironment::new();
-    let router_blueprint = Box::new(RouterBlueprint {});
-    let mut router_package = Package::new(".");
-    router_package.add_blueprint("router_bp", router_blueprint);
-    test_env.publish_package("router", router_package);
-    test_env.create_fixed_supply_token("usd", dec!(10000000));
-    test_env.create_fixed_supply_token("btc", dec!(10000000));
-    test_env.new_component("router_comp", "router_bp", vec![ResourceAddressArg("usd".to_string())]);
-    test_env
-}
-
-pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other: &str, other_amount: Decimal, min_rate: Decimal, max_rate: Decimal) -> PoolState
-{
-    test_env.call_method( RouterMethods::CreatePool(
-        "usd".to_string(),
-        stable_amount,
-        other.to_string(),
-        other_amount,
-        stable_amount / other_amount,
-        min_rate,
-        max_rate
-    )).run();
-
-    let mut pool_state: PoolState = PoolState::from(String::new(), String::new());
-
-    let router_address = test_env.get_component("router_comp").unwrap();
-    let other_address = test_env.get_resource(other).clone();
-
-    let output = run_command(Command::new("resim").arg("show").arg(router_address));
-
-    lazy_static! {
-        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<ResourceAddress, Tuple>\((.*), Tuple\(Own"#).unwrap();
-    }
-
-    let pools_list_cap = &POOLS_LIST_RE.captures(&output).expect("Could not find pools list");
-    let pools_list = &pools_list_cap[1];
-
-    lazy_static! {
-        static ref POOLS_RE: Regex = Regex::new(r#"ResourceAddress\("(\w*)"\)"#).unwrap();
-    }
-
-    for cap in POOLS_RE.captures_iter(pools_list) {
-
-        let resource = String::from(&cap[1]);
-        if resource == other_address
-        {
-            pool_state = PoolState::from(router_address.to_string(),other_address);
-            break;
-        }
-    }
-
-    pool_state.update();
-    pool_state
-}
-
