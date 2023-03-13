@@ -1,7 +1,7 @@
 use scrypto::prelude::{Decimal};
 use sqrt::blueprint::Blueprint;
 use sqrt::method::{Arg, Method};
-use sqrt::method::Arg::{DecimalArg, FungibleBucketArg, NonFungibleProofArg, ResourceAddressArg, U16};
+use sqrt::method::Arg::{DecimalArg, FungibleBucketArg, NonFungibleProofArg, NonFungibleBucketArg, ResourceAddressArg, U16};
 use sqrt::method_args;
 
 
@@ -29,7 +29,6 @@ pub enum RouterMethods {
     RemoveLiquidityAtStep(String, String, u16),
     RemoveLiquidityAtSteps(String, String, u16, u16),
     RemoveLiquidityAtRate(String, String, Decimal),
-    RemoveLiquidityAtRates(String, String, Decimal, Decimal),
     RemoveAllLiquidity(String, Vec<String>),
     ClaimFees(String, Vec<String>),
     Swap(String, Decimal, String),
@@ -44,7 +43,6 @@ impl Method for RouterMethods {
             RouterMethods::RemoveLiquidityAtStep(_, _, _) => { "remove_liquidity_at_step" }
             RouterMethods::RemoveLiquidityAtSteps(_, _, _, _) => { "remove_liquidity_at_steps" }
             RouterMethods::RemoveLiquidityAtRate(_, _, _) => { "remove_liquidity_at_rate" }
-            RouterMethods::RemoveLiquidityAtRates(_, _, _, _) => { "remove_liquidity_at_rates" }
             RouterMethods::RemoveAllLiquidity(_, _) => { "remove_all_liquidity" }
             RouterMethods::ClaimFees(_, _) => { "claim_fees" }
             RouterMethods::Swap(_, _, _) => { "swap" }
@@ -86,18 +84,10 @@ impl Method for RouterMethods {
                         DecimalArg(rate.clone())
                     )
                 }
-            RouterMethods::RemoveLiquidityAtRates(position, position_id, min_rate, max_rate) =>
-                {
-                    method_args!(
-                        NonFungibleProofArg(position.clone(), vec![position_id.clone()]),
-                        DecimalArg(min_rate.clone()),
-                        DecimalArg(max_rate.clone())
-                    )
-                }
             RouterMethods::RemoveAllLiquidity(position, position_ids) =>
                 {
                     method_args!(
-                        NonFungibleProofArg(position.clone(), position_ids.clone())
+                        NonFungibleBucketArg(position.clone(), position_ids.clone())
                     )
                 }
             RouterMethods::ClaimFees(position, position_ids) =>

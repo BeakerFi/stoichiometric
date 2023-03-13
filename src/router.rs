@@ -135,35 +135,6 @@ mod router {
             }
         }
 
-        pub fn add_liquidity_between_rates(&mut self, bucket_a: Bucket, bucket_b: Bucket, min_rate: Decimal, max_rate: Decimal, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>) {
-            let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
-            let pool = self.get_pool(bucket_other.resource_address());
-
-            match opt_position_proof {
-                Some(position_proof) => {
-                    let valid_proof = self.check_single_position_proof(position_proof);
-                    let position_nfr = valid_proof.non_fungible::<Position>();
-                    let data = self.get_position_data(&position_nfr);
-
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_between_rates(bucket_stable, bucket_other, data, min_rate, max_rate);
-                    self.update_position(position_nfr, new_data);
-                    (ret_stable, ret_other, None)
-                }
-                None => {
-                    let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_between_rates(bucket_stable, bucket_other, empty_pos, min_rate, max_rate);
-
-                    let bucket_pos = self.position_minter.authorize(|| {
-                        borrow_resource_manager!(self.position_address).mint_non_fungible(
-                            &NonFungibleLocalId::Integer(self.position_id.into()),
-                            new_data
-                        )
-                    });
-                    self.position_id+=1;
-                    (ret_stable, ret_other, Some(bucket_pos))
-                }
-            }
-        }
 
         pub fn add_liquidity_at_step(&mut self, bucket_a: Bucket, bucket_b: Bucket, step_id: u16, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
         {
@@ -278,7 +249,7 @@ mod router {
                 buckets.push(ret_other);
             }
             buckets.push(stable_bucket);
-            self.position_minter.authorize(|| { positions_bucket });
+            self.position_minter.authorize(|| { positions_bucket.burn() });
             buckets
         }
 

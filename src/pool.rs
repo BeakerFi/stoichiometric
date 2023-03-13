@@ -2,7 +2,7 @@ use scrypto::blueprint;
 
 #[blueprint]
 mod pool {
-    use crate::constants::{NB_STEP, PROTOCOL_FEE};
+    use crate::constants::{NB_STEP};
     use crate::decimal_maths::{ln, pow};
     use crate::pool_step::PoolStepComponent;
     use crate::position::Position;
@@ -73,13 +73,6 @@ mod pool {
             self.add_liquidity_at_step(bucket_stable, bucket_other, position, step_id)
         }
 
-        pub fn add_liquidity_between_rates(&mut self, bucket_stable: Bucket, bucket_other: Bucket, position: Position, min_rate: Decimal, max_rate: Decimal) -> (Bucket, Bucket, Position) {
-            let min_step = self.step_at_rate(min_rate);
-            let max_step = self.step_at_rate(max_rate);
-            info!("Adding liquidity between steps: {} and {} ({}, {})", min_step, max_step, min_rate, max_rate);
-            self.add_liquidity_at_steps(bucket_stable, bucket_other, position, min_step, max_step)
-        }
-
         pub fn add_liquidity_at_step(
             &mut self,
             bucket_stable: Bucket,
@@ -106,7 +99,7 @@ mod pool {
 
             // Add liquidity to step and return
             let (stable_return, other_return, new_step) =
-                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step <= step_id, step_position);
+                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step_id, step_position);
             position.insert_step(step_id, new_step);
 
             (stable_return, other_return, position)
@@ -141,7 +134,9 @@ mod pool {
 
             if step_position.liquidity > Decimal::ZERO {
                 let pool_step = self.steps.get(&step_id).unwrap();
-                (bucket_stable, bucket_other) = pool_step.remove_liquidity(step_position);
+                let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
+                bucket_stable.put(tmp_stable);
+                bucket_other.put(tmp_other);
             }
             (bucket_stable, bucket_other, position)
         }
@@ -184,21 +179,20 @@ mod pool {
             (bucket_stable, bucket_other)
         }
 
-        pub fn claim_fees(&mut self, position: Position) -> (Bucket, Bucket, Position) {
-            let step_positions = position.step_positions;
+        pub fn claim_fees(&mut self, mut position: Position) -> (Bucket, Bucket, Position) {
+
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
 
-            let mut new_position = Position::from(position.token);
-            for (step, step_position) in step_positions {
-                let pool_step = self.steps.get(&step).unwrap();
-                let (tmp_stable, tmp_other, step_position) = pool_step.claim_fees(step_position);
+            for (step, step_position) in position.step_positions.iter_mut() {
+                let pool_step = self.steps.get(step).unwrap();
+                let (tmp_stable, tmp_other, new_step_position) = pool_step.claim_fees(step_position.clone());
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
-                new_position.insert_step(step, step_position);
+                step_position.update(new_step_position)
             }
 
-            (bucket_stable, bucket_other, new_position)
+            (bucket_stable, bucket_other, position)
         }
 
         pub fn swap(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
@@ -209,12 +203,8 @@ mod pool {
             }
         }
 
-        fn swap_for_other(&mut self, mut input_bucket: Bucket) -> (Bucket, Bucket) {
+        fn swap_for_other(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
             // Input bucket has stable tokens
-
-            // Take protocol fees
-            self.stable_protocol_fees
-                .put(input_bucket.take(input_bucket.amount() * PROTOCOL_FEE));
 
             let mut other_ret = Bucket::new(self.other_protocol_fees.resource_address());
             let mut stable_ret = Bucket::from(input_bucket);
@@ -222,33 +212,30 @@ mod pool {
             loop {
                 match self.steps.get_mut(&self.current_step) {
                     Some(pool_step) => {
-                        let (other_tmp, stable_tmp) = pool_step.swap_for_other(stable_ret);
+                        let (stable_tmp, other_tmp, stable_protocol_fees, is_empty) = pool_step.swap_for_other(stable_ret);
+                        self.stable_protocol_fees.put(stable_protocol_fees);
                         other_ret.put(other_tmp);
                         stable_ret = stable_tmp;
 
-                        if stable_ret.amount() == Decimal::ZERO {
+                        if !is_empty {
                             break;
                         }
                     }
                     None => {}
                 };
 
-                if self.current_step == 0
+                if self.current_step == 65535
                 {
                     break;
                 }
-                self.current_step -= 1;
+                self.current_step += 1;
             }
 
-            (other_ret, stable_ret)
+            (stable_ret, other_ret)
         }
 
-        fn swap_for_stable(&mut self, mut input_bucket: Bucket) -> (Bucket, Bucket) {
+        fn swap_for_stable(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
             // Input bucket has other tokens
-
-            // Take protocol fees
-            self.other_protocol_fees
-                .put(input_bucket.take(input_bucket.amount() * PROTOCOL_FEE));
 
             let mut other_ret = Bucket::from(input_bucket);
             let mut stable_ret = Bucket::new(self.stable_protocol_fees.resource_address());
@@ -256,11 +243,12 @@ mod pool {
             loop {
                 match self.steps.get_mut(&self.current_step) {
                     Some(pool_step) => {
-                        let (stable_tmp, other_tmp) = pool_step.swap_for_stable(other_ret);
+                        let (stable_tmp, other_tmp, other_protocol_fees, is_empty) = pool_step.swap_for_stable(other_ret);
+                        self.other_protocol_fees.put(other_protocol_fees);
                         other_ret = other_tmp;
                         stable_ret.put(stable_tmp);
 
-                        if other_ret.amount() == Decimal::ZERO {
+                        if !is_empty {
                             break;
                         }
                     }
@@ -269,11 +257,11 @@ mod pool {
                 if self.current_step == 0 {
                     break;
                 } else {
-                    self.current_step += 1;
+                    self.current_step -= 1;
                 }
             }
 
-            (other_ret, stable_ret)
+            (stable_ret, other_ret)
         }
 
         pub fn claim_protocol_fees(&mut self) -> (Bucket, Bucket)

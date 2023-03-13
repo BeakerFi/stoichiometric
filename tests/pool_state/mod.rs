@@ -119,12 +119,12 @@ impl PoolState {
         self.steps = StepState::from_output(&capture[6]);
     }
 
-    pub fn assert_state_is(&self, rate_step: Decimal, current_step : u16, min_rate: Decimal, steps: HashMap<u16, StepState>, a_protocol: Decimal, b_protocol: Decimal) {
+    pub fn assert_state_is(&self, rate_step: Decimal, current_step : u16, min_rate: Decimal, steps: HashMap<u16, StepState>, stable_protocol: Decimal, other_protocol: Decimal) {
         assert_eq!(self.rate_step, rate_step);
         assert_eq!(self.min_rate, min_rate);
         StepState::assert_step_states(&self.steps, &steps);
         assert_eq!(self.current_step, current_step);
-        assert_eq!(self.stable_protocol, a_protocol);
-        assert_eq!(self.other_protocol, b_protocol);
+        assert_eq!(self.stable_protocol, stable_protocol);
+        assert_eq!(self.other_protocol, other_protocol);
     }
 }

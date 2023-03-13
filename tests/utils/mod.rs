@@ -259,3 +259,26 @@ fn assert_step_positions(output_str: &str, step_positions: &HashMap<u16, (Decima
         assert_eq!(value, *value_2);
     }
 }
+
+pub fn assert_no_positions(test_env: &TestEnvironment, token: &str)
+{
+    let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
+
+    lazy_static!{
+        static ref POSITIONS_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\)\), mutable_data: Tuple\(Map<U16, Tuple>\((.*)\) \}"#).unwrap();
+    }
+
+    let mut position_found = false;
+    for position_cap in POSITIONS_RE.captures_iter(&output)
+    {
+        let token_address = String::from(&position_cap[2]);
+        let token = test_env.get_resource(token).clone();
+        if token_address == token
+        {
+            position_found = true;
+            break;
+        }
+    }
+
+    assert!(!position_found);
+}

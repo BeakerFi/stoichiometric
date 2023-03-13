@@ -23,6 +23,12 @@ impl StepPosition {
             last_other_fees_per_liq: Decimal::zero(),
         }
     }
+    pub fn update(&mut self, new_position: StepPosition)
+    {
+        self.liquidity = new_position.liquidity;
+        self.last_stable_fees_per_liq = new_position.last_stable_fees_per_liq;
+        self.last_other_fees_per_liq = new_position.last_other_fees_per_liq;
+    }
 }
 
 #[derive(NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]

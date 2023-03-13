@@ -6,7 +6,7 @@ use scrypto::blueprint;
 
 #[blueprint]
 mod pool_step {
-    use crate::constants::{LP_FEE, RATIO_TRADED};
+    use crate::constants::{LP_FEE, PROTOCOL_FEE, RATIO_TRADED};
     use crate::position::StepPosition;
 
     pub struct PoolStep {
@@ -88,13 +88,13 @@ mod pool_step {
             {
                 if current_step_is_lower
                 {
-                    right_stable = bucket_stable.amount();
-                    right_other = Decimal::ZERO;
+                    right_stable = Decimal::ZERO;
+                    right_other = bucket_other.amount();
                 }
                 else
                 {
-                    right_stable = Decimal::ZERO;
-                    right_other = bucket_other.amount();
+                    right_stable = bucket_stable.amount();
+                    right_other = Decimal::ZERO;
                 }
 
             }
@@ -108,7 +108,7 @@ mod pool_step {
                 {
                     // In this case, there is too much stable token
                     right_other = bucket_other.amount();
-                    right_stable = bucket_stable.amount() * self.rate*right_other * pool_stable_fraction/(Decimal::ONE - pool_stable_fraction) ;
+                    right_stable = self.rate*right_other * pool_stable_fraction/(Decimal::ONE - pool_stable_fraction) ;
                 }
                 else
                 {
@@ -118,7 +118,6 @@ mod pool_step {
                 }
 
             }
-
             self.stable_vault.put(bucket_stable.take(right_stable));
             self.other_vault.put(bucket_other.take(right_other));
 
@@ -150,10 +149,8 @@ mod pool_step {
             let l = stable + other*self.rate;
             let stable_fraction = stable / l;
             fees_stable.put(self.stable_vault.take(stable_fraction * liquidity));
-            let other_take = (Decimal::ONE - stable_fraction) * l / self.rate;
-            fees_other.put(self.stable_vault.take(other_take));
-
-
+            let other_take = (Decimal::ONE - stable_fraction) * liquidity / self.rate;
+            fees_other.put(self.other_vault.take(other_take));
             (fees_stable, fees_other)
         }
 
@@ -184,10 +181,10 @@ mod pool_step {
         /// # Arguments
         /// * `input_tokens` - bucket containing X tokens to be swapped for Y tokens.
         /// * `fees` - bucket containing fees in X tokens
-        pub fn swap_for_stable(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
+        pub fn swap_for_stable(&mut self, mut other: Bucket) -> (Bucket, Bucket, Bucket, bool) {
 
             // Compute the real amount of tokens to be traded
-            let max_stable = RATIO_TRADED * input.amount() * self.rate;
+            let max_stable = other.amount() * self.rate;
             let real_stable = max_stable.min(self.stable_vault.amount());
             let real_other = real_stable / self.rate ;
 
@@ -195,13 +192,14 @@ mod pool_step {
             let fees = real_other * LP_FEE;
             let l = self.stable_vault.amount() + self.rate * self.other_vault.amount();
             self.other_fees_per_liq += fees / l;
-            self.other_fees_vault.put(input.take(fees));
+            self.other_fees_vault.put(other.take(fees));
+            let other_protocol_fees = other.take(PROTOCOL_FEE*real_other);
 
             // Make the swap
-            self.other_vault.put(input.take(real_other * RATIO_TRADED));
-            let output = self.stable_vault.take(real_stable * RATIO_TRADED);
+            self.other_vault.put(other.take(real_other * RATIO_TRADED));
+            let stable = self.stable_vault.take(real_stable * RATIO_TRADED);
 
-            (input, output)
+            (stable, other, other_protocol_fees, self.stable_vault.is_empty())
         }
 
         /// Swaps Y tokens for X tokens
@@ -209,24 +207,25 @@ mod pool_step {
         /// # Arguments
         /// * `input_tokens` - bucket containing Y tokens to be swapped for X tokens.
         /// * `fees` - bucket containing fees in Y tokens
-        pub fn swap_for_other(&mut self, mut input: Bucket) -> (Bucket, Bucket) {
+        pub fn swap_for_other(&mut self, mut stable: Bucket) -> (Bucket, Bucket, Bucket, bool) {
 
             // Compute the real amount of tokens to be traded
-            let max_other = RATIO_TRADED * input.amount() / self.rate ;
+            let max_other = stable.amount() / self.rate ;
             let real_other = max_other.min(self.other_vault.amount());
             let real_stable = real_other * self.rate;
 
             // Take fees
             let fees = real_stable * LP_FEE;
-            let l = self.other_vault.amount() + self.rate * self.stable_vault.amount();
+            let l = self.stable_vault.amount() + self.rate * self.other_vault.amount();
             self.stable_fees_per_liq += fees / l;
-            self.stable_fees_vault.put(input.take(fees));
+            self.stable_fees_vault.put(stable.take(fees));
+            let stable_protocol_fees = stable.take(PROTOCOL_FEE*real_stable);
 
             // Make the swap
-            let output = self.other_vault.take(real_other * RATIO_TRADED);
-            self.stable_vault.put(input.take(real_stable * RATIO_TRADED));
+            self.stable_vault.put(stable.take(real_stable * RATIO_TRADED));
+            let other = self.other_vault.take(real_other * RATIO_TRADED);
 
-            (input, output)
+            (stable, other, stable_protocol_fees, self.other_vault.is_empty())
         }
 
         pub fn pool_step_state(&self) -> Vec<Decimal> {

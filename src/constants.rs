@@ -7,4 +7,4 @@ pub const LP_FEE: Decimal = Decimal(BnumI256::from_digits([2500000000000000, 0, 
 
 pub const PROTOCOL_FEE: Decimal = Decimal(BnumI256::from_digits([500000000000000, 0, 0, 0]));
 
-pub const RATIO_TRADED: Decimal = Decimal(BnumI256::from_digits([997500000000000000, 0, 0, 0]));
+pub const RATIO_TRADED: Decimal = Decimal(BnumI256::from_digits([997000000000000000, 0, 0, 0]));
