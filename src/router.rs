@@ -136,7 +136,7 @@ mod router {
         }
 
 
-        pub fn add_liquidity_at_step(&mut self, bucket_a: Bucket, bucket_b: Bucket, step_id: u16, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
+        pub fn add_liquidity_at_step(&mut self, bucket_a: Bucket, bucket_b: Bucket, step: u16, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
         {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
             let pool = self.get_pool(bucket_other.resource_address());
@@ -147,13 +147,13 @@ mod router {
                     let position_nfr = valid_proof.non_fungible::<Position>();
                     let data = self.get_position_data(&position_nfr);
 
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, data, step_id);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, step, data);
                     self.update_position(position_nfr, new_data);
                     (ret_stable, ret_other, None)
                 }
                 None => {
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, empty_pos, step_id);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, step, empty_pos);
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
@@ -178,13 +178,13 @@ mod router {
                     let position_nfr = valid_proof.non_fungible::<Position>();
                     let data = self.get_position_data(&position_nfr);
 
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, data, start_step, stop_step);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, start_step, stop_step, data);
                     self.update_position(position_nfr, new_data);
                     (ret_stable, ret_other, None)
                 }
                 None => {
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, empty_pos, start_step, stop_step);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, start_step, stop_step, empty_pos);
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
@@ -205,7 +205,7 @@ mod router {
             let data = self.get_position_data(&position_nfr);
 
             let pool = self.get_pool(data.token);
-            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_step(data, step);
+            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_step(step, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
         }
@@ -217,7 +217,7 @@ mod router {
             let data = self.get_position_data(&position_nfr);
 
             let pool = self.get_pool(data.token);
-            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_steps(data, start_step, stop_step);
+            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_steps(start_step, stop_step, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
         }
@@ -229,7 +229,7 @@ mod router {
             let data = self.get_position_data(&position_nfr);
 
             let pool = self.get_pool(data.token);
-            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_rate(data, rate);
+            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_rate(rate, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
         }

@@ -1,3 +1,5 @@
+//! Mathematical primitives implementation
+
 use scrypto::math::BnumI256;
 use scrypto::prelude::{dec, Decimal};
 use std::fmt;
@@ -14,13 +16,11 @@ pub const EULER_NUMBER: Decimal = Decimal(BnumI256::from_digits([271828182845904
 /// # Examples
 ///
 /// ```
-/// use scrypto::prelude::Decimal;
+/// use scrypto::prelude::{dec, Decimal};
 /// use stoichiometric::decimal_maths::exp;
 ///
-/// let res = exp(Decimal::one());
-/// let true_res = Decimal::from(1.0_f64.exp().to_string());
-/// let diff = res - true_res;
-/// assert!(diff.abs() < Decimal::from("0.000000000000001"));
+/// let res = exp(dec!("2.5"));
+/// assert_eq!(res, dec!("12.182493960703473402"));
 /// ```
 pub fn exp<T: TryInto<Decimal>>(value: T) -> Decimal
 where
@@ -71,13 +71,11 @@ where
 /// # Examples
 ///
 /// ```
-/// use scrypto::prelude::Decimal;
+/// use scrypto::prelude::{dec, Decimal};
 /// use stoichiometric::decimal_maths::ln;
 ///
 /// let res = ln(100);
-/// let true_res = Decimal::from(100.0_f64.ln().to_string());
-/// let diff = res - true_res;
-/// assert!(diff.abs() < Decimal::from("0.000000000000001"));
+/// assert_eq!(res, dec!("4.605170185988091375"));
 /// ```
 pub fn ln<T: TryInto<Decimal>>(value: T) -> Decimal
 where
@@ -136,6 +134,20 @@ where
     result + Decimal::from(n)
 }
 
+/// Returns the power of a [`Decimal`] using `exp` and `ln`
+///
+/// # Arguments
+/// * `value` - The Decimal to compute the exponential for
+///
+/// # Examples
+///
+/// ```
+/// use scrypto::prelude::{dec, Decimal};
+/// use stoichiometric::decimal_maths::pow;
+///
+/// let res = pow::<Decimal, Decimal>(dec!("2.5"), dec!("3.4"));
+/// assert_eq!(res, dec!("22.542186029800212409"));
+/// ```
 pub fn pow<T: TryInto<Decimal>, E: TryInto<Decimal>>(value: T, exponent: T) -> Decimal
 where
     <T as TryInto<Decimal>>::Error: fmt::Debug,
@@ -154,7 +166,6 @@ where
 #[cfg(test)]
 mod tests {
     use crate::decimal_maths::{exp, ln, EULER_NUMBER};
-    use rand::Rng;
     use scrypto::math::{Decimal};
     use scrypto::prelude::dec;
 
@@ -166,35 +177,15 @@ mod tests {
     }
 
     #[test]
-    fn test_exp_random_pos() {
-        let num: f64 = rand::thread_rng().gen_range(0.0..2.0);
-        let dec_num = Decimal::from(num.to_string());
-        let res = exp(dec_num);
-        let true_res = Decimal::from(num.exp().to_string());
-        let diff = res - true_res;
-        let acceptable_difference = 10e-14;
-        assert!(
-            diff.abs() < Decimal::from(acceptable_difference.to_string()),
-            "{}, {}",
-            res,
-            true_res
-        );
+    fn test_exp_42() {
+        let res = exp(42);
+        assert_eq!(res, dec!("1739274941520501047.394681299721124048"))
     }
 
     #[test]
-    fn test_exp_random_neg() {
-        let num: f64 = rand::thread_rng().gen_range(-2.0..0.0);
-        let dec_num = Decimal::from(num.to_string());
-        let res = exp(dec_num);
-        let true_res = Decimal::from(num.exp().to_string());
-        let diff = res - true_res;
-        let acceptable_difference = 10e-14;
-        assert!(
-            diff.abs() < Decimal::from(acceptable_difference.to_string()),
-            "{}, {}",
-            res,
-            true_res
-        );
+    fn test_exp_minus_12() {
+        let res = exp(-12);
+        assert_eq!(res, dec!("0.000006144212353328"))
     }
 
     #[test]
@@ -212,9 +203,13 @@ mod tests {
     #[test]
     fn test_ln_int() {
         let res = ln(exp(12));
-        let true_res = dec!(12);
-        let diff = res - true_res;
-        assert!(diff.abs() < Decimal::from("0.000000000000001"));
+        assert_eq!(res, dec!("12.000000000000000002"))
+    }
+
+    #[test]
+    fn test_ln_smaller_than_one() {
+        let res = ln("0.69");
+        assert_eq!(res, dec!("-0.371063681390831991"));
     }
 
     #[test]
@@ -222,22 +217,4 @@ mod tests {
         let res = ln(EULER_NUMBER);
         assert_eq!(res, Decimal::one())
     }
-
-    #[test]
-    fn test_ln_random() {
-        let num: f64 = rand::thread_rng().gen_range(0.0..10000.0);
-        let dec_num = Decimal::from(num.to_string());
-        let res = ln(dec_num);
-        let true_res = Decimal::from(num.ln().to_string());
-        let diff = res - true_res;
-        let acceptable_difference = 10e-14;
-        assert!(
-            diff.abs() < Decimal::from(acceptable_difference.to_string()),
-            "{}, {}",
-            res,
-            true_res
-        );
-    }
-
-
 }

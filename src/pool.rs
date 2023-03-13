@@ -1,3 +1,30 @@
+//! # Pool Blueprint
+//!
+//! Implements a concentrated liquidity pool using constant-sum market making for each step. This
+//! blueprint is to be instantiated privately.
+//!
+//! # Functions & Methods
+//!
+//! ### Function
+//! - [new](PoolComponent::new) - Instantiates a new [`PoolComponent`] and returns it.
+//! and returns it.
+//!
+//! ### Methods
+//! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the closest rate to the given rate.
+//! - [add_liquidity_at_step](PoolComponent::add_liquidity_at_step) - Adds liquidity to the pool at the given step.
+//! - [add_liquidity_at_steps](PoolComponent::add_liquidity_at_steps) - Adds liquidity to the pool at the given steps.
+//! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the given rate.
+//! - [remove_liquidity_at_step](PoolComponent::remove_liquidity_at_step) - Removes all the liquidity associated to a given [`Position`] at the given step.
+//! - [remove_liquidity_at_steps](PoolComponent::remove_liquidity_at_steps) - Removes all the liquidity associated to a given [`Position`] at the given steps.
+//! - [remove_liquidity_at_rate](PoolComponent::remove_liquidity_at_rate) - Removes all the liquidity associated to a given [`Position`] at the given rate.
+//! - [remove_all_liquidity](PoolComponent::remove_all_liquidity) - Removes all the liquidity associated to a given [`Position`].
+//! - [claim_fees](PoolComponent::claim_fees) - Claims fees associated to a [`Position`].
+//! - [swap](PoolComponent::swap) - Swaps stablecoins/other tokens for other tokens/stablecoins.
+//! - [claim_protocol_fees](PoolComponent::claim_protocol_fees) - Claims protocol fees.
+//! - [get_state](PoolComponent::get_state) - Returns the full state of the blueprint.
+//! - [rate_at_step](PoolComponent::rate_at_step) - Returns the exchange rate associated to a given step.
+//! - [step_at_rate](PoolComponent::step_at_rate) - Returns the step associated to a given exchange rate.
+
 use scrypto::blueprint;
 
 #[blueprint]
@@ -8,23 +35,34 @@ mod pool {
     use crate::position::Position;
 
     pub struct Pool {
-        /// Percentage rate increase between each PoolStep
+        /// Percentage rate increase between each step
         rate_step: Decimal,
 
         /// Current step
         current_step: u16,
 
-        ///
+        /// Minimum exchange rate
         min_rate: Decimal,
 
+        /// Pool steps
         steps: HashMap<u16, PoolStepComponent>,
 
+        /// Protocol fees in stablecoins
         stable_protocol_fees: Vault,
 
+        /// Other protocol fees
         other_protocol_fees: Vault,
     }
 
     impl Pool {
+
+        /// Instantiates a new [`PoolComponent`] and returns it.
+        ///
+        /// # Arguments
+        /// * `bucket_stable` - Bucket containing the initial liquidity in stablecoins
+        /// * `bucket_other` - Bucket containing the initial liquidity in the other token
+        /// * `min_rate` - Minimum exchange rate of the pool
+        /// * `max_rate` - Maximum exchange rate of the pool
         pub fn new(
             bucket_stable: Bucket,
             bucket_other: Bucket,
@@ -37,11 +75,12 @@ mod pool {
             assert!(initial_rate >= min_rate && initial_rate <= max_rate, "The initial rate should be included in the given rate range");
 
             // Computes the rate % change between each steps
+            // We want the relation: max_rate = min_rate*rate_step^65535
             let exponent = Decimal::ONE / NB_STEP;
-            let rate_step = pow::<Decimal, Decimal>(max_rate / min_rate, exponent) - Decimal::ONE;
+            let rate_step = pow::<Decimal, Decimal>(max_rate / min_rate, exponent);
 
             // Computes the current pool step from input tokens
-            let dec_step = ln(initial_rate / min_rate) / ln(Decimal::ONE + rate_step);
+            let dec_step = ln(initial_rate / min_rate) / ln(rate_step);
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
@@ -55,13 +94,21 @@ mod pool {
             }
             .instantiate();
 
+            // Adds the initial liquidity
             let position = Position::from(bucket_other.resource_address());
             let (stable_ret, other_ret, pos_ret) =
-                component.add_liquidity_at_step(bucket_stable, bucket_other, position, current_step);
+                component.add_liquidity_at_step(bucket_stable, bucket_other, current_step, position);
 
             (component, stable_ret, other_ret, pos_ret)
         }
 
+        /// Adds liquidity to the pool at the closest rate to the given rate.
+        ///
+        /// # Arguments
+        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
+        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `rate` - Rate at which to provide liquidity
+        /// * `position` - [`Position`] of the user
         pub fn add_liquidity(
             &mut self,
             bucket_stable: Bucket,
@@ -69,51 +116,70 @@ mod pool {
             rate: Decimal,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-            let step_id = self.step_at_rate(rate);
-            self.add_liquidity_at_step(bucket_stable, bucket_other, position, step_id)
+            let step = self.step_at_rate(rate);
+            self.add_liquidity_at_step(bucket_stable, bucket_other, step, position)
         }
 
+        /// Adds liquidity to the pool at the given step.
+        ///
+        /// # Arguments
+        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
+        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `step` - Step at which to provide liquidity
+        /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_step(
             &mut self,
             bucket_stable: Bucket,
             bucket_other: Bucket,
+            step: u16,
             mut position: Position,
-            step_id: u16,
         ) -> (Bucket, Bucket, Position) {
-            let step_position = position.get_step(step_id);
+            let step_position = position.get_step(step);
 
             // Get or create the given step
-            let pool_step = match self.steps.get_mut(&step_id) {
+            let pool_step = match self.steps.get_mut(&step) {
                 Some(ps) => ps,
                 None => {
-                    let rate = self.rate_at_step(step_id);
+                    let rate = self.rate_at_step(step);
                     let new_step = PoolStepComponent::new(
                         self.stable_protocol_fees.resource_address(),
                         self.other_protocol_fees.resource_address(),
                         rate,
                     );
-                    self.steps.insert(step_id, new_step);
-                    self.steps.get(&step_id).unwrap()
+                    self.steps.insert(step, new_step);
+                    self.steps.get(&step).unwrap()
                 }
             };
 
             // Add liquidity to step and return
             let (stable_return, other_return, new_step) =
-                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step_id, step_position);
-            position.insert_step(step_id, new_step);
+                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step, step_position);
+            position.insert_step(step, new_step);
 
             (stable_return, other_return, position)
         }
 
-        pub fn add_liquidity_at_steps(&mut self, mut bucket_stable: Bucket, mut bucket_other: Bucket, position: Position, start_step: u16, stop_step: u16) -> (Bucket, Bucket, Position) {
+        /// Adds liquidity to the pool at the given steps.
+        ///
+        /// # Arguments
+        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
+        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `start_step` - Start step at which to provide liquidity
+        /// * `stop_step` - Stop step at which to provide liquidity
+        /// * `position` - [`Position`] of the user
+        pub fn add_liquidity_at_steps(&mut self, mut bucket_stable: Bucket, mut bucket_other: Bucket, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position) {
+
+            // We put the same amount of tokens at each step
             let nb_steps = stop_step - start_step + 1;
             let stable_per_step = bucket_stable.amount()/nb_steps;
             let other_per_step = bucket_other.amount()/nb_steps;
+
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
+
             for i in start_step..stop_step+1 {
-                let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(bucket_stable.take(stable_per_step), bucket_other.take(other_per_step), position, i);
+                let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(bucket_stable.take(stable_per_step), bucket_other.take(other_per_step), i, position);
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 position = tmp_pos;
@@ -123,17 +189,22 @@ mod pool {
             (ret_stable, ret_other, position)
         }
 
+        /// Removes all the liquidity associated to a given [`Position`] at a given step.
+        ///
+        /// # Arguments
+        /// * `step` - Step at which to remove the liquidity
+        /// * `position` - [`Position`] of the user
         pub fn remove_liquidity_at_step(
             &mut self,
-            mut position: Position,
-            step_id: u16,
+            step: u16,
+            mut position: Position
         ) -> (Bucket, Bucket, Position) {
-            let step_position = position.remove_step(step_id);
+            let step_position = position.remove_step(step);
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
 
             if step_position.liquidity > Decimal::ZERO {
-                let pool_step = self.steps.get(&step_id).unwrap();
+                let pool_step = self.steps.get(&step).unwrap();
                 let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
@@ -141,13 +212,19 @@ mod pool {
             (bucket_stable, bucket_other, position)
         }
 
-        pub fn remove_liquidity_at_steps(&mut self, position: Position, start_step: u16, stop_step: u16) -> (Bucket, Bucket, Position) {
+        /// Removes all the liquidity associated to a given [`Position`] between the given steps.
+        ///
+        /// # Arguments
+        /// * `start_step` - Start step at which to provide liquidity
+        /// * `stop_step` - Stop step at which to provide liquidity
+        /// * `position` - [`Position`] of the user
+        pub fn remove_liquidity_at_steps(&mut self, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position) {
             let mut ret_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut ret_other = Bucket::new(position.token);
             let mut ret_pos = position;
 
             for i in start_step..stop_step+1 {
-                let (tmp_stable, tmp_other, tmp_pos) = self.remove_liquidity_at_step(ret_pos, i);
+                let (tmp_stable, tmp_other, tmp_pos) = self.remove_liquidity_at_step(i, ret_pos);
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 ret_pos = tmp_pos;
@@ -155,15 +232,24 @@ mod pool {
             (ret_stable, ret_other, ret_pos)
         }
 
+        /// Removes all the liquidity associated to a given [`Position`] at a given rate.
+        ///
+        /// # Arguments
+        /// * `step` - Rate at which to remove the liquidity
+        /// * `position` - [`Position`] of the user
         pub fn remove_liquidity_at_rate(
             &mut self,
-            position: Position,
             rate: Decimal,
+            position: Position
         ) -> (Bucket, Bucket, Position) {
-            let step_id = self.step_at_rate(rate);
-            self.remove_liquidity_at_step(position, step_id)
+            let step = self.step_at_rate(rate);
+            self.remove_liquidity_at_step(step, position)
         }
 
+        /// Removes all the liquidity associated to a given [`Position`].
+        ///
+        /// # Arguments
+        /// * `position` - [`Position`] of the user
         pub fn remove_all_liquidity(&mut self, position: Position) -> (Bucket, Bucket) {
             let step_positions = position.step_positions;
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
@@ -179,6 +265,11 @@ mod pool {
             (bucket_stable, bucket_other)
         }
 
+
+        /// Claims fees associated to a given [`Position`].
+        ///
+        /// # Arguments
+        /// * `position` -  Position value of the caller
         pub fn claim_fees(&mut self, mut position: Position) -> (Bucket, Bucket, Position) {
 
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
@@ -195,6 +286,10 @@ mod pool {
             (bucket_stable, bucket_other, position)
         }
 
+        /// Swaps stablecoins/other tokens for other tokens/stablecoins.
+        ///
+        /// # Arguments
+        /// * `input_bucket` - bucket containing stablecoins/other tokens
         pub fn swap(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
             if input_bucket.resource_address() == self.stable_protocol_fees.resource_address() {
                 self.swap_for_other(input_bucket)
@@ -203,6 +298,10 @@ mod pool {
             }
         }
 
+        /// Internal functions that swaps stablecoins for the other tokens.
+        ///
+        /// # Arguments
+        /// * `input buckets` - bucket containing stablecoins to swap
         fn swap_for_other(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
             // Input bucket has stable tokens
 
@@ -234,6 +333,10 @@ mod pool {
             (stable_ret, other_ret)
         }
 
+        /// Internal functions that swaps the other tokens for stablecoins.
+        ///
+        /// # Arguments
+        /// * `input buckets` - bucket containing other tokens to swap
         fn swap_for_stable(&mut self, input_bucket: Bucket) -> (Bucket, Bucket) {
             // Input bucket has other tokens
 
@@ -264,11 +367,13 @@ mod pool {
             (stable_ret, other_ret)
         }
 
+        /// Claims protocol fees.
         pub fn claim_protocol_fees(&mut self) -> (Bucket, Bucket)
         {
             (self.stable_protocol_fees.take_all(), self.other_protocol_fees.take_all())
         }
 
+        /// Returns the full state of the blueprint.
         pub fn get_state(
             &self,
         ) -> (
@@ -295,13 +400,15 @@ mod pool {
         }
 
         #[inline]
-        pub fn rate_at_step(&self, step_id: u16) -> Decimal {
-            self.min_rate * (Decimal::ONE + self.rate_step).powi(step_id.into())
+        /// Returns the exchange rate associated to a given step.
+        pub fn rate_at_step(&self, step: u16) -> Decimal {
+            self.min_rate * (self.rate_step).powi(step.into())
         }
 
+        /// Returns the step associated to a given exchange rate.
         pub fn step_at_rate(&self, rate: Decimal) -> u16 {
             // rate = min_rate*(1 + rate_step)**step => ln(rate/min_rate) = step*ln(1 + rate_step)
-            let dec_step = ln(rate / self.min_rate) / ln(Decimal::ONE + self.rate_step);
+            let dec_step = ln(rate / self.min_rate) / ln(self.rate_step);
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let step_id: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
             step_id
