@@ -86,7 +86,7 @@ mod pool_step {
 
             if l_pool.is_zero()
             {
-                if !current_step_is_lower
+                if current_step_is_lower
                 {
                     right_stable = bucket_stable.amount();
                     right_other = Decimal::ZERO;

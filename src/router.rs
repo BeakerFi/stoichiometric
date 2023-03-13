@@ -48,17 +48,16 @@ mod router {
 
             let router_rules = AccessRules::new()
                 .method("add_liquidity", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("add_liquidity_between_rates", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("add_liquidity_at_step", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("add_liquidity_at_steps", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_liquidity_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_liquidity_between_rates", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_liquidity_at_step", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_liquidity_at_steps", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_all_liquidity", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("claim_fees", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("swap", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_pool_state", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("step_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
                 .default(
                     rule!(require(admin_badge.resource_address())),
                     AccessRule::DenyAll
@@ -182,7 +181,7 @@ mod router {
                     (ret_stable, ret_other, None)
                 }
                 None => {
-                    let empty_pos = Position::from(bucket_stable.resource_address());
+                    let empty_pos = Position::from(bucket_other.resource_address());
                     let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, empty_pos, step_id);
 
                     let bucket_pos = self.position_minter.authorize(|| {
@@ -264,30 +263,21 @@ mod router {
             (ret_stable, ret_other)
         }
 
-        pub fn remove_liquidity_between_rates(&mut self, position_proof: Proof, min_rate: Decimal, max_rate: Decimal) -> (Bucket, Bucket) {
-            let valid_proof = self.check_single_position_proof(position_proof);
-            let position_nfr = valid_proof.non_fungible::<Position>();
-            let data = self.get_position_data(&position_nfr);
-
-            let pool = self.get_pool(data.token);
-            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_between_rates(data, min_rate, max_rate);
-            self.update_position(position_nfr, new_data);
-            (ret_stable, ret_other)
-        }
-
         pub fn remove_all_liquidity(&mut self, positions_bucket: Bucket) -> Vec<Bucket> {
             assert!(positions_bucket.resource_address() == self.position_address);
 
             let mut buckets: Vec<Bucket> = Vec::new();
+            let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in positions_bucket.non_fungibles::<Position>() {
 
                 let data = self.get_position_data(&position_nfr);
                 let pool = self.get_pool(data.token);
                 let (ret_stable, ret_other) = pool.remove_all_liquidity(data);
 
-                buckets.push(ret_stable);
+                stable_bucket.put(ret_stable);
                 buckets.push(ret_other);
             }
+            buckets.push(stable_bucket);
             self.position_minter.authorize(|| { positions_bucket });
             buckets
         }
@@ -296,6 +286,7 @@ mod router {
             let valid_proof = self.check_multiple_position_proof(positions_proof);
 
             let mut buckets: Vec<Bucket> = Vec::new();
+            let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in valid_proof.non_fungibles::<Position>() {
 
                 let data = self.get_position_data(&position_nfr);
@@ -303,9 +294,23 @@ mod router {
                 let (ret_stable, ret_other, new_data) = pool.claim_fees(data);
                 self.update_position(position_nfr, new_data);
 
-                buckets.push(ret_stable);
+                stable_bucket.put(ret_stable);
                 buckets.push(ret_other);
             }
+            buckets.push(stable_bucket);
+            buckets
+        }
+
+        pub fn claim_protocol_fees(&mut self) -> Vec<Bucket> {
+            let mut buckets: Vec<Bucket> = Vec::new();
+            let mut stable_bucket = Bucket::new(self.stablecoin_address);
+
+            for (_, pool) in &self.pools {
+                let (stable_tmp, other_bucket) = pool.claim_protocol_fees();
+                buckets.push(other_bucket);
+                stable_bucket.put(stable_tmp);
+            }
+            buckets.push(stable_bucket);
             buckets
         }
 
@@ -375,5 +380,11 @@ mod router {
                 (bucket_b, bucket_a)
             }
         }
+
+        pub fn step_at_rate(&self, token: ResourceAddress, rate: Decimal) -> u16 {
+            let pool = self.get_pool(token);
+            pool.step_at_rate(rate)
+        }
+
     }
 }

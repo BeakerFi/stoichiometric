@@ -3,11 +3,12 @@ use std::process::Command;
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
-use sqrt::method::Arg::ResourceAddressArg;
+use sqrt::manifest_call::ManifestCall;
+use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use crate::pool_state::{PoolState};
-use crate::router_sqrt::{RouterBlueprint, RouterMethods};
+use crate::router_sqrt::{POSITION_NAME, RouterBlueprint, RouterMethods};
 
 pub fn run_command(command: &mut Command) -> String {
     let output = command.output().expect("Failed to run command line");
@@ -76,6 +77,140 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
     pool_state
 }
 
+pub fn add_liquidity_at_step<'a>(test_env: &'a mut TestEnvironment,
+                                 amount_stable: Decimal,
+                                 token_b: &'a str,
+                                 amount_b: Decimal,
+                                 step: u16,
+                                 position_id: Option<String>,) -> ManifestCall<'a>
+{
+    let mut env_args = Vec::new();
+    env_args.push((
+        "caller_address".to_string(),
+        AccountAddressArg(test_env.get_current_account_name().to_string()),
+    ));
+    env_args.push((
+        "component_address".to_string(),
+        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+    ));
+    env_args.push((
+        "token_a_address".to_string(),
+        ResourceAddressArg("usd".to_string()),
+    ));
+    env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
+    env_args.push((
+        "token_b_address".to_string(),
+        ResourceAddressArg(token_b.to_string()),
+    ));
+    env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
+
+    env_args.push(("step".to_string(), U16(step)));
+
+    let manifest_name = match position_id {
+        None => "add_liquidity_at_step_no_pos",
+        Some(id) => {
+            env_args.push((
+                "position_address".to_string(),
+                ResourceAddressArg(POSITION_NAME.to_string()),
+            ));
+            env_args.push(("position_id".to_string(), StringArg(id)));
+            "add_liquidity_at_step_with_pos"
+        }
+    };
+
+    test_env.call_custom_manifest(manifest_name, env_args)
+}
+
+pub fn add_liquidity_at_steps<'a>(test_env: &'a mut TestEnvironment,
+amount_stable: Decimal,
+token_b: &'a str,
+amount_b: Decimal,
+start_step: u16,
+stop_step: u16,
+                                  position_id: Option<String>
+) -> ManifestCall<'a>
+{
+    let mut env_args = Vec::new();
+    env_args.push((
+        "caller_address".to_string(),
+        AccountAddressArg(test_env.get_current_account_name().to_string()),
+    ));
+    env_args.push((
+        "component_address".to_string(),
+        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+    ));
+    env_args.push((
+        "token_a_address".to_string(),
+        ResourceAddressArg("usd".to_string()),
+    ));
+    env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
+    env_args.push((
+        "token_b_address".to_string(),
+        ResourceAddressArg(token_b.to_string()),
+    ));
+    env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
+
+    env_args.push(("start_step".to_string(), U16(start_step)));
+    env_args.push(("stop_step".to_string(), U16(stop_step)));
+
+    let manifest_name = match position_id {
+        None => "add_liquidity_at_steps_no_pos",
+        Some(id) => {
+            env_args.push((
+                "position_address".to_string(),
+                ResourceAddressArg(POSITION_NAME.to_string()),
+            ));
+            env_args.push(("position_id".to_string(), StringArg(id)));
+            "add_liquidity_at_steps_with_pos"
+        }
+    };
+
+    test_env.call_custom_manifest(manifest_name, env_args)
+}
+
+pub fn add_liquidity<'a>(test_env: &'a mut TestEnvironment,
+                         amount_stable: Decimal,
+                         token_b: &'a str,
+                         amount_b: Decimal,
+                         rate: Decimal,
+                         position_id: Option<String>) -> ManifestCall<'a> {
+
+    let mut env_args = Vec::new();
+    env_args.push((
+        "caller_address".to_string(),
+        AccountAddressArg(test_env.get_current_account_name().to_string()),
+    ));
+    env_args.push((
+        "component_address".to_string(),
+        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+    ));
+    env_args.push((
+        "token_a_address".to_string(),
+        ResourceAddressArg("usd".to_string()),
+    ));
+    env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
+    env_args.push((
+        "token_b_address".to_string(),
+        ResourceAddressArg(token_b.to_string()),
+    ));
+    env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
+    env_args.push(("rate".to_string(), DecimalArg(rate)));
+
+    let manifest_name = match position_id {
+        None => "add_liquidity_no_pos",
+        Some(id) => {
+            env_args.push((
+                "position_address".to_string(),
+                ResourceAddressArg(POSITION_NAME.to_string()),
+            ));
+            env_args.push(("position_id".to_string(), StringArg(id)));
+            "add_liquidity_with_pos"
+        }
+    };
+
+    test_env.call_custom_manifest(manifest_name, env_args)
+}
+
 pub fn assert_current_position(test_env: &TestEnvironment, token: &str, step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>)
 {
     let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
@@ -88,7 +223,8 @@ pub fn assert_current_position(test_env: &TestEnvironment, token: &str, step_pos
     for position_cap in POSITIONS_RE.captures_iter(&output)
     {
         let token_address = String::from(&position_cap[2]);
-        if &token_address == test_env.get_resource(token)
+        let token = test_env.get_resource(token).clone();
+        if token_address == token
         {
             position_found = true;
             assert_step_positions(&position_cap[3], step_positions);

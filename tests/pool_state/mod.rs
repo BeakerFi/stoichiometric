@@ -70,9 +70,9 @@ impl StepState {
         // Checks that both maps have the same amount of keys and that the keys match
         assert!(step_states_1.len() == step_states_2.len() && step_states_1.keys().all(|k| step_states_2.contains_key(k)));
 
-        for (key,value) in step_states_2 {
+        for (key,value) in step_states_1 {
 
-            let state_2 = step_states_1.get(key).unwrap();
+            let state_2 = step_states_2.get(key).unwrap();
             value.assert_step_state(state_2);
         }
     }

@@ -5,8 +5,8 @@ use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::error::Error;
 use crate::pool_state::{PoolState, StepState};
-use crate::router_sqrt::{ADMIN_BADGE_NAME, RouterMethods};
-use crate::utils::{assert_current_position, create_pool, instantiate, run_command};
+use crate::router_sqrt::{ADMIN_BADGE_NAME, POSITION_NAME, RouterMethods};
+use crate::utils::{add_liquidity, add_liquidity_at_step, add_liquidity_at_steps, assert_current_position, create_pool, instantiate, run_command};
 
 mod pool_state;
 mod router_sqrt;
@@ -36,6 +36,8 @@ fn test_create_pool() {
         Decimal::ZERO,
         Decimal::ZERO
     );
+
+    // Check tokens owned by current account
     assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9980000));
     assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
 
@@ -265,4 +267,320 @@ fn create_pool_initial_rate_greater_than_max_fail() {
         dec!(2)
     )).should_panic(Error::AssertFailed("The initial rate should be included in the given rate range".to_string()))
         .run();
+}
+
+#[test]
+fn add_liquidity_to_step_no_position() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+
+    test_env.create_account("other");
+    test_env.transfer_to("other", "usd", dec!(100));
+    test_env.transfer_to("other", "btc", dec!(1));
+    test_env.set_current_account("other");
+
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let pool_state_2 = StepState::from(Decimal::ZERO, dec!(1), dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_states.insert(30000, pool_state_2);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(100));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(0));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(30000, (dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_to_step_with_position() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+    let position_id = test_env
+        .get_non_fungible_ids_owned_by_current(POSITION_NAME)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, Some(position_id)).run();
+
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let pool_state_2 = StepState::from(Decimal::ZERO, dec!(1), dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_states.insert(30000, pool_state_2);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9980000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(9999999));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(30000, (dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO));
+    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_same_step() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+    let position_id = test_env
+        .get_non_fungible_ids_owned_by_current(POSITION_NAME)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, Some(position_id)).run();
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20100), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9979900));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(50266, (dec!(20100), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_greater_step()
+{
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+    let position_id = test_env
+        .get_non_fungible_ids_owned_by_current(POSITION_NAME)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 65000, Some(position_id)).run();
+
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let pool_state_2 = StepState::from(dec!(100), Decimal::ZERO, dec!("94516.8566500089249139"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_states.insert(65000, pool_state_2);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9979900));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(65000, (dec!("100"), Decimal::ZERO, Decimal::ZERO));
+    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_at_steps_no_position()
+{
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+
+    test_env.create_account("other");
+    test_env.transfer_to("other", "usd", dec!(1000));
+    test_env.transfer_to("other", "btc", dec!(1));
+    test_env.set_current_account("other");
+
+    add_liquidity_at_steps(&mut test_env, dec!(1000), "btc", dec!(1), 51000, 51004, None).run();
+    pool_usd_btc.update();
+
+    let mut pool_states = HashMap::new();
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    pool_states.insert(50266, pool_state);
+    let step_change = dec!("1.000105411144423293");
+    for i in 51000_u16..51005 {
+        let new_pool_state = StepState::from(dec!("200"), Decimal::ZERO, dec!(100) * step_change.powi(i.into()), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+        pool_states.insert(i, new_pool_state);
+    }
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(0));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(1));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    for i in 51000_u16..51005 {
+        step_pos_map.insert(i, (dec!(200), Decimal::ZERO, Decimal::ZERO));
+    }
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_at_steps_with_position()
+{
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+
+    add_liquidity_at_steps(&mut test_env, dec!(1000), "btc", dec!(1), 51000, 51004, Some("#0#".to_string())).run();
+    pool_usd_btc.update();
+
+    let mut pool_states = HashMap::new();
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    pool_states.insert(50266, pool_state);
+    let step_change = dec!("1.000105411144423293");
+    for i in 51000_u16..51005 {
+        let new_pool_state = StepState::from(dec!("200"), Decimal::ZERO, dec!(100) * step_change.powi(i.into()), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+        pool_states.insert(i, new_pool_state);
+    }
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9979000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+
+    for i in 51000_u16..51005 {
+        step_pos_map.insert(i, (dec!(200), Decimal::ZERO, Decimal::ZERO));
+    }
+    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_at_rate_no_position()
+{
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+
+    test_env.create_account("other");
+    test_env.transfer_to("other", "usd", dec!(100));
+    test_env.transfer_to("other", "btc", dec!(1));
+    test_env.set_current_account("other");
+
+    add_liquidity(&mut test_env, dec!(100), "btc", dec!(1), dec!("2362.175"), None).run();
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let pool_state_2 = StepState::from(Decimal::ZERO, dec!(1), dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_states.insert(30000, pool_state_2);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(100));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(0));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(30000, (dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn add_liquidity_at_rate_with_position() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(&mut test_env, dec!(20000), "btc", dec!(1), dec!(100), dec!(100000));
+    let position_id = test_env
+        .get_non_fungible_ids_owned_by_current(POSITION_NAME)
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .clone();
+    add_liquidity(&mut test_env, dec!(100), "btc", dec!(1), dec!("2362.175"), Some(position_id)).run();
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(dec!(20000), Decimal::ZERO, dec!("19999.9994618360095662"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let pool_state_2 = StepState::from(Decimal::ZERO, dec!(1), dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO);
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, pool_state);
+    pool_states.insert(30000, pool_state_2);
+    pool_usd_btc.assert_state_is(
+        dec!("0.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9980000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(9999999));
+
+    // Check that the user got the right position
+    let mut step_pos_map = HashMap::new();
+    step_pos_map.insert(30000, (dec!("2362.1744661270945891"), Decimal::ZERO, Decimal::ZERO));
+    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
+    assert_current_position(&test_env, "btc", &step_pos_map);
 }

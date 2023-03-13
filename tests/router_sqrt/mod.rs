@@ -1,4 +1,4 @@
-use scrypto::prelude::{dec, Decimal};
+use scrypto::prelude::{Decimal};
 use sqrt::blueprint::Blueprint;
 use sqrt::method::{Arg, Method};
 use sqrt::method::Arg::{DecimalArg, FungibleBucketArg, NonFungibleProofArg, ResourceAddressArg, U16};
@@ -32,7 +32,8 @@ pub enum RouterMethods {
     RemoveLiquidityAtRates(String, String, Decimal, Decimal),
     RemoveAllLiquidity(String, Vec<String>),
     ClaimFees(String, Vec<String>),
-    Swap(String, Decimal, String)
+    Swap(String, Decimal, String),
+    ClaimProtocolFees
 }
 
 impl Method for RouterMethods {
@@ -47,6 +48,7 @@ impl Method for RouterMethods {
             RouterMethods::RemoveAllLiquidity(_, _) => { "remove_all_liquidity" }
             RouterMethods::ClaimFees(_, _) => { "claim_fees" }
             RouterMethods::Swap(_, _, _) => { "swap" }
+            RouterMethods::ClaimProtocolFees => { "claim_protocol_fees" }
         }
     }
 
@@ -111,12 +113,16 @@ impl Method for RouterMethods {
                         ResourceAddressArg(token_output.clone())
                     )
                 }
+            RouterMethods::ClaimProtocolFees =>
+                {
+                    method_args!()
+                }
         }
     }
 
     fn needs_admin_badge(&self) -> bool {
         match self {
-            RouterMethods::CreatePool(_,_,_,_, _, _, _) => true,
+            RouterMethods::CreatePool(_,_,_,_, _, _, _)| RouterMethods::ClaimProtocolFees => true,
             _ => false
         }
     }

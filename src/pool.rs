@@ -76,6 +76,7 @@ mod pool {
         pub fn add_liquidity_between_rates(&mut self, bucket_stable: Bucket, bucket_other: Bucket, position: Position, min_rate: Decimal, max_rate: Decimal) -> (Bucket, Bucket, Position) {
             let min_step = self.step_at_rate(min_rate);
             let max_step = self.step_at_rate(max_rate);
+            info!("Adding liquidity between steps: {} and {} ({}, {})", min_step, max_step, min_rate, max_rate);
             self.add_liquidity_at_steps(bucket_stable, bucket_other, position, min_step, max_step)
         }
 
@@ -105,26 +106,27 @@ mod pool {
 
             // Add liquidity to step and return
             let (stable_return, other_return, new_step) =
-                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step_id, step_position);
+                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step <= step_id, step_position);
             position.insert_step(step_id, new_step);
 
             (stable_return, other_return, position)
         }
 
         pub fn add_liquidity_at_steps(&mut self, mut bucket_stable: Bucket, mut bucket_other: Bucket, position: Position, start_step: u16, stop_step: u16) -> (Bucket, Bucket, Position) {
-            let nb_steps = stop_step - start_step;
+            let nb_steps = stop_step - start_step + 1;
             let stable_per_step = bucket_stable.amount()/nb_steps;
             let other_per_step = bucket_other.amount()/nb_steps;
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
-
             for i in start_step..stop_step+1 {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(bucket_stable.take(stable_per_step), bucket_other.take(other_per_step), position, i);
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 position = tmp_pos;
             }
+            ret_stable.put(bucket_stable);
+            ret_other.put(bucket_other);
             (ret_stable, ret_other, position)
         }
 
@@ -165,12 +167,6 @@ mod pool {
         ) -> (Bucket, Bucket, Position) {
             let step_id = self.step_at_rate(rate);
             self.remove_liquidity_at_step(position, step_id)
-        }
-
-        pub fn remove_liquidity_between_rates(&mut self, position: Position, min_rate: Decimal, max_rate: Decimal) -> (Bucket, Bucket, Position) {
-            let min_step = self.step_at_rate(min_rate);
-            let max_step = self.step_at_rate(max_rate);
-            self.remove_liquidity_at_steps(position, min_step, max_step)
         }
 
         pub fn remove_all_liquidity(&mut self, position: Position) -> (Bucket, Bucket) {
@@ -280,6 +276,11 @@ mod pool {
             (other_ret, stable_ret)
         }
 
+        pub fn claim_protocol_fees(&mut self) -> (Bucket, Bucket)
+        {
+            (self.stable_protocol_fees.take_all(), self.other_protocol_fees.take_all())
+        }
+
         pub fn get_state(
             &self,
         ) -> (
@@ -311,7 +312,7 @@ mod pool {
         }
 
         pub fn step_at_rate(&self, rate: Decimal) -> u16 {
-            // rate = min_rate*(1 + rate_step)**step => ln(rate) = step*ln(1 + rate_step)
+            // rate = min_rate*(1 + rate_step)**step => ln(rate/min_rate) = step*ln(1 + rate_step)
             let dec_step = ln(rate / self.min_rate) / ln(Decimal::ONE + self.rate_step);
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let step_id: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
