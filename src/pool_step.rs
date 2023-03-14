@@ -1,8 +1,23 @@
+//! # Pool Blueprint
+//!
+//! Implements a constant-sum AMM that does not recompound fees. This blueprint is to be
+//! instantiated privately.
+//!
+//! # Functions & Methods
+//!
+//! ### Function
+//! - [new](PoolStepComponent::new) - Instantiates a new [`PoolStepComponent`] and returns it.
+//! and returns it.
+//!
+//! ### Methods
+//! - [add_liquidity](PoolStepComponent::add_liquidity) - Adds liquidity to the PoolStep given two buckets and returns the excess amount of tokens.
+//! - [remove_liquidity](PoolStepComponent::remove_all_liquidity) - Removes all liquidity associated to a [`Position`] from the [`PoolStep`].
+//! - [claim_fees](PoolStepComponent::claim_fees) - Claims fees associated to a [`StepPosition`].
+//! - [swap_for_stable](PoolStepComponent::swap_for_stable) - Swaps stablecoins for other tokens.
+//! - [swap_for_other](PoolStepComponent::swap_for_other) - Swaps other tokens for stablecoins.
+//! - [get_step_state](PoolStepComponent::get_step_state) -  Returns the current state of the [`PoolStep`].
+
 use scrypto::blueprint;
-
-// p = stable/other
-// stable + p*other = k;
-
 
 #[blueprint]
 mod pool_step {
@@ -11,34 +26,35 @@ mod pool_step {
 
     pub struct PoolStep {
 
-        /// Vault containing Y tokens as liquidity
+        /// Vault containing stablecoins as liquidity
         stable_vault: Vault,
 
-        /// Vault containing X tokens as liquidity
+        /// Vault containing other tokens as liquidity
         other_vault: Vault,
 
-        /// Price of the pool step
+        /// Rate of the pool step
         rate: Decimal,
 
-        /// Accrued fees in token X per liquidity unit
+        /// Accrued fees in stablecoins per liquidity unit
         stable_fees_per_liq: Decimal,
 
-        /// Accrued fees in token Y per liquidity unit
+        /// Accrued fees in other tokens per liquidity unit
         other_fees_per_liq: Decimal,
 
-        /// Vault containing fees in token X
+        /// Vault containing stablecoin fees
         stable_fees_vault: Vault,
 
-        /// Vault containing fees in token Y
+        /// Vault containing other token fees
         other_fees_vault: Vault,
     }
 
     impl PoolStep {
-        /// Instantiates a new PoolStep Component and returns it
+
+        /// Instantiates a new [`PoolStepComponent`] and returns it.
         ///
         /// # Arguments
-        /// * `token_x` - Address of the X token that will be traded by the beaker
-        /// * `token_y` - Address of the Y token that will be traded by the beaker
+        /// * `token_stable` - Address of the stablecoin that will be traded by the [`PoolStep`]
+        /// * `token_other` - Address of the other token that will be traded by the [`PoolStep`]
         /// * `rate` - Fixed rate for this PoolStep
         pub fn new(
             token_stable: ResourceAddress,
@@ -60,12 +76,13 @@ mod pool_step {
             component
         }
 
-        /// Adds liquidity to the PoolStep given two buckets and returns the excess amount of tokens
+        /// Adds liquidity to the [`PoolStep`] given two buckets and returns the excess amount of tokens.
         ///
         /// # Arguments
-        /// * `bucket_x` - Bucket containing X tokens to be added as liquidity
-        /// * `bucket_y` - Bucket containing Y tokens to be added as liquidity
-        /// * `step_position` - StepPosition already held by the user
+        /// * `bucket_stable` - Bucket containing stablecoins to be added as liquidity
+        /// * `bucket_other` - Bucket containing other tokens to be added as liquidity
+        /// * `current_step_is_lower` - Boolean stating whether the underlying pool current step is lower than this step
+        /// * `step_position` - [`StepPosition`] to add the liquidity to
         pub fn add_liquidity(
             &mut self,
             mut bucket_stable: Bucket,
@@ -82,10 +99,15 @@ mod pool_step {
             let right_stable;
             let right_other;
 
+            // Liquidity of the pool
             let l_pool = self.stable_vault.amount() + self.other_vault.amount()*self.rate;
 
+            // If the liquidity of the pool is equal to zero, then the pool is empty.
+            // The step should then be full of stablecoins or in the other token
             if l_pool.is_zero()
             {
+                // If the underlying pool is in step that is lower, then the current pool rate is lower
+                // This means that step should be filled with the other token
                 if current_step_is_lower
                 {
                     right_stable = Decimal::ZERO;
@@ -100,19 +122,22 @@ mod pool_step {
             }
             else
             {
+                // If the pool is not empty, we determine the proportion of stablecoins in the liquidity
+                // and we make sure that the tokens from the bucket respect the same proportion
+
                 let pool_stable_fraction = self.stable_vault.amount() / l_pool;
                 let l_bucket = bucket_stable.amount() + bucket_other.amount()*self.rate;
                 let bucket_stable_fraction = bucket_stable.amount() / l_bucket;
 
                 if bucket_stable_fraction >= pool_stable_fraction
                 {
-                    // In this case, there is too much stable token
+                    // In this case, there is too much stable token input
                     right_other = bucket_other.amount();
                     right_stable = self.rate*right_other * pool_stable_fraction/(Decimal::ONE - pool_stable_fraction) ;
                 }
                 else
                 {
-                    // In this case, there is too much other token
+                    // In this case, there is too much other token input
                     right_stable = bucket_stable.amount();
                     right_other = (Decimal::ONE/pool_stable_fraction - Decimal::ONE)*right_stable/self.rate
                 }
@@ -127,12 +152,10 @@ mod pool_step {
             (bucket_stable, bucket_other, new_step_position)
         }
 
-        /// Removes liquidity from a PoolStep.
-        /// Returns buckets containing X and Y tokens (unclaimed fees and tokens associated to removed
-        /// liquidity).
+        /// Removes all liquidity associated to a [`StepPosition`] from the [`PoolStep`].
         ///
         /// # Arguments
-        /// * `liquidity` - Amount of liquidity to remove from the beaker
+        /// * `step_position` - [`StepPosition`] to remove liquidity from
         pub fn remove_liquidity(
             &mut self,
             step_position: StepPosition,
@@ -143,17 +166,24 @@ mod pool_step {
             // Start by claiming fees
             let (mut fees_stable, mut fees_other, _) = self.claim_fees(step_position);
 
-            // Compute amount of tokens to return and put them in the buckets
+            // Compute amount of tokens to return. The tokens returned should have the same proportion
+            // as the tokens in the pool
             let stable = self.stable_vault.amount();
             let other = self.other_vault.amount();
             let l = stable + other*self.rate;
             let stable_fraction = stable / l;
-            fees_stable.put(self.stable_vault.take(stable_fraction * liquidity));
             let other_take = (Decimal::ONE - stable_fraction) * liquidity / self.rate;
+
+            fees_stable.put(self.stable_vault.take(stable_fraction * liquidity));
             fees_other.put(self.other_vault.take(other_take));
+
             (fees_stable, fees_other)
         }
 
+        /// Claims fees associated to a [`StepPosition`].
+        ///
+        /// # Arguments
+        /// * `step_position` - [`StepPosition`] to claim fees for
         pub fn claim_fees(
             &mut self,
             step_position: StepPosition,
@@ -176,11 +206,10 @@ mod pool_step {
             (bucket_stable, bucket_other, new_step_position)
         }
 
-        /// Swaps X tokens for Y tokens
+        /// Swaps other tokens for stablecoins.
         ///
         /// # Arguments
-        /// * `input_tokens` - bucket containing X tokens to be swapped for Y tokens.
-        /// * `fees` - bucket containing fees in X tokens
+        /// * `other` - bucket containing other tokens to be swapped for stablecoins.
         pub fn swap_for_stable(&mut self, mut other: Bucket) -> (Bucket, Bucket, Bucket, bool) {
 
             // Compute the real amount of tokens to be traded
@@ -202,11 +231,10 @@ mod pool_step {
             (stable, other, other_protocol_fees, self.stable_vault.is_empty())
         }
 
-        /// Swaps Y tokens for X tokens
+        /// Swaps stablecoins for other tokens.
         ///
         /// # Arguments
-        /// * `input_tokens` - bucket containing Y tokens to be swapped for X tokens.
-        /// * `fees` - bucket containing fees in Y tokens
+        /// * `stable` - bucket containing stablecoins to be swapped for other tokens.
         pub fn swap_for_other(&mut self, mut stable: Bucket) -> (Bucket, Bucket, Bucket, bool) {
 
             // Compute the real amount of tokens to be traded
@@ -228,7 +256,8 @@ mod pool_step {
             (stable, other, stable_protocol_fees, self.other_vault.is_empty())
         }
 
-        pub fn pool_step_state(&self) -> Vec<Decimal> {
+        /// Returns the current state of the [`PoolStep`].
+        pub fn get_step_state(&self) -> Vec<Decimal> {
             vec![
                 self.stable_vault.amount(),
                 self.other_vault.amount(),

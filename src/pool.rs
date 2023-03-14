@@ -13,7 +13,6 @@
 //! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the closest rate to the given rate.
 //! - [add_liquidity_at_step](PoolComponent::add_liquidity_at_step) - Adds liquidity to the pool at the given step.
 //! - [add_liquidity_at_steps](PoolComponent::add_liquidity_at_steps) - Adds liquidity to the pool at the given steps.
-//! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the given rate.
 //! - [remove_liquidity_at_step](PoolComponent::remove_liquidity_at_step) - Removes all the liquidity associated to a given [`Position`] at the given step.
 //! - [remove_liquidity_at_steps](PoolComponent::remove_liquidity_at_steps) - Removes all the liquidity associated to a given [`Position`] at the given steps.
 //! - [remove_liquidity_at_rate](PoolComponent::remove_liquidity_at_rate) - Removes all the liquidity associated to a given [`Position`] at the given rate.
@@ -199,6 +198,7 @@ mod pool {
             step: u16,
             mut position: Position
         ) -> (Bucket, Bucket, Position) {
+
             let step_position = position.remove_step(step);
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
@@ -280,7 +280,7 @@ mod pool {
                 let (tmp_stable, tmp_other, new_step_position) = pool_step.claim_fees(step_position.clone());
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
-                step_position.update(new_step_position)
+                step_position.update(&new_step_position)
             }
 
             (bucket_stable, bucket_other, position)

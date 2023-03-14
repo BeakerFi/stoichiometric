@@ -29,7 +29,7 @@ fn test_create_pool() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -98,7 +98,7 @@ fn test_inverted_pools() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_btc_usd.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -124,7 +124,7 @@ fn test_create_multiple_pools() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -141,7 +141,7 @@ fn test_create_multiple_pools() {
     let mut pool_states = HashMap::new();
     pool_states.insert(44280, pool_state);
     pool_usd_eth.assert_state_is(
-        dec!("0.000115989063276095"),
+        dec!("1.000115989063276095"),
         44280,
         dec!(10),
         pool_states,
@@ -289,7 +289,7 @@ fn add_liquidity_at_step_no_position() {
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -328,7 +328,7 @@ fn add_liquidity_at_step_with_position() {
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -365,7 +365,7 @@ fn add_liquidity_same_step() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -405,7 +405,7 @@ fn add_liquidity_greater_step()
     pool_states.insert(50266, pool_state);
     pool_states.insert(65000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -447,7 +447,7 @@ fn add_liquidity_at_steps_no_position()
         pool_states.insert(i, new_pool_state);
     }
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -485,7 +485,7 @@ fn add_liquidity_at_steps_with_position()
         pool_states.insert(i, new_pool_state);
     }
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -528,7 +528,7 @@ fn add_liquidity_at_rate_no_position()
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -566,7 +566,7 @@ fn add_liquidity_at_rate_with_position() {
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -608,7 +608,7 @@ fn remove_liquidity_at_step() {
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -643,7 +643,7 @@ fn remove_liquidity_at_steps() {
         pool_states.insert(i, new_pool_state);
     }
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -680,7 +680,7 @@ fn remove_liquidity_at_rate() {
     pool_states.insert(50266, pool_state);
     pool_states.insert(30000, pool_state_2);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -716,7 +716,7 @@ fn remove_all_liquidity() {
         pool_states.insert(i, new_pool_state);
     }
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -748,7 +748,7 @@ fn remove_all_liquidity_from_multiple_pools() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -761,7 +761,7 @@ fn remove_all_liquidity_from_multiple_pools() {
     let mut pool_states = HashMap::new();
     pool_states.insert(44280, pool_state);
     pool_usd_eth.assert_state_is(
-        dec!("0.000115989063276095"),
+        dec!("1.000115989063276095"),
         44280,
         dec!(10),
         pool_states,
@@ -793,7 +793,7 @@ fn swap_for_stable() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -823,7 +823,7 @@ fn swap_for_other() {
     pool_states.insert(50267, pool_state_2);
 
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50267,
         dec!(100),
         pool_states,
@@ -853,7 +853,7 @@ fn claim_fees_stable() {
     pool_states.insert(50267, pool_state_2);
 
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50267,
         dec!(100),
         pool_states,
@@ -887,7 +887,7 @@ fn claim_fees_other() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -922,7 +922,7 @@ fn claim_protocol_fees()
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -961,7 +961,7 @@ fn add_liquidity_to_mixed_step_too_much_other()
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -1000,7 +1000,7 @@ fn add_liquidity_to_mixed_step_too_much_stable() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
@@ -1039,7 +1039,7 @@ fn remove_liquidity_from_mixed_step() {
     let mut pool_states = HashMap::new();
     pool_states.insert(50266, pool_state);
     pool_usd_btc.assert_state_is(
-        dec!("0.000105411144423293"),
+        dec!("1.000105411144423293"),
         50266,
         dec!(100),
         pool_states,
