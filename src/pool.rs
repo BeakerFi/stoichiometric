@@ -28,7 +28,7 @@ use scrypto::blueprint;
 
 #[blueprint]
 mod pool {
-    use crate::constants::{NB_STEP};
+    use crate::constants::NB_STEP;
     use crate::decimal_maths::{ln, pow};
     use crate::pool_step::PoolStepComponent;
     use crate::position::Position;
@@ -54,7 +54,6 @@ mod pool {
     }
 
     impl Pool {
-
         /// Instantiates a new [`PoolComponent`] and returns it.
         ///
         /// # Arguments
@@ -69,9 +68,18 @@ mod pool {
             min_rate: Decimal,
             max_rate: Decimal,
         ) -> (PoolComponent, Bucket, Bucket, Position) {
-            assert!(min_rate > Decimal::ZERO, "The minimum rate should be positive");
-            assert!(max_rate > min_rate, "The maximum rate should be greater than the minimum rate");
-            assert!(initial_rate >= min_rate && initial_rate <= max_rate, "The initial rate should be included in the given rate range");
+            assert!(
+                min_rate > Decimal::ZERO,
+                "The minimum rate should be positive"
+            );
+            assert!(
+                max_rate > min_rate,
+                "The maximum rate should be greater than the minimum rate"
+            );
+            assert!(
+                initial_rate >= min_rate && initial_rate <= max_rate,
+                "The initial rate should be included in the given rate range"
+            );
 
             // Computes the rate % change between each steps
             // We want the relation: max_rate = min_rate*rate_step^65535
@@ -95,8 +103,12 @@ mod pool {
 
             // Adds the initial liquidity
             let position = Position::from(bucket_other.resource_address());
-            let (stable_ret, other_ret, pos_ret) =
-                component.add_liquidity_at_step(bucket_stable, bucket_other, current_step, position);
+            let (stable_ret, other_ret, pos_ret) = component.add_liquidity_at_step(
+                bucket_stable,
+                bucket_other,
+                current_step,
+                position,
+            );
 
             (component, stable_ret, other_ret, pos_ret)
         }
@@ -151,8 +163,12 @@ mod pool {
             };
 
             // Add liquidity to step and return
-            let (stable_return, other_return, new_step) =
-                pool_step.add_liquidity(bucket_stable, bucket_other, self.current_step < step, step_position);
+            let (stable_return, other_return, new_step) = pool_step.add_liquidity(
+                bucket_stable,
+                bucket_other,
+                self.current_step < step,
+                step_position,
+            );
             position.insert_step(step, new_step);
 
             (stable_return, other_return, position)
@@ -166,19 +182,30 @@ mod pool {
         /// * `start_step` - Start step at which to provide liquidity
         /// * `stop_step` - Stop step at which to provide liquidity
         /// * `position` - [`Position`] of the user
-        pub fn add_liquidity_at_steps(&mut self, mut bucket_stable: Bucket, mut bucket_other: Bucket, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position) {
-
+        pub fn add_liquidity_at_steps(
+            &mut self,
+            mut bucket_stable: Bucket,
+            mut bucket_other: Bucket,
+            start_step: u16,
+            stop_step: u16,
+            position: Position,
+        ) -> (Bucket, Bucket, Position) {
             // We put the same amount of tokens at each step
             let nb_steps = stop_step - start_step + 1;
-            let stable_per_step = bucket_stable.amount()/nb_steps;
-            let other_per_step = bucket_other.amount()/nb_steps;
+            let stable_per_step = bucket_stable.amount() / nb_steps;
+            let other_per_step = bucket_other.amount() / nb_steps;
 
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for i in start_step..stop_step+1 {
-                let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(bucket_stable.take(stable_per_step), bucket_other.take(other_per_step), i, position);
+            for i in start_step..stop_step + 1 {
+                let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
+                    bucket_stable.take(stable_per_step),
+                    bucket_other.take(other_per_step),
+                    i,
+                    position,
+                );
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 position = tmp_pos;
@@ -196,9 +223,8 @@ mod pool {
         pub fn remove_liquidity_at_step(
             &mut self,
             step: u16,
-            mut position: Position
+            mut position: Position,
         ) -> (Bucket, Bucket, Position) {
-
             let step_position = position.remove_step(step);
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
@@ -218,12 +244,17 @@ mod pool {
         /// * `start_step` - Start step at which to provide liquidity
         /// * `stop_step` - Stop step at which to provide liquidity
         /// * `position` - [`Position`] of the user
-        pub fn remove_liquidity_at_steps(&mut self, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position) {
+        pub fn remove_liquidity_at_steps(
+            &mut self,
+            start_step: u16,
+            stop_step: u16,
+            position: Position,
+        ) -> (Bucket, Bucket, Position) {
             let mut ret_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut ret_other = Bucket::new(position.token);
             let mut ret_pos = position;
 
-            for i in start_step..stop_step+1 {
+            for i in start_step..stop_step + 1 {
                 let (tmp_stable, tmp_other, tmp_pos) = self.remove_liquidity_at_step(i, ret_pos);
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
@@ -240,7 +271,7 @@ mod pool {
         pub fn remove_liquidity_at_rate(
             &mut self,
             rate: Decimal,
-            position: Position
+            position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step = self.step_at_rate(rate);
             self.remove_liquidity_at_step(step, position)
@@ -257,27 +288,25 @@ mod pool {
 
             for (step, step_position) in step_positions {
                 let pool_step = self.steps.get(&step).unwrap();
-                let (tmp_stable, tmp_other) =
-                    pool_step.remove_liquidity(step_position);
+                let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
             }
             (bucket_stable, bucket_other)
         }
 
-
         /// Claims fees associated to a given [`Position`].
         ///
         /// # Arguments
         /// * `position` -  Position value of the caller
         pub fn claim_fees(&mut self, mut position: Position) -> (Bucket, Bucket, Position) {
-
             let mut bucket_stable = Bucket::new(self.stable_protocol_fees.resource_address());
             let mut bucket_other = Bucket::new(position.token);
 
             for (step, step_position) in position.step_positions.iter_mut() {
                 let pool_step = self.steps.get(step).unwrap();
-                let (tmp_stable, tmp_other, new_step_position) = pool_step.claim_fees(step_position.clone());
+                let (tmp_stable, tmp_other, new_step_position) =
+                    pool_step.claim_fees(step_position.clone());
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
                 step_position.update(&new_step_position)
@@ -311,7 +340,8 @@ mod pool {
             loop {
                 match self.steps.get_mut(&self.current_step) {
                     Some(pool_step) => {
-                        let (stable_tmp, other_tmp, stable_protocol_fees, is_empty) = pool_step.swap_for_other(stable_ret);
+                        let (stable_tmp, other_tmp, stable_protocol_fees, is_empty) =
+                            pool_step.swap_for_other(stable_ret);
                         self.stable_protocol_fees.put(stable_protocol_fees);
                         other_ret.put(other_tmp);
                         stable_ret = stable_tmp;
@@ -323,8 +353,7 @@ mod pool {
                     None => {}
                 };
 
-                if self.current_step == 65535
-                {
+                if self.current_step == 65535 {
                     break;
                 }
                 self.current_step += 1;
@@ -346,7 +375,8 @@ mod pool {
             loop {
                 match self.steps.get_mut(&self.current_step) {
                     Some(pool_step) => {
-                        let (stable_tmp, other_tmp, other_protocol_fees, is_empty) = pool_step.swap_for_stable(other_ret);
+                        let (stable_tmp, other_tmp, other_protocol_fees, is_empty) =
+                            pool_step.swap_for_stable(other_ret);
                         self.other_protocol_fees.put(other_protocol_fees);
                         other_ret = other_tmp;
                         stable_ret.put(stable_tmp);
@@ -368,9 +398,11 @@ mod pool {
         }
 
         /// Claims protocol fees.
-        pub fn claim_protocol_fees(&mut self) -> (Bucket, Bucket)
-        {
-            (self.stable_protocol_fees.take_all(), self.other_protocol_fees.take_all())
+        pub fn claim_protocol_fees(&mut self) -> (Bucket, Bucket) {
+            (
+                self.stable_protocol_fees.take_all(),
+                self.other_protocol_fees.take_all(),
+            )
         }
 
         /// Returns the full state of the blueprint.
@@ -386,17 +418,21 @@ mod pool {
             let mut pool_steps_state = vec![];
 
             for (step_id, pool_step) in &self.steps {
-                let state = pool_step.pool_step_state();
+                let state = pool_step.get_step_state();
 
                 pool_steps_state.push((*step_id, state));
             }
 
-
-            (self.rate_step,
-             self.current_step,
-             self.min_rate,
-             (self.stable_protocol_fees.amount(), self.other_protocol_fees.amount()),
-             pool_steps_state)
+            (
+                self.rate_step,
+                self.current_step,
+                self.min_rate,
+                (
+                    self.stable_protocol_fees.amount(),
+                    self.other_protocol_fees.amount(),
+                ),
+                pool_steps_state,
+            )
         }
 
         #[inline]

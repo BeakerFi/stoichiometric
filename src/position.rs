@@ -7,17 +7,16 @@ pub struct StepPosition {
     /// Liquidity of the position
     pub liquidity: Decimal,
 
-    /// Value of the `stable_fees_per_liq` variable of the [`PoolStep`] last time that the
+    /// Value of the `stable_fees_per_liq` variable of the PoolStep last time that the
     /// associated [`Position`] collected fees.
     pub last_stable_fees_per_liq: Decimal,
 
-    /// Value of the `other_fees_per_liq` variable of the [`PoolStep`] last time that the associated
+    /// Value of the `other_fees_per_liq` variable of the PoolStep last time that the associated
     /// Position collected fees
     pub last_other_fees_per_liq: Decimal,
 }
 
 impl StepPosition {
-
     /// Returns a new [`StepPosition`].
     pub fn new() -> Self {
         Self {
@@ -28,17 +27,17 @@ impl StepPosition {
     }
 
     /// Updates the [`StepPosition`] from another one.
-    pub fn update(&mut self, new_position: &StepPosition)
-    {
+    pub fn update(&mut self, new_position: &StepPosition) {
         self.liquidity = new_position.liquidity;
         self.last_stable_fees_per_liq = new_position.last_stable_fees_per_liq;
         self.last_other_fees_per_liq = new_position.last_other_fees_per_liq;
     }
 }
 
-#[derive(NonFungibleData, Clone)]
+#[derive(
+    NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone,
+)]
 pub struct Position {
-
     /// Other token of the position
     pub token: ResourceAddress,
 
@@ -48,7 +47,6 @@ pub struct Position {
 }
 
 impl Position {
-
     /// Creates a new [`Position`] for a token.
     pub fn from(token: ResourceAddress) -> Self {
         Self {

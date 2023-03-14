@@ -1,14 +1,16 @@
-use std::collections::HashMap;
-use std::process::Command;
+use crate::pool_state::PoolState;
+use crate::router_sqrt::{RouterBlueprint, RouterMethods, POSITION_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::manifest_call::ManifestCall;
-use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16};
+use sqrt::method::Arg::{
+    AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16,
+};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
-use crate::pool_state::{PoolState};
-use crate::router_sqrt::{POSITION_NAME, RouterBlueprint, RouterMethods};
+use std::collections::HashMap;
+use std::process::Command;
 
 pub fn run_command(command: &mut Command) -> String {
     let output = command.output().expect("Failed to run command line");
@@ -29,21 +31,33 @@ pub fn instantiate() -> TestEnvironment {
     test_env.publish_package("router", router_package);
     test_env.create_fixed_supply_token("usd", dec!(10000000));
     test_env.create_fixed_supply_token("btc", dec!(10000000));
-    test_env.new_component("router_comp", "router_bp", vec![ResourceAddressArg("usd".to_string())]);
+    test_env.new_component(
+        "router_comp",
+        "router_bp",
+        vec![ResourceAddressArg("usd".to_string())],
+    );
     test_env
 }
 
-pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other: &str, other_amount: Decimal, min_rate: Decimal, max_rate: Decimal) -> PoolState
-{
-    test_env.call_method( RouterMethods::CreatePool(
-        "usd".to_string(),
-        stable_amount,
-        other.to_string(),
-        other_amount,
-        stable_amount / other_amount,
-        min_rate,
-        max_rate
-    )).run();
+pub fn create_pool(
+    test_env: &mut TestEnvironment,
+    stable_amount: Decimal,
+    other: &str,
+    other_amount: Decimal,
+    min_rate: Decimal,
+    max_rate: Decimal,
+) -> PoolState {
+    test_env
+        .call_method(RouterMethods::CreatePool(
+            "usd".to_string(),
+            stable_amount,
+            other.to_string(),
+            other_amount,
+            stable_amount / other_amount,
+            min_rate,
+            max_rate,
+        ))
+        .run();
 
     let mut pool_state: PoolState = PoolState::from(String::new(), String::new());
 
@@ -53,10 +67,13 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
     let output = run_command(Command::new("resim").arg("show").arg(router_address));
 
     lazy_static! {
-        static ref POOLS_LIST_RE: Regex = Regex::new(r#"Map<ResourceAddress, Tuple>\((.*), Tuple\(Own"#).unwrap();
+        static ref POOLS_LIST_RE: Regex =
+            Regex::new(r#"Map<ResourceAddress, Tuple>\((.*), Tuple\(Own"#).unwrap();
     }
 
-    let pools_list_cap = &POOLS_LIST_RE.captures(&output).expect("Could not find pools list");
+    let pools_list_cap = &POOLS_LIST_RE
+        .captures(&output)
+        .expect("Could not find pools list");
     let pools_list = &pools_list_cap[1];
 
     lazy_static! {
@@ -64,11 +81,9 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
     }
 
     for cap in POOLS_RE.captures_iter(pools_list) {
-
         let resource = String::from(&cap[1]);
-        if resource == other_address
-        {
-            pool_state = PoolState::from(router_address.to_string(),other_address);
+        if resource == other_address {
+            pool_state = PoolState::from(router_address.to_string(), other_address);
             break;
         }
     }
@@ -77,13 +92,14 @@ pub fn create_pool(test_env: &mut TestEnvironment, stable_amount: Decimal, other
     pool_state
 }
 
-pub fn add_liquidity_at_step<'a>(test_env: &'a mut TestEnvironment,
-                                 amount_stable: Decimal,
-                                 token_b: &'a str,
-                                 amount_b: Decimal,
-                                 step: u16,
-                                 position_id: Option<String>,) -> ManifestCall<'a>
-{
+pub fn add_liquidity_at_step<'a>(
+    test_env: &'a mut TestEnvironment,
+    amount_stable: Decimal,
+    token_b: &'a str,
+    amount_b: Decimal,
+    step: u16,
+    position_id: Option<String>,
+) -> ManifestCall<'a> {
     let mut env_args = Vec::new();
     env_args.push((
         "caller_address".to_string(),
@@ -121,15 +137,15 @@ pub fn add_liquidity_at_step<'a>(test_env: &'a mut TestEnvironment,
     test_env.call_custom_manifest(manifest_name, env_args)
 }
 
-pub fn add_liquidity_at_steps<'a>(test_env: &'a mut TestEnvironment,
-amount_stable: Decimal,
-token_b: &'a str,
-amount_b: Decimal,
-start_step: u16,
-stop_step: u16,
-                                  position_id: Option<String>
-) -> ManifestCall<'a>
-{
+pub fn add_liquidity_at_steps<'a>(
+    test_env: &'a mut TestEnvironment,
+    amount_stable: Decimal,
+    token_b: &'a str,
+    amount_b: Decimal,
+    start_step: u16,
+    stop_step: u16,
+    position_id: Option<String>,
+) -> ManifestCall<'a> {
     let mut env_args = Vec::new();
     env_args.push((
         "caller_address".to_string(),
@@ -168,13 +184,14 @@ stop_step: u16,
     test_env.call_custom_manifest(manifest_name, env_args)
 }
 
-pub fn add_liquidity<'a>(test_env: &'a mut TestEnvironment,
-                         amount_stable: Decimal,
-                         token_b: &'a str,
-                         amount_b: Decimal,
-                         rate: Decimal,
-                         position_id: Option<String>) -> ManifestCall<'a> {
-
+pub fn add_liquidity<'a>(
+    test_env: &'a mut TestEnvironment,
+    amount_stable: Decimal,
+    token_b: &'a str,
+    amount_b: Decimal,
+    rate: Decimal,
+    position_id: Option<String>,
+) -> ManifestCall<'a> {
     let mut env_args = Vec::new();
     env_args.push((
         "caller_address".to_string(),
@@ -211,21 +228,26 @@ pub fn add_liquidity<'a>(test_env: &'a mut TestEnvironment,
     test_env.call_custom_manifest(manifest_name, env_args)
 }
 
-pub fn assert_current_position(test_env: &TestEnvironment, token: &str, step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>)
-{
-    let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
+pub fn assert_current_position(
+    test_env: &TestEnvironment,
+    token: &str,
+    step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>,
+) {
+    let output = run_command(
+        Command::new("resim")
+            .arg("show")
+            .arg(test_env.get_current_account_address()),
+    );
 
-    lazy_static!{
+    lazy_static! {
         static ref POSITIONS_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\)\), mutable_data: Tuple\(Map<U16, Tuple>\((.*)\) \}"#).unwrap();
     }
 
     let mut position_found = false;
-    for position_cap in POSITIONS_RE.captures_iter(&output)
-    {
+    for position_cap in POSITIONS_RE.captures_iter(&output) {
         let token_address = String::from(&position_cap[2]);
         let token = test_env.get_resource(token).clone();
-        if token_address == token
-        {
+        if token_address == token {
             position_found = true;
             assert_step_positions(&position_cap[3], step_positions);
         }
@@ -234,47 +256,54 @@ pub fn assert_current_position(test_env: &TestEnvironment, token: &str, step_pos
     assert!(position_found);
 }
 
-fn assert_step_positions(output_str: &str, step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>)
-{
-    lazy_static!{
+fn assert_step_positions(
+    output_str: &str,
+    step_positions: &HashMap<u16, (Decimal, Decimal, Decimal)>,
+) {
+    lazy_static! {
         static ref STEP_POSITION_RE: Regex = Regex::new(r#"(\w*)u16, Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)"#).unwrap();
     }
 
     let mut new_hashmap = HashMap::new();
 
-    for step_position_cap in STEP_POSITION_RE.captures_iter(output_str)
-    {
+    for step_position_cap in STEP_POSITION_RE.captures_iter(output_str) {
         let step_id: u16 = String::from(&step_position_cap[1]).parse::<u16>().unwrap();
         let liquidity = Decimal::from(&step_position_cap[2]);
         let last_stable_fees_per_liq = Decimal::from(&step_position_cap[3]);
         let last_other_fees_per_liq = Decimal::from(&step_position_cap[4]);
-        new_hashmap.insert(step_id, (liquidity, last_stable_fees_per_liq, last_other_fees_per_liq));
+        new_hashmap.insert(
+            step_id,
+            (liquidity, last_stable_fees_per_liq, last_other_fees_per_liq),
+        );
     }
 
-    assert!(new_hashmap.len() == step_positions.len() && new_hashmap.keys().all(|k| step_positions.contains_key(k)));
+    assert!(
+        new_hashmap.len() == step_positions.len()
+            && new_hashmap.keys().all(|k| step_positions.contains_key(k))
+    );
 
-    for (key, value) in new_hashmap
-    {
+    for (key, value) in new_hashmap {
         let value_2 = step_positions.get(&key).unwrap();
         assert_eq!(value, *value_2);
     }
 }
 
-pub fn assert_no_positions(test_env: &TestEnvironment, token: &str)
-{
-    let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
+pub fn assert_no_positions(test_env: &TestEnvironment, token: &str) {
+    let output = run_command(
+        Command::new("resim")
+            .arg("show")
+            .arg(test_env.get_current_account_address()),
+    );
 
-    lazy_static!{
+    lazy_static! {
         static ref POSITIONS_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\)\), mutable_data: Tuple\(Map<U16, Tuple>\((.*)\) \}"#).unwrap();
     }
 
     let mut position_found = false;
-    for position_cap in POSITIONS_RE.captures_iter(&output)
-    {
+    for position_cap in POSITIONS_RE.captures_iter(&output) {
         let token_address = String::from(&position_cap[2]);
         let token = test_env.get_resource(token).clone();
-        if token_address == token
-        {
+        if token_address == token {
             position_found = true;
             break;
         }

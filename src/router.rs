@@ -13,16 +13,15 @@
 //! - [add_liquidity](RouterComponent::add_liquidity) - Adds liquidity to an existing pool to the given rate.
 //! - [add_liquidity_at_step](RouterComponent::add_liquidity_at_step) - Adds liquidity to an existing pool at the given step.
 //! - [add_liquidity_at_steps](RouterComponent::add_liquidity_at_steps) - Adds liquidity to an existing pool at the given steps.
-//! - [remove_liquidity_at_step](RouterComponent::remove_liquidity_at_step) - Removes all the liquidity associated to a given [`Position`] at the given step.
-//! - [remove_liquidity_at_steps](RouterComponent::remove_liquidity_at_steps) - Removes all the liquidity associated to a given [`Position`] at the given steps.
-//! - [remove_liquidity_at_rate](RouterComponent::remove_liquidity_at_rate) - Removes all the liquidity associated to a given [`Position`] at the given rate.
-//! - [remove_all_liquidity](RouterComponent::remove_all_liquidity) - Removes all the liquidity associated to a given [`Position`].
-//! - [claim_fees](RouterComponent::claim_fees) - Claims fees associated to a [`Position`].
-//! - [swap](RouterComponent::swap) - Swaps stablecoins/other tokens for other tokens/stablecoins.
+//! - [remove_liquidity_at_step](RouterComponent::remove_liquidity_at_step) - Removes liquidity from an existing pool at a given step.
+//! - [remove_liquidity_at_steps](RouterComponent::remove_liquidity_at_steps) - Removes liquidity from an existing pool at given steps.
+//! - [remove_liquidity_at_rate](RouterComponent::remove_liquidity_at_rate) - Removes liquidity from an existing pool at a given rate.
+//! - [remove_all_liquidity](RouterComponent::remove_all_liquidity) - Removes all liquidity from the supplied [`Position`]s NFR and burns them.
+//! - [claim_fees](RouterComponent::claim_fees) - Claim fees associated to the supplied proof of [`Position`]s.
+//! - [swap](RouterComponent::swap) - Swaps tokens.
 //! - [claim_protocol_fees](RouterComponent::claim_protocol_fees) - Claims protocol fees.
-//! - [get_state](RouterComponent::get_state) - Returns the full state of the blueprint.
-//! - [rate_at_step](RouterComponent::rate_at_step) - Returns the exchange rate associated to a given step.
-//! - [step_at_rate](RouterComponent::step_at_rate) - Returns the step associated to a given exchange rate.
+//! - [get_pool_state](RouterComponent::get_pool_state) - Returns the full state of the blueprint.
+//! - [step_at_rate](RouterComponent::step_at_rate) - Returns the step of a pool associated to a given rate
 
 use scrypto::blueprint;
 
@@ -32,7 +31,7 @@ mod router {
     use crate::pool::PoolComponent;
     use crate::position::Position;
 
-    pub struct Router{
+    pub struct Router {
         /// Address of the stablecoin used in the pairs of the pools.
         stablecoin_address: ResourceAddress,
 
@@ -49,17 +48,15 @@ mod router {
         position_id: u64,
 
         /// Address of the admin badge controlling the Router and its pools
-        admin_badge: ResourceAddress
+        admin_badge: ResourceAddress,
     }
 
     impl Router {
-
         /// Instantiates and globalizes a new [`RouterComponent`] and returns its address and an admin badge.
         ///
         /// # Arguments
         /// * `stablecoin_address` - ResourceAddress of the stablecoin to be used by the pools.
         pub fn new(stablecoin_address: ResourceAddress) -> (ComponentAddress, Bucket) {
-
             // Creates the admin badge
             let admin_badge: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
@@ -93,19 +90,43 @@ mod router {
             // the default access rule is set to require the admin badge.
             let router_rules = AccessRules::new()
                 .method("add_liquidity", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("add_liquidity_at_step", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("add_liquidity_at_steps", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_liquidity_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_liquidity_at_step", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_liquidity_at_steps", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_all_liquidity", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method(
+                    "add_liquidity_at_step",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
+                .method(
+                    "add_liquidity_at_steps",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
+                .method(
+                    "remove_liquidity_at_rate",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
+                .method(
+                    "remove_liquidity_at_step",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
+                .method(
+                    "remove_liquidity_at_steps",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
+                .method(
+                    "remove_all_liquidity",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
                 .method("claim_fees", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("swap", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_pool_state", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("step_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
                 .default(
                     rule!(require(admin_badge.resource_address())),
-                    AccessRule::DenyAll
+                    AccessRule::DenyAll,
                 );
 
             let mut component = Self {
@@ -114,9 +135,9 @@ mod router {
                 position_minter: Vault::with_bucket(position_minter),
                 position_address: position_resource,
                 position_id: 0,
-                admin_badge: admin_badge.resource_address()
+                admin_badge: admin_badge.resource_address(),
             }
-                .instantiate();
+            .instantiate();
 
             component.add_access_check(router_rules);
             let component = component.globalize();
@@ -134,29 +155,53 @@ mod router {
         /// * `initial_rate` - Initial exchange rate of the pool.
         /// * `min_rate` -  Minimum exchange rate of the pool.
         /// * `max_rate` - Maximum exchange rate of the pool.
-        pub fn create_pool(&mut self, bucket_a: Bucket, bucket_b: Bucket, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal) ->(Bucket, Bucket, Bucket)
-        {
-            assert!(bucket_a.resource_address() != bucket_b.resource_address(), "Two pools cannot trade the same token");
-            assert!(bucket_a.resource_address() == self.stablecoin_address || bucket_b.resource_address() == self.stablecoin_address, "Every pool should be Stablecoin/Other");
+        pub fn create_pool(
+            &mut self,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
+            initial_rate: Decimal,
+            min_rate: Decimal,
+            max_rate: Decimal,
+        ) -> (Bucket, Bucket, Bucket) {
+            assert!(
+                bucket_a.resource_address() != bucket_b.resource_address(),
+                "Two pools cannot trade the same token"
+            );
+            assert!(
+                bucket_a.resource_address() == self.stablecoin_address
+                    || bucket_b.resource_address() == self.stablecoin_address,
+                "Every pool should be Stablecoin/Other"
+            );
 
             // Reorder the buckets correctly and computes the right rates
-            let (bucket_stable, bucket_other, rate_init, rate_min, rate_max) = if bucket_a.resource_address() == self.stablecoin_address {
-                (bucket_a, bucket_b, initial_rate, min_rate, max_rate)
-            } else {
-                (bucket_b, bucket_a, Decimal::ONE / initial_rate, Decimal::ONE/ max_rate, Decimal::ONE / min_rate)
-            };
+            let (bucket_stable, bucket_other, rate_init, rate_min, rate_max) =
+                if bucket_a.resource_address() == self.stablecoin_address {
+                    (bucket_a, bucket_b, initial_rate, min_rate, max_rate)
+                } else {
+                    (
+                        bucket_b,
+                        bucket_a,
+                        Decimal::ONE / initial_rate,
+                        Decimal::ONE / max_rate,
+                        Decimal::ONE / min_rate,
+                    )
+                };
 
-            assert!(self.pools.get(&bucket_other.resource_address()).is_none(), "A pool trading these tokens already exists");
+            assert!(
+                self.pools.get(&bucket_other.resource_address()).is_none(),
+                "A pool trading these tokens already exists"
+            );
 
-            let (pool, ret_stable, ret_other, position) = PoolComponent::new(bucket_stable, bucket_other, rate_init, rate_min, rate_max);
+            let (pool, ret_stable, ret_other, position) =
+                PoolComponent::new(bucket_stable, bucket_other, rate_init, rate_min, rate_max);
             self.pools.insert(ret_other.resource_address(), pool);
             let ret_pos = self.position_minter.authorize(|| {
                 borrow_resource_manager!(self.position_address).mint_non_fungible(
                     &NonFungibleLocalId::Integer(self.position_id.into()),
-                    position
+                    position,
                 )
             });
-            self.position_id+=1;
+            self.position_id += 1;
 
             (ret_stable, ret_other, ret_pos)
         }
@@ -168,13 +213,17 @@ mod router {
         /// * `bucket_b` - Bucket containing the second token to be added as liquidity
         /// * `rate` - Rate at which to add the liquidity
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
-        pub fn add_liquidity(&mut self, bucket_a: Bucket, bucket_b: Bucket, rate: Decimal, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
-        {
+        pub fn add_liquidity(
+            &mut self,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
+            rate: Decimal,
+            opt_position_proof: Option<Proof>,
+        ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
             let pool = self.get_pool(bucket_other.resource_address());
 
             match opt_position_proof {
-
                 Some(position_proof) => {
                     // If the user supplied a Proof, check that it is indeed a proof of a single position NFR
                     let valid_proof = self.check_single_position_proof(position_proof);
@@ -183,8 +232,8 @@ mod router {
                     // Extract the data from the Position NFR
                     let data = self.get_position_data(&position_nfr);
 
-
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity(bucket_stable, bucket_other, rate, data);
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity(bucket_stable, bucket_other, rate, data);
                     self.update_position(position_nfr, new_data);
 
                     (ret_stable, ret_other, None)
@@ -192,20 +241,20 @@ mod router {
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity(bucket_stable, bucket_other, rate, empty_pos);
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity(bucket_stable, bucket_other, rate, empty_pos);
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
                             &NonFungibleLocalId::Integer(self.position_id.into()),
-                            new_data
+                            new_data,
                         )
                     });
-                    self.position_id+=1;
+                    self.position_id += 1;
                     (ret_stable, ret_other, Some(bucket_pos))
                 }
             }
         }
-
 
         /// Adds liquidity to an existing pool at a given step.
         ///
@@ -214,8 +263,13 @@ mod router {
         /// * `bucket_b` - Bucket containing the second token to be added as liquidity
         /// * `step` - Step to which to add liquidity
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
-        pub fn add_liquidity_at_step(&mut self, bucket_a: Bucket, bucket_b: Bucket, step: u16, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
-        {
+        pub fn add_liquidity_at_step(
+            &mut self,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
+            step: u16,
+            opt_position_proof: Option<Proof>,
+        ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
             let pool = self.get_pool(bucket_other.resource_address());
 
@@ -228,7 +282,8 @@ mod router {
                     // Extract the data from the Position NFR
                     let data = self.get_position_data(&position_nfr);
 
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, step, data);
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity_at_step(bucket_stable, bucket_other, step, data);
                     self.update_position(position_nfr, new_data);
 
                     (ret_stable, ret_other, None)
@@ -236,21 +291,22 @@ mod router {
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_step(bucket_stable, bucket_other, step, empty_pos);
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity_at_step(bucket_stable, bucket_other, step, empty_pos);
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
                             &NonFungibleLocalId::Integer(self.position_id.into()),
-                            new_data
+                            new_data,
                         )
                     });
-                    self.position_id+=1;
+                    self.position_id += 1;
                     (ret_stable, ret_other, Some(bucket_pos))
                 }
             }
         }
 
-        /// Adds liquidity to an existing pool at the given steps.
+        /// Adds liquidity to an existing pool at given steps.
         ///
         /// # Arguments
         /// * `bucket_a` - Bucket containing the first token to be added as liquidity
@@ -258,8 +314,14 @@ mod router {
         /// * `start_step` - First step to which to add liquidity
         /// * `stop_step` - Last step to which to add liquidity
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
-        pub fn add_liquidity_at_steps(&mut self, bucket_a: Bucket, bucket_b: Bucket, start_step: u16, stop_step: u16, opt_position_proof: Option<Proof>) -> (Bucket, Bucket, Option<Bucket>)
-        {
+        pub fn add_liquidity_at_steps(
+            &mut self,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
+            start_step: u16,
+            stop_step: u16,
+            opt_position_proof: Option<Proof>,
+        ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
             let pool = self.get_pool(bucket_other.resource_address());
 
@@ -272,33 +334,48 @@ mod router {
                     // Extract the data from the Position NFR
                     let data = self.get_position_data(&position_nfr);
 
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, start_step, stop_step, data);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
+                        bucket_stable,
+                        bucket_other,
+                        start_step,
+                        stop_step,
+                        data,
+                    );
                     self.update_position(position_nfr, new_data);
                     (ret_stable, ret_other, None)
                 }
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(bucket_stable, bucket_other, start_step, stop_step, empty_pos);
+                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
+                        bucket_stable,
+                        bucket_other,
+                        start_step,
+                        stop_step,
+                        empty_pos,
+                    );
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
                             &NonFungibleLocalId::Integer(self.position_id.into()),
-                            new_data
+                            new_data,
                         )
                     });
-                    self.position_id+=1;
+                    self.position_id += 1;
                     (ret_stable, ret_other, Some(bucket_pos))
                 }
             }
         }
 
-        /// Adds liquidity from an existing pool at a given step.
+        /// Removes liquidity from an existing pool at a given step.
         ///
         /// # Arguments
         /// * `position_proof` - Proof of an existing [`Position`] NFR
-        pub fn remove_liquidity_at_step(&mut self, position_proof: Proof, step: u16) -> (Bucket, Bucket)
-        {
+        pub fn remove_liquidity_at_step(
+            &mut self,
+            position_proof: Proof,
+            step: u16,
+        ) -> (Bucket, Bucket) {
             let valid_proof = self.check_single_position_proof(position_proof);
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
@@ -309,28 +386,36 @@ mod router {
             (ret_stable, ret_other)
         }
 
-        /// Adds liquidity from an existing pool at a given step range.
+        /// Removes liquidity from an existing pool at a given step range.
         ///
         /// # Arguments
         /// * `position_proof` - Proof of an existing [`Position`] NFR
-        pub fn remove_liquidity_at_steps(&mut self, position_proof: Proof, start_step: u16, stop_step: u16) -> (Bucket, Bucket)
-        {
+        pub fn remove_liquidity_at_steps(
+            &mut self,
+            position_proof: Proof,
+            start_step: u16,
+            stop_step: u16,
+        ) -> (Bucket, Bucket) {
             let valid_proof = self.check_single_position_proof(position_proof);
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
 
             let pool = self.get_pool(data.token);
-            let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_steps(start_step, stop_step, data);
+            let (ret_stable, ret_other, new_data) =
+                pool.remove_liquidity_at_steps(start_step, stop_step, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
         }
 
-        /// Adds liquidity from an existing pool at a given exchange rate.
+        /// Removes liquidity from an existing pool at a given exchange rate.
         ///
         /// # Arguments
         /// * `position_proof` - Proof of an existing [`Position`] NFR
-        pub fn remove_liquidity_at_rate(&mut self, position_proof: Proof, rate: Decimal) -> (Bucket, Bucket)
-        {
+        pub fn remove_liquidity_at_rate(
+            &mut self,
+            position_proof: Proof,
+            rate: Decimal,
+        ) -> (Bucket, Bucket) {
             let valid_proof = self.check_single_position_proof(position_proof);
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
@@ -341,7 +426,7 @@ mod router {
             (ret_stable, ret_other)
         }
 
-        /// Removes all liquidity from the supplied [`Positions`]s NFR and burns them.
+        /// Removes all liquidity from the supplied [`Position`]s NFR and burns them.
         ///
         /// # Arguments
         /// * `positions_bucket` - Proof of an existing [`Position`] NFR
@@ -351,7 +436,6 @@ mod router {
             let mut buckets: Vec<Bucket> = Vec::new();
             let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in positions_bucket.non_fungibles::<Position>() {
-
                 let data = self.get_position_data(&position_nfr);
                 let pool = self.get_pool(data.token);
                 let (ret_stable, ret_other) = pool.remove_all_liquidity(data);
@@ -360,11 +444,11 @@ mod router {
                 buckets.push(ret_other);
             }
             buckets.push(stable_bucket);
-            self.position_minter.authorize(|| { positions_bucket.burn() });
+            self.position_minter.authorize(|| positions_bucket.burn());
             buckets
         }
 
-        /// Claim fees associated to the supplied proof of [`Positions`]s.
+        /// Claim fees associated to the supplied proof of [`Position`]s.
         ///
         /// # Arguments
         /// * `positions_proof` - Proof of existing [`Position`]s NFR
@@ -374,7 +458,6 @@ mod router {
             let mut buckets: Vec<Bucket> = Vec::new();
             let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in valid_proof.non_fungibles::<Position>() {
-
                 let data = self.get_position_data(&position_nfr);
                 let pool = self.get_pool(data.token);
                 let (ret_stable, ret_other, new_data) = pool.claim_fees(data);
@@ -385,6 +468,21 @@ mod router {
             }
             buckets.push(stable_bucket);
             buckets
+        }
+
+        /// Swaps tokens.
+        ///
+        /// # Arguments
+        /// `input` - tokens to be swapped
+        /// `output` - tokens to receive
+        pub fn swap(&mut self, input: Bucket, output: ResourceAddress) -> (Bucket, Bucket) {
+            let pool;
+            if output == self.stablecoin_address {
+                pool = self.get_pool(input.resource_address())
+            } else {
+                pool = self.get_pool(output)
+            }
+            pool.swap(input)
         }
 
         /// Claims protocol fees.
@@ -404,43 +502,40 @@ mod router {
             buckets
         }
 
-        /// Swaps tokens.
-        ///
-        /// # Arguments
-        /// `input` - tokens to be swapped
-        /// `output` - tokens to receive
-        pub fn swap(&mut self, input: Bucket, output: ResourceAddress) -> (Bucket, Bucket) {
-            let pool;
-            if output == self.stablecoin_address
-            {
-                pool = self.get_pool(input.resource_address())
-            }
-            else
-            {
-                pool = self.get_pool(output)
-            }
-            pool.swap(input)
-        }
-
         /// Return the state of the given pool.
         ///
         /// # Arguments
         /// `token` - other token traded by the pool to get the state of
-        pub fn get_pool_state(&mut self, token: ResourceAddress) -> (
-        Decimal,
-        u16,
-        Decimal,
-        (Decimal, Decimal),
-        Vec<(u16, Vec<Decimal>)>,
+        pub fn get_pool_state(
+            &mut self,
+            token: ResourceAddress,
+        ) -> (
+            Decimal,
+            u16,
+            Decimal,
+            (Decimal, Decimal),
+            Vec<(u16, Vec<Decimal>)>,
         ) {
             let pool = self.get_pool(token);
             pool.get_state()
         }
 
+        /// Returns the step of a pool associated to a given rate.
+        ///
+        /// # Arguments
+        /// `token` - ResourceAddress of the other token traded by the pool
+        /// `rate` - Rate for which to compute the associated step
+        pub fn step_at_rate(&self, token: ResourceAddress, rate: Decimal) -> u16 {
+            let pool = self.get_pool(token);
+            pool.step_at_rate(rate)
+        }
+
         /// Internal method that returns the pool trading the pair stablecoin/token.
         fn get_pool(&self, token: ResourceAddress) -> &PoolComponent {
             match self.pools.get(&token) {
-                None => { panic!("There is no pool trading this pair") }
+                None => {
+                    panic!("There is no pool trading this pair")
+                }
                 Some(pool) => pool,
             }
         }
@@ -457,7 +552,8 @@ mod router {
 
         /// Internal method that checks that a given proof is a proof of [`Position`](s) NFR.
         fn check_multiple_position_proof(&self, positions_proof: Proof) -> ValidatedProof {
-            positions_proof.validate_proof(ProofValidationMode::ValidateResourceAddress(
+            positions_proof
+                .validate_proof(ProofValidationMode::ValidateResourceAddress(
                     self.position_address,
                 ))
                 .expect("The provided proof is invalid")
@@ -472,7 +568,8 @@ mod router {
 
         /// Internal method that updates the data of a [`Position`] NFR.
         fn update_position(&self, position_nfr: NonFungible<Position>, new_data: Position) {
-            self.position_minter.authorize(|| position_nfr.update_data(new_data));
+            self.position_minter
+                .authorize(|| position_nfr.update_data(new_data));
         }
 
         #[inline]
@@ -481,22 +578,9 @@ mod router {
         fn sort_buckets(&self, bucket_a: Bucket, bucket_b: Bucket) -> (Bucket, Bucket) {
             if bucket_a.resource_address() == self.stablecoin_address {
                 (bucket_a, bucket_b)
-            }
-            else
-            {
+            } else {
                 (bucket_b, bucket_a)
             }
         }
-
-        /// Returns the step of a pool associated to a given rate.
-        ///
-        /// # Arguments
-        /// `token` - ResourceAddress of the other token traded by the pool
-        /// `rate` - Rate for which to compute the associated step
-        pub fn step_at_rate(&self, token: ResourceAddress, rate: Decimal) -> u16 {
-            let pool = self.get_pool(token);
-            pool.step_at_rate(rate)
-        }
-
     }
 }

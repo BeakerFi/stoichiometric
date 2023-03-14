@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::process::Command;
+use crate::utils::run_command;
 use lazy_static::lazy_static;
 use regex::Regex;
-use scrypto::prelude::{Decimal};
-use crate::utils::run_command;
+use scrypto::prelude::Decimal;
+use std::collections::HashMap;
+use std::process::Command;
 
 pub struct StepState {
     stable: Decimal,
@@ -12,12 +12,19 @@ pub struct StepState {
     stable_fees_per_liq: Decimal,
     other_fees_per_liq: Decimal,
     stable_fees: Decimal,
-    other_fees: Decimal
+    other_fees: Decimal,
 }
 
 impl StepState {
-
-    pub fn from(stable: Decimal, other: Decimal, rate: Decimal, stable_fees_per_liq: Decimal, other_fees_per_liq: Decimal, stable_fees: Decimal, other_fees: Decimal) -> Self {
+    pub fn from(
+        stable: Decimal,
+        other: Decimal,
+        rate: Decimal,
+        stable_fees_per_liq: Decimal,
+        other_fees_per_liq: Decimal,
+        stable_fees: Decimal,
+        other_fees: Decimal,
+    ) -> Self {
         Self {
             stable,
             other,
@@ -25,20 +32,18 @@ impl StepState {
             stable_fees_per_liq,
             other_fees_per_liq,
             stable_fees,
-            other_fees
+            other_fees,
         }
     }
 
-    pub fn from_output(str_output: &str) -> HashMap<u16, Self>
-    {
+    pub fn from_output(str_output: &str) -> HashMap<u16, Self> {
         let mut steps = HashMap::new();
 
         lazy_static! {
             static ref STEP_STATE_RE: Regex = Regex::new(r#"Tuple\((\w*)u16, Array<Decimal>\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\)\)"#).unwrap();
         }
 
-        for step_cap in STEP_STATE_RE.captures_iter(str_output)
-        {
+        for step_cap in STEP_STATE_RE.captures_iter(str_output) {
             let step = String::from(&step_cap[1]).parse::<u16>().unwrap();
             let step_state = StepState {
                 stable: Decimal::from(&step_cap[2]),
@@ -66,12 +71,17 @@ impl StepState {
         assert_eq!(self.other_fees, other_step.other_fees);
     }
 
-    pub fn assert_step_states(step_states_1: &HashMap<u16, StepState>, step_states_2: &HashMap<u16, StepState>) {
+    pub fn assert_step_states(
+        step_states_1: &HashMap<u16, StepState>,
+        step_states_2: &HashMap<u16, StepState>,
+    ) {
         // Checks that both maps have the same amount of keys and that the keys match
-        assert!(step_states_1.len() == step_states_2.len() && step_states_1.keys().all(|k| step_states_2.contains_key(k)));
+        assert!(
+            step_states_1.len() == step_states_2.len()
+                && step_states_1.keys().all(|k| step_states_2.contains_key(k))
+        );
 
-        for (key,value) in step_states_1 {
-
+        for (key, value) in step_states_1 {
             let state_2 = step_states_2.get(key).unwrap();
             value.assert_step_state(state_2);
         }
@@ -90,7 +100,6 @@ pub struct PoolState {
 }
 
 impl PoolState {
-
     pub fn from(router_address: String, other: String) -> Self {
         PoolState {
             router_address,
@@ -105,7 +114,13 @@ impl PoolState {
     }
 
     pub fn update(&mut self) {
-        let output = run_command(Command::new("resim").arg("call-method").arg(&self.router_address).arg("get_pool_state").arg(&self.other));
+        let output = run_command(
+            Command::new("resim")
+                .arg("call-method")
+                .arg(&self.router_address)
+                .arg("get_pool_state")
+                .arg(&self.other),
+        );
 
         lazy_static! {
             static ref STATE_MATCH_RE: Regex = Regex::new(r#"├─ Tuple\(Decimal\("([\d.]*)"\), (\w*)u16, Decimal\("([\d.]*)"\), Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), Array<Tuple>\((.*)\)"#).unwrap();
@@ -119,7 +134,15 @@ impl PoolState {
         self.steps = StepState::from_output(&capture[6]);
     }
 
-    pub fn assert_state_is(&self, rate_step: Decimal, current_step : u16, min_rate: Decimal, steps: HashMap<u16, StepState>, stable_protocol: Decimal, other_protocol: Decimal) {
+    pub fn assert_state_is(
+        &self,
+        rate_step: Decimal,
+        current_step: u16,
+        min_rate: Decimal,
+        steps: HashMap<u16, StepState>,
+        stable_protocol: Decimal,
+        other_protocol: Decimal,
+    ) {
         assert_eq!(self.rate_step, rate_step);
         assert_eq!(self.min_rate, min_rate);
         StepState::assert_step_states(&self.steps, &steps);

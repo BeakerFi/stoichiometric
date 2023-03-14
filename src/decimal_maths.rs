@@ -95,7 +95,7 @@ where
     // Therefore, ln(y) = ln(a) + n
 
     if value < Decimal::ONE {
-        return -ln(Decimal::ONE / value)
+        return -ln(Decimal::ONE / value);
     }
 
     let mut n = 0;
@@ -104,9 +104,8 @@ where
         n += 1;
     }
 
-    if value  == Decimal::ONE
-    {
-        return Decimal::from(n)
+    if value == Decimal::ONE {
+        return Decimal::from(n);
     }
 
     // Start with an arbitrary number as the first guess
@@ -166,7 +165,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::decimal_maths::{exp, ln, EULER_NUMBER};
-    use scrypto::math::{Decimal};
+    use scrypto::math::Decimal;
     use scrypto::prelude::dec;
 
     #[test]
