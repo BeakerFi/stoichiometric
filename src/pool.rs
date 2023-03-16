@@ -51,6 +51,7 @@ mod pool {
     use crate::oracle::OracleComponent;
     use crate::pool_step::PoolStepComponent;
     use crate::position::Position;
+    use crate::position::StepPosition;
 
     pub struct Pool {
         /// Percentage rate increase between each step
@@ -128,8 +129,7 @@ mod pool {
                 other_protocol_fees: Vault::new(bucket_other.resource_address()),
                 oracle: OracleComponent::new()
             }
-            .instantiate()
-                .globalize();
+            .instantiate();
 
             // Adds the initial liquidity
             let position = Position::from(bucket_other.resource_address());
@@ -139,6 +139,8 @@ mod pool {
                 current_step,
                 position,
             );
+
+            let component = component.globalize();
 
             (component, stable_ret, other_ret, pos_ret)
         }
@@ -178,7 +180,7 @@ mod pool {
             let step_position = position.get_step(step);
 
             // Get or create the given step
-            let pool_step = match self.steps.get_mut(&step) {
+            let mut pool_step = match self.steps.get_mut(&step) {
                 Some(ps) => LocalPoolStepComponent::at(*ps),
                 None => {
                     let rate = self.rate_at_step(step);
@@ -260,7 +262,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             if step_position.liquidity > Decimal::ZERO {
-                let pool_step = self.get_step(&step).unwrap();
+                let mut pool_step = self.get_step(&step).unwrap();
                 let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
@@ -317,7 +319,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             for (step, step_position) in step_positions {
-                let pool_step = self.get_step(&step).unwrap();
+                let mut pool_step = self.get_step(&step).unwrap();
                 let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
@@ -334,7 +336,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             for (step, step_position) in position.step_positions.iter_mut() {
-                let pool_step = self.get_step(step).unwrap();
+                let mut pool_step = self.get_step(step).unwrap();
                 let (tmp_stable, tmp_other, new_step_position) =
                     pool_step.claim_fees(step_position.clone());
                 bucket_stable.put(tmp_stable);
@@ -369,7 +371,7 @@ mod pool {
 
             loop {
                 match self.get_step(&self.current_step) {
-                    Some(pool_step) => {
+                    Some(mut pool_step) => {
                         let (stable_tmp, other_tmp, stable_protocol_fees, is_empty) =
                             pool_step.swap_for_other(stable_ret);
                         self.stable_protocol_fees.put(stable_protocol_fees);
@@ -389,7 +391,7 @@ mod pool {
                 self.current_step += 1;
             }
 
-            self.stable_prot_fess = self.stable_protocol_fees.amount();
+            self.stable_prot_fees = self.stable_protocol_fees.amount();
             (stable_ret, other_ret)
         }
 
@@ -405,7 +407,7 @@ mod pool {
 
             loop {
                 match self.get_step(&self.current_step) {
-                    Some(pool_step) => {
+                    Some(mut pool_step) => {
                         let (stable_tmp, other_tmp, other_protocol_fees, is_empty) =
                             pool_step.swap_for_stable(other_ret);
                         self.other_protocol_fees.put(other_protocol_fees);
@@ -425,7 +427,7 @@ mod pool {
                 }
             }
 
-            self.other_prot_fess = self.other_protocol_fees.amount();
+            self.other_prot_fees = self.other_protocol_fees.amount();
             (stable_ret, other_ret)
         }
 
@@ -464,7 +466,7 @@ mod pool {
             let mut pool_steps_state = vec![];
 
             for (step_id, pool_step) in &self.steps {
-                let state = pool_step.get_step_state();
+                let state = LocalPoolStepComponent::at(*pool_step).get_step_state();
 
                 pool_steps_state.push((*step_id, state));
             }
@@ -496,7 +498,7 @@ mod pool {
             step_id
         }
 
-        fn get_step(&self, &step: u16) -> Option<LocalPoolStepComponent> {
+        fn get_step(&self, step: &u16) -> Option<LocalPoolStepComponent> {
             match self.steps.get(step) {
                 Some(step_address) => Some(LocalPoolStepComponent::at(*step_address)),
                 None => { None }

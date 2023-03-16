@@ -35,6 +35,8 @@ external_component! {
 
         fn remove_liquidity_at_step(&mut self,step: u16,position: Position) -> (Bucket, Bucket, Position);
 
+        fn remove_liquidity_at_steps(&mut self, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position);
+
         fn remove_liquidity_at_rate(&mut self,rate: Decimal,position: Position) -> (Bucket, Bucket, Position);
 
         fn remove_all_liquidity(&mut self, position: Position) -> (Bucket, Bucket);
@@ -249,7 +251,7 @@ mod router {
             opt_position_proof: Option<Proof>,
         ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
-            let pool = self.get_pool(bucket_other.resource_address());
+            let mut pool = self.get_pool(bucket_other.resource_address());
 
             match opt_position_proof {
                 Some(position_proof) => {
@@ -299,7 +301,7 @@ mod router {
             opt_position_proof: Option<Proof>,
         ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
-            let pool = self.get_pool(bucket_other.resource_address());
+            let mut pool = self.get_pool(bucket_other.resource_address());
 
             match opt_position_proof {
                 Some(position_proof) => {
@@ -351,7 +353,7 @@ mod router {
             opt_position_proof: Option<Proof>,
         ) -> (Bucket, Bucket, Option<Bucket>) {
             let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
-            let pool = self.get_pool(bucket_other.resource_address());
+            let mut pool = self.get_pool(bucket_other.resource_address());
 
             match opt_position_proof {
                 Some(position_proof) => {
@@ -408,7 +410,7 @@ mod router {
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
 
-            let pool = self.get_pool(data.token);
+            let mut pool = self.get_pool(data.token);
             let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_step(step, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
@@ -428,7 +430,7 @@ mod router {
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
 
-            let pool = self.get_pool(data.token);
+            let mut pool = self.get_pool(data.token);
             let (ret_stable, ret_other, new_data) =
                 pool.remove_liquidity_at_steps(start_step, stop_step, data);
             self.update_position(position_nfr, new_data);
@@ -448,7 +450,7 @@ mod router {
             let position_nfr = valid_proof.non_fungible::<Position>();
             let data = self.get_position_data(&position_nfr);
 
-            let pool = self.get_pool(data.token);
+            let mut pool = self.get_pool(data.token);
             let (ret_stable, ret_other, new_data) = pool.remove_liquidity_at_rate(rate, data);
             self.update_position(position_nfr, new_data);
             (ret_stable, ret_other)
@@ -465,7 +467,7 @@ mod router {
             let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in positions_bucket.non_fungibles::<Position>() {
                 let data = self.get_position_data(&position_nfr);
-                let pool = self.get_pool(data.token);
+                let mut pool = self.get_pool(data.token);
                 let (ret_stable, ret_other) = pool.remove_all_liquidity(data);
 
                 stable_bucket.put(ret_stable);
@@ -487,7 +489,7 @@ mod router {
             let mut stable_bucket = Bucket::new(self.stablecoin_address);
             for position_nfr in valid_proof.non_fungibles::<Position>() {
                 let data = self.get_position_data(&position_nfr);
-                let pool = self.get_pool(data.token);
+                let mut pool = self.get_pool(data.token);
                 let (ret_stable, ret_other, new_data) = pool.claim_fees(data);
                 self.update_position(position_nfr, new_data);
 
@@ -504,7 +506,7 @@ mod router {
         /// `input` - tokens to be swapped
         /// `output` - tokens to receive
         pub fn swap(&mut self, input: Bucket, output: ResourceAddress) -> (Bucket, Bucket) {
-            let pool;
+            let mut pool;
             if output == self.stablecoin_address {
                 pool = self.get_pool(input.resource_address())
             } else {
@@ -522,7 +524,7 @@ mod router {
             let mut stable_bucket = Bucket::new(self.stablecoin_address);
 
             for (_, pool) in &self.pools {
-                let (stable_tmp, other_bucket) = pool.claim_protocol_fees();
+                let (stable_tmp, other_bucket) = LocalPoolComponent::at(*pool).claim_protocol_fees();
                 buckets.push(other_bucket);
                 stable_bucket.put(stable_tmp);
             }
