@@ -23,7 +23,35 @@
 //! - [get_pool_state](RouterComponent::get_pool_state) - Returns the full state of the blueprint.
 //! - [step_at_rate](RouterComponent::step_at_rate) - Returns the step of a pool associated to a given rate
 
-use scrypto::blueprint;
+use scrypto::{blueprint, external_component};
+
+external_component! {
+    LocalPoolComponent {
+        fn add_liquidity(&mut self,bucket_stable: Bucket,bucket_other: Bucket, rate: Decimal, position: Position) -> (Bucket, Bucket, Position);
+
+        fn add_liquidity_at_step(&mut self, bucket_stable: Bucket, bucket_other: Bucket, step: u16, position: Position) -> (Bucket, Bucket, Position);
+
+        fn add_liquidity_at_steps(&mut self, bucket_stable: Bucket, bucket_other: Bucket, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position);
+
+        fn remove_liquidity_at_step(&mut self,step: u16,position: Position) -> (Bucket, Bucket, Position);
+
+        fn remove_liquidity_at_rate(&mut self,rate: Decimal,position: Position) -> (Bucket, Bucket, Position);
+
+        fn remove_all_liquidity(&mut self, position: Position) -> (Bucket, Bucket);
+
+        fn claim_fees(&mut self, position: Position) -> (Bucket, Bucket, Position);
+
+        fn swap(&mut self, input_bucket: Bucket) -> (Bucket, Bucket);
+
+        fn claim_protocol_fees(&mut self) -> (Bucket, Bucket);
+
+        fn get_state(&self) -> (Decimal, u16, Decimal,(Decimal, Decimal),Vec<(u16, Vec<Decimal>)>);
+
+        fn rate_at_step(&self, step: u16) -> Decimal;
+
+        fn step_at_rate(&self, rate: Decimal) -> u16;
+    }
+}
 
 #[blueprint]
 mod router {
@@ -36,7 +64,7 @@ mod router {
         stablecoin_address: ResourceAddress,
 
         /// Pools registered by the router
-        pools: HashMap<ResourceAddress, PoolComponent>,
+        pools: HashMap<ResourceAddress, ComponentAddress>,
 
         /// Vault used to mint [`Position`]s
         position_minter: Vault,
@@ -531,12 +559,12 @@ mod router {
         }
 
         /// Internal method that returns the pool trading the pair stablecoin/token.
-        fn get_pool(&self, token: ResourceAddress) -> &PoolComponent {
+        fn get_pool(&self, token: ResourceAddress) -> LocalPoolComponent {
             match self.pools.get(&token) {
                 None => {
                     panic!("There is no pool trading this pair")
                 }
-                Some(pool) => pool,
+                Some(pool) => LocalPoolComponent::at(*pool),
             }
         }
 

@@ -25,11 +25,10 @@ mod pool_step {
     use crate::position::StepPosition;
 
     pub struct PoolStep {
-        /// Vault containing stablecoins as liquidity
-        stable_vault: Vault,
 
-        /// Vault containing other tokens as liquidity
-        other_vault: Vault,
+        stable: Decimal,
+
+        other: Decimal,
 
         /// Rate of the pool step
         rate: Decimal,
@@ -39,6 +38,16 @@ mod pool_step {
 
         /// Accrued fees in other tokens per liquidity unit
         other_fees_per_liq: Decimal,
+
+        stable_fees: Decimal,
+
+        other_fees: Decimal,
+
+        /// Vault containing stablecoins as liquidity
+        stable_vault: Vault,
+
+        /// Vault containing other tokens as liquidity
+        other_vault: Vault,
 
         /// Vault containing stablecoin fees
         stable_fees_vault: Vault,
@@ -58,18 +67,24 @@ mod pool_step {
             token_stable: ResourceAddress,
             token_other: ResourceAddress,
             rate: Decimal,
-        ) -> PoolStepComponent {
+        ) -> ComponentAddress {
             // Create the component
             let component = Self {
-                stable_vault: Vault::new(token_stable.clone()),
-                other_vault: Vault::new(token_other.clone()),
+
+                stable: Decimal::ZERO,
+                other: Decimal::ZERO,
                 rate: rate,
                 stable_fees_per_liq: Decimal::ZERO,
                 other_fees_per_liq: Decimal::ZERO,
+                stable_fees: Decimal::ZERO,
+                other_fees: Decimal::ZERO,
+                stable_vault: Vault::new(token_stable.clone()),
+                other_vault: Vault::new(token_other.clone()),
                 stable_fees_vault: Vault::new(token_stable.clone()),
                 other_fees_vault: Vault::new(token_other.clone()),
             }
-            .instantiate();
+                .instantiate()
+                .globalize();
 
             component
         }
@@ -135,6 +150,8 @@ mod pool_step {
             }
             self.stable_vault.put(bucket_stable.take(right_stable));
             self.other_vault.put(bucket_other.take(right_other));
+            self.stable = self.stable_vault.amount();
+            self.other = self.other_vault.amount();
 
             // Update the StepPosition
             new_step_position.liquidity += right_stable + right_other * self.rate;
@@ -162,6 +179,8 @@ mod pool_step {
 
             fees_stable.put(self.stable_vault.take(stable_fraction * liquidity));
             fees_other.put(self.other_vault.take(other_take));
+            self.stable = self.stable_vault.amount();
+            self.other = self.other_vault.amount();
 
             (fees_stable, fees_other)
         }
@@ -183,6 +202,8 @@ mod pool_step {
             // Put the fees in buckets
             let bucket_stable = self.stable_fees_vault.take(stable_fees);
             let bucket_other = self.other_fees_vault.take(other_fees);
+            self.stable_fees = self.stable_fees_vault.amount();
+            self.other_fees = self.other_fees_vault.amount();
 
             //
             let mut new_step_position = step_position.clone();
@@ -212,6 +233,9 @@ mod pool_step {
             // Make the swap
             self.other_vault.put(other.take(real_other * RATIO_TRADED));
             let stable = self.stable_vault.take(real_stable * RATIO_TRADED);
+            self.other = self.other_vault.amount();
+            self.stable = self.stable_vault.amount();
+            self.other_fees = self.other_fees_vault.amount();
 
             (
                 stable,
@@ -242,6 +266,9 @@ mod pool_step {
             self.stable_vault
                 .put(stable.take(real_stable * RATIO_TRADED));
             let other = self.other_vault.take(real_other * RATIO_TRADED);
+            self.other = self.other_vault.amount();
+            self.stable = self.stable_vault.amount();
+            self.stable_fees = self.stable_fees_vault.amount();
 
             (
                 stable,

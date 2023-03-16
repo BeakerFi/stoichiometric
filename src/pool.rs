@@ -24,7 +24,25 @@
 //! - [rate_at_step](PoolComponent::rate_at_step) - Returns the exchange rate associated to a given step.
 //! - [step_at_rate](PoolComponent::step_at_rate) - Returns the step associated to a given exchange rate.
 
-use scrypto::blueprint;
+use scrypto::{blueprint, external_component};
+
+external_component! {
+    LocalPoolStepComponent {
+        fn add_liquidity(&mut self, bucket_stable: Bucket, bucket_other: Bucket, current_step_is_lower: bool, step_position: StepPosition) -> (Bucket, Bucket, StepPosition);
+
+        fn remove_liquidity(&mut self, step_position: StepPosition) -> (Bucket, Bucket);
+
+        fn claim_fees(&mut self,step_position: StepPosition) -> (Bucket, Bucket, StepPosition);
+
+        fn swap_for_stable(&mut self, other: Bucket) -> (Bucket, Bucket, Bucket, bool);
+
+        fn swap_for_other(&mut self, stable: Bucket) -> (Bucket, Bucket, Bucket, bool);
+
+        fn get_step_state(&self) -> Vec<Decimal>;
+    }
+}
+
+
 
 #[blueprint]
 mod pool {
@@ -43,8 +61,12 @@ mod pool {
         /// Minimum exchange rate
         min_rate: Decimal,
 
+        stable_prot_fees: Decimal,
+
+        other_prot_fees: Decimal,
+
         /// Pool steps
-        steps: HashMap<u16, PoolStepComponent>,
+        steps: HashMap<u16, ComponentAddress>,
 
         /// Protocol fees in stablecoins
         stable_protocol_fees: Vault,
@@ -67,7 +89,7 @@ mod pool {
             initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
-        ) -> (PoolComponent, Bucket, Bucket, Position) {
+        ) -> (ComponentAddress, Bucket, Bucket, Position) {
             assert!(
                 min_rate > Decimal::ZERO,
                 "The minimum rate should be positive"
@@ -95,11 +117,14 @@ mod pool {
                 rate_step,
                 current_step,
                 min_rate,
+                stable_prot_fees: Decimal::ZERO,
+                other_prot_fees: Decimal::ZERO,
                 steps: HashMap::new(),
                 stable_protocol_fees: Vault::new(bucket_stable.resource_address()),
                 other_protocol_fees: Vault::new(bucket_other.resource_address()),
             }
-            .instantiate();
+            .instantiate()
+                .globalize();
 
             // Adds the initial liquidity
             let position = Position::from(bucket_other.resource_address());
@@ -149,7 +174,7 @@ mod pool {
 
             // Get or create the given step
             let pool_step = match self.steps.get_mut(&step) {
-                Some(ps) => ps,
+                Some(ps) => LocalPoolStepComponent::at(*ps),
                 None => {
                     let rate = self.rate_at_step(step);
                     let new_step = PoolStepComponent::new(
@@ -158,7 +183,7 @@ mod pool {
                         rate,
                     );
                     self.steps.insert(step, new_step);
-                    self.steps.get(&step).unwrap()
+                    LocalPoolStepComponent::at(*self.steps.get(&step).unwrap())
                 }
             };
 
@@ -230,7 +255,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             if step_position.liquidity > Decimal::ZERO {
-                let pool_step = self.steps.get(&step).unwrap();
+                let pool_step = self.get_step(&step).unwrap();
                 let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
@@ -287,7 +312,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             for (step, step_position) in step_positions {
-                let pool_step = self.steps.get(&step).unwrap();
+                let pool_step = self.get_step(&step).unwrap();
                 let (tmp_stable, tmp_other) = pool_step.remove_liquidity(step_position);
                 bucket_stable.put(tmp_stable);
                 bucket_other.put(tmp_other);
@@ -304,7 +329,7 @@ mod pool {
             let mut bucket_other = Bucket::new(position.token);
 
             for (step, step_position) in position.step_positions.iter_mut() {
-                let pool_step = self.steps.get(step).unwrap();
+                let pool_step = self.get_step(step).unwrap();
                 let (tmp_stable, tmp_other, new_step_position) =
                     pool_step.claim_fees(step_position.clone());
                 bucket_stable.put(tmp_stable);
@@ -338,7 +363,7 @@ mod pool {
             let mut stable_ret = Bucket::from(input_bucket);
 
             loop {
-                match self.steps.get_mut(&self.current_step) {
+                match self.get_step(&self.current_step) {
                     Some(pool_step) => {
                         let (stable_tmp, other_tmp, stable_protocol_fees, is_empty) =
                             pool_step.swap_for_other(stable_ret);
@@ -359,6 +384,7 @@ mod pool {
                 self.current_step += 1;
             }
 
+            self.stable_prot_fess = self.stable_protocol_fees.amount();
             (stable_ret, other_ret)
         }
 
@@ -373,7 +399,7 @@ mod pool {
             let mut stable_ret = Bucket::new(self.stable_protocol_fees.resource_address());
 
             loop {
-                match self.steps.get_mut(&self.current_step) {
+                match self.get_step(&self.current_step) {
                     Some(pool_step) => {
                         let (stable_tmp, other_tmp, other_protocol_fees, is_empty) =
                             pool_step.swap_for_stable(other_ret);
@@ -394,6 +420,7 @@ mod pool {
                 }
             }
 
+            self.other_prot_fess = self.other_protocol_fees.amount();
             (stable_ret, other_ret)
         }
 
@@ -448,6 +475,13 @@ mod pool {
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let step_id: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
             step_id
+        }
+
+        fn get_step(&self, &step: u16) -> Option<LocalPoolStepComponent> {
+            match self.steps.get(step) {
+                Some(step_address) => Some(LocalPoolStepComponent::at(*step_address)),
+                None => { None }
+            }
         }
     }
 }
