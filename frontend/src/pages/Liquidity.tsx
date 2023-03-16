@@ -46,6 +46,11 @@ function Liquidity() {
     const [sent, setSent] = useState<number>(0);
     const [get, setGet] = useState<number>(0);
 
+    const [minPrice, setMinPrice] = useState<number>(1);
+    const [maxPrice, setMaxPrice] = useState<number>(1000);
+    const [price1, setPrice1] = useState<number>(1);
+    const [price2, setPrice2] = useState<number>(500);
+
     const [priceImpact, setPriceImpact] = useState("0");
 
     const [myPosition, setMyPosition] = useState(false);
@@ -1061,7 +1066,16 @@ function Liquidity() {
             position: 'relative' as 'relative',
             width: '100%',
             marginBottom: '20px',
-            marginTop: '-25px'
+
+            '& p': {
+                margin: 0,
+                marginBottom: '-35px',
+                padding: 0,
+                fontFamily: 'primary',
+                fontSize: '1',
+                fontWeight: '600',
+                color: 'text'
+            }
         },
 
         range2: {
@@ -1102,7 +1116,7 @@ function Liquidity() {
               },
 
               '&:nth-of-type(2)': {
-                transform: 'TranslateY(17.5px)',
+                transform: 'TranslateY(17px)',
               },
 
               '&:nth-of-type(3)::-webkit-slider-thumb': {
@@ -1126,8 +1140,8 @@ function Liquidity() {
 
             '& div': {
                 position: 'absolute' as 'absolute',
-                left: '30%',
-                width: '50%',
+                left: `Calc(2.5px + ${100*(Math.min(price1, price2)-minPrice)/(maxPrice-minPrice)}%)`,
+                width: `${100*Math.abs(price2-price1)/(maxPrice-minPrice)}%`,
                 height: '100%',
                 boxShadow: 'none',
                 background: 'primary',
@@ -1246,11 +1260,12 @@ function Liquidity() {
                                 </div>
                                 <span sx={style.tokenAddress}><span>Token Address</span>{token2.address.slice(0,5) + "..." + token2.address.slice(token2.address.length - 10, token2.address.length)}</span>
                                 <div sx={style.rangeInput}>
+                                    <p>Price Range</p>
                                     <div sx={style.rangeBar}>
                                         <div/>
                                     </div>
-                                    <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
-                                    <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
+                                    <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step="10" onChange={(e) => {setPrice1(Math.floor(parseFloat(e.target.value)))}}/>
+                                    <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step="10" onChange={(e) => {setPrice2(Math.floor(parseFloat(e.target.value)))}}/>
                                     <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
                                 </div>
                                 <div sx={style.swapInfos}>
