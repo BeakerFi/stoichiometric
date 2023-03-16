@@ -1,5 +1,5 @@
 [package]
-name = "stoichiometric"
+name = "stoichiometric-dex"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,7 @@ scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0"
 transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 scrypto-unit = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
-sqrt = { path = "../sqrt"}
+sqrt = { git = "https://github.com/PointSquare/sqrt" }
 regex = "1"
 lazy_static = "1.4.0"
 
@@ -25,7 +25,3 @@ overflow-checks = true # Panic in the case of an overflow.
 
 [lib]
 crate-type = ["cdylib", "lib"]
-
-[workspace]
-# Set the package crate as its own empty workspace, to hide it from any potential ancestor workspace
-# Remove this [workspace] section if you intend the package to be part of a Cargo workspace
