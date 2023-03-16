@@ -48,6 +48,7 @@ external_component! {
 mod pool {
     use crate::constants::NB_STEP;
     use crate::decimal_maths::{ln, pow};
+    use crate::oracle::OracleComponent;
     use crate::pool_step::PoolStepComponent;
     use crate::position::Position;
 
@@ -73,6 +74,9 @@ mod pool {
 
         /// Other protocol fees
         other_protocol_fees: Vault,
+
+        /// Price oracle
+        oracle: OracleComponent
     }
 
     impl Pool {
@@ -122,6 +126,7 @@ mod pool {
                 steps: HashMap::new(),
                 stable_protocol_fees: Vault::new(bucket_stable.resource_address()),
                 other_protocol_fees: Vault::new(bucket_other.resource_address()),
+                oracle: OracleComponent::new()
             }
             .instantiate()
                 .globalize();
@@ -430,6 +435,20 @@ mod pool {
                 self.stable_protocol_fees.take_all(),
                 self.other_protocol_fees.take_all(),
             )
+        }
+
+        /// Makes a new oracle observations if last observations happened more than 20 seconds ago
+        pub fn new_observation(&mut self) {
+            let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
+            self.oracle.new_observation(current_time, self.current_step);
+        }
+
+        pub fn get_twap_since(&self, timestamp: i64) -> Decimal
+        {
+            let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
+            let twas = self.oracle.get_time_weighted_average_step_since(timestamp, current_time);
+            let twap = self.rate_step.powi(twas as i64);
+            twap
         }
 
         /// Returns the full state of the blueprint.
