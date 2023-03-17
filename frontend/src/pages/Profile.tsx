@@ -5,7 +5,7 @@ import { useContext, useState, useEffect } from "react";
 
 import Dashboard from "components/Dashboard";
 
-import { randomIntFromInterval } from "functions/maths";
+import { randomIntFromInterval } from "utils/maths";
 
 import Star from "components/Star";
 

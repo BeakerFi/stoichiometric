@@ -1,7 +1,7 @@
 /** @jsxImportSource theme-ui */
 import { useContext } from "react";
 
-import useMousePosition from "functions/useMousePosition";
+import useMousePosition from "utils/useMousePosition";
 
 import { ResponsiveContext } from "contexts/ResponsiveContext";
 

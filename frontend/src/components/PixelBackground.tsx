@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { randomIntFromInterval } from "functions/maths";
+import { randomIntFromInterval } from "utils/maths";
 
 const style = {
     main: {

@@ -1,16 +1,16 @@
 import React, { useState, useContext, useEffect } from "react";
 
-import { rdt, resetRdt } from "functions/connectToBlockchain";
+import { rdt, resetRdt } from "utils/connectToWallet";
 
 import { SnackbarContext } from "./SnackbarContext";
 
-import { getNbTokens, getPositions } from "functions/connectToBackend";
+import { getNbTokens, getPositions } from "utils/connectToBackend";
 
 const UserContext = React.createContext(null as any);
 
 interface Props {
     children: any;
-};
+}
 
 interface User {
     address: string | null;
