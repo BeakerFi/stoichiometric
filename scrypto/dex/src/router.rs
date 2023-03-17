@@ -31,7 +31,7 @@ external_component! {
 
         fn add_liquidity_at_step(&mut self, bucket_stable: Bucket, bucket_other: Bucket, step: u16, position: Position) -> (Bucket, Bucket, Position);
 
-        fn add_liquidity_at_steps(&mut self, bucket_stable: Bucket, bucket_other: Bucket, start_step: u16, stop_step: u16, position: Position) -> (Bucket, Bucket, Position);
+        fn add_liquidity_at_steps(&mut self, steps: Vec<(u16, Bucket, Bucket)>, position: Position) -> (Bucket, Bucket, Position);
 
         fn remove_liquidity_at_step(&mut self,step: u16,position: Position) -> (Bucket, Bucket, Position);
 
@@ -339,21 +339,17 @@ mod router {
         /// Adds liquidity to an existing pool at given steps.
         ///
         /// # Arguments
-        /// * `bucket_a` - Bucket containing the first token to be added as liquidity
-        /// * `bucket_b` - Bucket containing the second token to be added as liquidity
-        /// * `start_step` - First step to which to add liquidity
-        /// * `stop_step` - Last step to which to add liquidity
+        /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
         pub fn add_liquidity_at_steps(
             &mut self,
-            bucket_a: Bucket,
-            bucket_b: Bucket,
-            start_step: u16,
-            stop_step: u16,
+            steps: Vec<(u16, Bucket, Bucket)>,
             opt_position_proof: Option<Proof>,
         ) -> (Bucket, Bucket, Option<Bucket>) {
-            let (bucket_stable, bucket_other) = self.sort_buckets(bucket_a, bucket_b);
-            let mut pool = self.get_pool(bucket_other.resource_address());
+            let (_, bucket_a, bucket_b) =  steps.get(0).expect("Cannot provide empty list");
+
+            let other_resource = if bucket_a.resource_address() == self.stablecoin_address { bucket_b.resource_address() } else { bucket_a.resource_address() };
+            let mut pool = self.get_pool(other_resource);
 
             match opt_position_proof {
                 Some(position_proof) => {
@@ -365,10 +361,7 @@ mod router {
                     let data = self.get_position_data(&position_nfr);
 
                     let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
-                        bucket_stable,
-                        bucket_other,
-                        start_step,
-                        stop_step,
+                        steps,
                         data,
                     );
                     self.update_position(position_nfr, new_data);
@@ -376,12 +369,9 @@ mod router {
                 }
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
-                    let empty_pos = Position::from(bucket_other.resource_address());
+                    let empty_pos = Position::from(other_resource);
                     let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
-                        bucket_stable,
-                        bucket_other,
-                        start_step,
-                        stop_step,
+                        steps,
                         empty_pos,
                     );
 

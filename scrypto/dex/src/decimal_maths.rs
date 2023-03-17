@@ -17,7 +17,7 @@ pub const EULER_NUMBER: Decimal = Decimal(BnumI256::from_digits([271828182845904
 ///
 /// ```
 /// use scrypto::prelude::{dec, Decimal};
-/// use stoichiometric::decimal_maths::exp;
+/// use stoichiometric_dex::decimal_maths::exp;
 ///
 /// let res = exp(dec!("2.5"));
 /// assert_eq!(res, dec!("12.182493960703473402"));
@@ -72,7 +72,7 @@ where
 ///
 /// ```
 /// use scrypto::prelude::{dec, Decimal};
-/// use stoichiometric::decimal_maths::ln;
+/// use stoichiometric_dex::decimal_maths::ln;
 ///
 /// let res = ln(100);
 /// assert_eq!(res, dec!("4.605170185988091375"));
@@ -142,7 +142,7 @@ where
 ///
 /// ```
 /// use scrypto::prelude::{dec, Decimal};
-/// use stoichiometric::decimal_maths::pow;
+/// use stoichiometric_dex::decimal_maths::pow;
 ///
 /// let res = pow::<Decimal, Decimal>(dec!("2.5"), dec!("3.4"));
 /// assert_eq!(res, dec!("22.542186029800212409"));

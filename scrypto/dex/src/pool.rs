@@ -63,6 +63,8 @@ mod pool {
         /// Minimum exchange rate
         min_rate: Decimal,
 
+        max_rate: Decimal,
+
         stable_prot_fees: Decimal,
 
         other_prot_fees: Decimal,
@@ -122,6 +124,7 @@ mod pool {
                 rate_step,
                 current_step,
                 min_rate,
+                max_rate,
                 stable_prot_fees: Decimal::ZERO,
                 other_prot_fees: Decimal::ZERO,
                 steps: HashMap::new(),
@@ -166,18 +169,23 @@ mod pool {
         /// Adds liquidity to the pool at the given step.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
-        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `bucket_a` - Bucket containing first token to add as liquidity
+        /// * `bucket_b` - Bucket containing second token to add as liquidity
         /// * `step` - Step at which to provide liquidity
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_step(
             &mut self,
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
             step: u16,
             mut position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step_position = position.get_step(step);
+            let (bucket_stable, bucket_other) = if bucket_a.resource_address() == self.stable_protocol_fees.resource_address(){
+                (bucket_a, bucket_b)
+            } else {
+                (bucket_b, bucket_a)
+            };
 
             // Get or create the given step
             let mut pool_step = match self.steps.get_mut(&step) {
@@ -209,41 +217,30 @@ mod pool {
         /// Adds liquidity to the pool at the given steps.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
-        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
-        /// * `start_step` - Start step at which to provide liquidity
-        /// * `stop_step` - Stop step at which to provide liquidity
+        /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_steps(
             &mut self,
-            mut bucket_stable: Bucket,
-            mut bucket_other: Bucket,
-            start_step: u16,
-            stop_step: u16,
+            steps: Vec<(u16, Bucket, Bucket)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-            // We put the same amount of tokens at each step
-            let nb_steps = stop_step - start_step + 1;
-            let stable_per_step = bucket_stable.amount() / nb_steps;
-            let other_per_step = bucket_other.amount() / nb_steps;
-
             let mut position = position;
-            let mut ret_stable = Bucket::new(bucket_stable.resource_address());
-            let mut ret_other = Bucket::new(bucket_other.resource_address());
+            let mut ret_stable = Bucket::new(self.stable_protocol_fees.resource_address());
+            let mut ret_other = Bucket::new(self.other_protocol_fees.resource_address());
 
-            for i in start_step..stop_step + 1 {
+            for (step, token_a, token_b) in steps {
+
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
-                    bucket_stable.take(stable_per_step),
-                    bucket_other.take(other_per_step),
-                    i,
-                    position,
-                );
+                        token_a,
+                        token_b,
+                        step,
+                        position,
+                    );
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 position = tmp_pos;
             }
-            ret_stable.put(bucket_stable);
-            ret_other.put(bucket_other);
+
             (ret_stable, ret_other, position)
         }
 
