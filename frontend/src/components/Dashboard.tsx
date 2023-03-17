@@ -7,17 +7,15 @@ import { ResponsiveContext } from 'contexts/ResponsiveContext';
 import { BurgerContext } from 'contexts/BurgerContext';
 import { UserContext } from 'contexts/UserContext';
 
-import { ThemeContext } from 'contexts/ThemeContext';
 
 import ConnectWallet from 'components/ConnectWallet';
-import LogOut from "components/LogOut";
 
 export interface Props {
     children?: any;
     page: string;
 }
 
-const pages = ["swap", "liquidity"];
+const pages = ["swap", "liquidity", "lend"];
 
 const Dashboard: React.FC<Props> = (props) => {
     const { device } = useContext( ResponsiveContext );

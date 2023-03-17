@@ -4,7 +4,7 @@
 import Home from 'pages/Home';
 import Swap from 'pages/Swap';
 import Liquidity from 'pages/Liquidity';
-import Feedback from 'pages/Feedback';
+import Lend from 'pages/Lend';
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = [
@@ -18,8 +18,8 @@ const MainRoutes = [
         path: '/liquidity',
         element: <Liquidity />
     },{
-        path: '/feedback',
-        element: <Feedback />
+        path: '/lend',
+        element: <Lend />
     }
 ];
 

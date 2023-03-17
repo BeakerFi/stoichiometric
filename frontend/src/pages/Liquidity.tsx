@@ -57,8 +57,6 @@ function Liquidity() {
 
     const [chosePosition, setChosePosition] = useState(false);
 
-    const [removePercentage, setRemovePercentage] = useState(0);
-
     function resetValues() {
         setSent(0);
         setGet(0);
@@ -764,7 +762,24 @@ function Liquidity() {
             display: 'flex',
             flexDirection: 'column' as 'column',
             marginTop: '10px',
-            marginBottom: '20px'
+            marginBottom: '20px',
+
+            '& button': {
+                background: 'primary',
+                color: 'text',
+                borderRadius: '5px',
+                border: 'none',
+                fontFamily: 'primary',
+                fontSize: 1,
+                cursor: 'pointer',
+                marginBottom: '10px',
+                width: '40%',
+                marginLeft: '30%',
+
+                '&:hover': {
+                    opacity: '.8'
+                }
+            }
         },
 
         swapInfoMain: {
@@ -1252,15 +1267,7 @@ function Liquidity() {
         ranges: {
             position: 'relative' as 'relative',
             width: '100%',
-            marginBottom: '20px'
-        },
-
-        rangeMin: {
-
-        },
-
-        rangeMax: {
-
+            marginBottom: '25px'
         }
     }  
 
@@ -1372,10 +1379,11 @@ function Liquidity() {
                                             </div>
                                         </div>
                                         <div sx={style.swapInfos}>
-                                            <span sx={style.swapInfoMain}><span>Removing</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)*removePercentage/100) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)*removePercentage/100) : '?'} {token2.symb}</div></span>
-                                            <span sx={style.swapInfo}><span>Value</span>${formatToString(positionInfos.value_locked * removePercentage/100)}</span>
+                                            <button>Load Data</button>
+                                            <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {token2.symb}</div></span>
+                                            <span sx={style.swapInfo}><span>Value</span>$?</span>
                                         </div>
-                                        <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL((positionInfos.liquidity * removePercentage/100).toString())}>{removeLoading ? "" : "Remove Liquidity"}</button>
+                                        <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
                                     </div>
                                 </div>
                             )
