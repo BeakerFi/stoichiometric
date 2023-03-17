@@ -7,7 +7,7 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice } from "functions/connectToBackend";
+import { getPrice } from "utils/connectToBackend";
 
 import Star from "components/Star";
 
@@ -17,8 +17,8 @@ import ConnectWallet2 from "components/ConnectWallet2";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, randomIntFromInterval } from "functions/maths";
-import { sendSwapTransaction } from "functions/connectToBlockchain";
+import { formatToString, formatToString2, randomIntFromInterval } from "utils/maths";
+import {swap_direct} from "../utils/routerMethods";
 
 const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
 
@@ -240,7 +240,7 @@ function Swap() {
 
     async function sendSwap() {
         setSwapLoading(true);
-        const flag = await sendSwapTransaction(user.address, token1.address, token2.address, sent.toString())
+        const flag = await swap_direct(user.address, token1.address, token2.address, sent.toString())
         setNbTokens();
         resetValues();
         if (flag) {

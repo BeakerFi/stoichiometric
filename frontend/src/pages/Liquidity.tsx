@@ -7,7 +7,7 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice, getPositionInfos } from "functions/connectToBackend";
+import { getPrice, getPositionInfos } from "utils/connectToBackend";
 
 import Star from "components/Star";
 
@@ -17,8 +17,7 @@ import ConnectWallet2 from "components/ConnectWallet2";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, randomIntFromInterval } from "functions/maths";
-import { createPosition, addToPosition, claimFees, removeLiquidity, closePosition } from "functions/connectToBlockchain";
+import { formatToString, formatToString2, randomIntFromInterval } from "utils/maths";
 
 function Liquidity() {
 
@@ -395,9 +394,9 @@ function Liquidity() {
     }, [token1, token2, positions])
 
 
-    async function sendSwap() {
+        async function sendSwap() {
         setSwapLoading(true);
-        var flag;
+        /*var flag;
         if (!nftId) flag = await createPosition(user.address, token1.address, token2.address, sent.toString(), get.toString())
         else flag = await addToPosition(user.address, token1.address, token2.address, sent.toString(), get.toString(), nftId)
         setNbTokens();
@@ -408,13 +407,14 @@ function Liquidity() {
             addAlert("error", "An error occured");
         }
         setSwapLoading(false);
+        */
     }
 
     const [feesLoading, setFeesLoading] = useState(false);
 
     async function claimF() {
         setFeesLoading(true);
-        var flag;
+        /*var flag;
         if (nftId) {
             flag = await claimFees(user.address, nftId);
             if (flag) {
@@ -425,13 +425,14 @@ function Liquidity() {
             setFeesLoading(false);
         }
         else {addAlert("error", "You don't have a position"); return false;}
+        */
     }
 
     const [removeLoading, setRemoveLoading] = useState(false);
 
     async function removeL(liqu: string) {
         setRemoveLoading(true);
-        var flag;
+        /*var flag;
         if (nftId) {
             if(removePercentage < 100) flag = await removeLiquidity(user.address, nftId, liqu);
             else flag = await closePosition(user.address, nftId);
@@ -443,6 +444,7 @@ function Liquidity() {
             setRemoveLoading(false);
         }
         else {addAlert("error", "You don't have a position"); return false;}
+         */
     }
 
     const style = {

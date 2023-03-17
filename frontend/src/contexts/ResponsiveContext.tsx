@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import useWindowSize from "functions/useWindowSize";
+import useWindowSize from "utils/useWindowSize";
 
 const ResponsiveContext = React.createContext(null as any);
 
