@@ -1,5 +1,5 @@
 [package]
-name = "stoichiometric-dex"
+name = "stoichiometric-stablecoin"
 version = "0.1.0"
 edition = "2021"
 
