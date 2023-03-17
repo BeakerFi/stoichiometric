@@ -40,11 +40,38 @@ async function getTokens() {
 
         // @ts-ignore
         const metadata = data["metadata"]["items"];
-        tokens_list.push( {name: metadata[2]["value"], symb: metadata[3]["symbol"], address: token, icon_url: metadata[1]["icon"]});
+        tokens_list.push( {name: metadata[2]["value"], symb: metadata[3]["value"], address: token, icon_url: metadata[1]["value"]});
     }
 
     return tokens_list;
 }
 
+async function getNbTokens(account: string) {
+    let nbTokensList: any[] = [];
 
-export { getTokens }
+    const obj: EntityDetailsRequest = {
+        "address": account
+    };
+
+    let data;
+    await fetch( api_url + `/entity/resources`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then( (response) => response.json() )
+        .then( (tmp_data) => data = tmp_data )
+        .catch(console.error);
+
+    // @ts-ignore
+    const fungible = data["fungible_resources"]["items"];
+
+    for (var i = 0; i < fungible.length; ++i) {
+        nbTokensList[fungible[i]["address"]] = parseFloat(fungible[i]["amount"]["value"])
+    }
+
+    return [nbTokensList, account];
+}
+
+
+export { getTokens, getNbTokens }

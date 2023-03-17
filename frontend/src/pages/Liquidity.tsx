@@ -17,8 +17,8 @@ import ConnectWallet2 from "components/ConnectWallet2";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "functions/maths";
-import { createPosition, addToPosition, claimFees, removeLiquidity, closePosition } from "functions/connectToBlockchain";
+import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "utils/maths";
+import { createPosition, addToPosition, claimFees, removeLiquidity, closePosition } from "utils/connectToWallet";
 
 function Liquidity() {
 
@@ -1350,10 +1350,26 @@ function Liquidity() {
                                     </div>
                                     <div sx={style.swapZone}>
                                         <h1>🍂 Remove Liquidity</h1>
-                                        <div sx={style.rangeRow}>
-                                            <input sx={style.range} type="range" id="remove" name="remove"
-                                                min="0" max="100" value={removePercentage} onChange={(e) => {setRemovePercentage(Math.floor(parseFloat(e.target.value)))}}/>
-                                            <p>{removePercentage}%</p>
+                                        <div sx={style.rangeInput}>
+                                            <p>Price Range ({token2.symb + "/" + token1.symb})</p>
+                                            <div sx={style.ranges}>
+                                                <div sx={style.rangeBar}>
+                                                    <div/>
+                                                </div>
+                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice1(twoDecimals(parseFloat(e.target.value)))}}/>
+                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice2(twoDecimals(parseFloat(e.target.value)))}}/>
+                                                <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
+                                            </div>
+                                            <div sx={style.rangeInputs}>
+                                                <div sx={style.inputBar2}>
+                                                    <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e)}} value={Math.min(price1, price2)}/>
+                                                    <label htmlFor="range1">Price min</label>
+                                                </div>
+                                                <div sx={style.inputBar2}>
+                                                    <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e)}} value={Math.max(price1,price2)}/>
+                                                    <label htmlFor="range2">Price max</label>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div sx={style.swapInfos}>
                                             <span sx={style.swapInfoMain}><span>Removing</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)*removePercentage/100) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)*removePercentage/100) : '?'} {token2.symb}</div></span>

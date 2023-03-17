@@ -1,34 +1,6 @@
+import { getTokens, getNbTokens } from "./connectToApi";
+
 const api_url = 'https://beaker.fi:8888'
-
-async function getTokens() {
-  const request = new Request( api_url + '/marketv2', {
-    method: 'GET',
-    headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-  });
-
-  let tokens_list: any[] = [{name: 'Radix', symb: 'XRD', address: 'resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp', icon_url: "https://switchere.com/i/currencies/XRD.svg"},
-  {name: "Wrapped Bitcoin", symb: "WBTC", address: "resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"},
-  {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"}];
-
-  return tokens_list;
-}
-
-async function getNbTokens(account: string){
-  const params = new URLSearchParams();
-  params.append('wallet', account);
-
-  const request = new Request( `${api_url}/getTokensOfWallet?${params}`, {
-  method: 'GET',
-  headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-  });
-
-  let tokens
-  await fetch(request)
-  .then(data => data.json())
-  .then(res => tokens = res)
-  .catch( e => console.log(e) )
-  return tokens
-}
 
 async function getPositions(address: string) {
 
@@ -83,6 +55,9 @@ async function getPools() {
   .then(data => data.json())
   .then(arr => pools = arr)
   .catch( e => console.log(e) )
+
+  console.log("pools", pools)
+
   return pools
 }
 
