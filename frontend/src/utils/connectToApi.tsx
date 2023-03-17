@@ -1,5 +1,10 @@
-import {api_url, dAppId, router_address} from "./constants";
-import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
+import {api_url, position_address, router_address} from "./constants";
+import {
+    EntityDetailsRequest,
+    EntityNonFungibleIdsRequest,
+    NonFungibleDataRequest
+} from "@radixdlt/babylon-gateway-api-sdk";
+import {RadixDappToolkit} from "@radixdlt/radix-dapp-toolkit";
 
 async function getTokens() {
 
@@ -56,6 +61,49 @@ async function getNbTokens(account: string) {
     }
 
     return [nbTokensList, account];
+}
+
+async function getPositions(account: string) {
+
+    const obj: EntityNonFungibleIdsRequest = {
+        "address": account,
+        "resource_address": position_address
+    };
+
+    let data;
+    await fetch(api_url + `/entity/non-fungible/ids`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data["non_fungible_ids"]["items"])
+        .catch(console.error);
+
+    const positions: any[] = [];
+    // @ts-ignore
+    for (const id of data) {
+
+        const nf_id = id["non_fungible_id"];
+
+    }
+}
+
+async function getNFIDValue(id: string) {
+    const obj: NonFungibleDataRequest = {
+        "address": position_address,
+        "non_fungible_id": id
+    }
+    let data;
+    await fetch(api_url + `/entity/non-fungible/data`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data)
+        .catch(console.error);
+
 }
 
 async function getPool(token: string) {
