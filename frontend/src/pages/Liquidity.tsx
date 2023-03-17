@@ -17,7 +17,8 @@ import ConnectWallet2 from "components/ConnectWallet2";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, randomIntFromInterval } from "utils/maths";
+import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "utils/maths";
+import { createPosition, addToPosition, claimFees, removeLiquidity, closePosition } from "utils/connectToWallet";
 
 function Liquidity() {
 
@@ -45,10 +46,10 @@ function Liquidity() {
     const [sent, setSent] = useState<number>(0);
     const [get, setGet] = useState<number>(0);
 
-    const [minPrice, setMinPrice] = useState<number>(1);
-    const [maxPrice, setMaxPrice] = useState<number>(1000);
-    const [price1, setPrice1] = useState<number>(1);
-    const [price2, setPrice2] = useState<number>(500);
+    const [minPrice, setMinPrice] = useState<number>(2);
+    const [maxPrice, setMaxPrice] = useState<number>(45);
+    const [price1, setPrice1] = useState<number>(2.5);
+    const [price2, setPrice2] = useState<number>(35);
 
     const [priceImpact, setPriceImpact] = useState("0");
 
@@ -146,6 +147,36 @@ function Liquidity() {
             else {
                 if (token2Owned < s) return formatToString(token2Owned);
                 else return formatToString(s);
+            }
+        }
+    }
+
+    const range1Change = (event: any) => {
+        var s = event.target.value;
+        if (!isNaN(s)) {
+            if (s.length == 0) {
+                setPriceMin(0);
+                return
+            }
+            if (s.includes(".")) {
+                setPriceMin(s);
+            } else {
+                setPriceMin(parseFloat(s));
+            }
+        }
+    }
+
+    const range2Change = (event: any) => {
+        var s = event.target.value;
+        if (!isNaN(s)) {
+            if (s.length == 0) {
+                setPriceMax(0);
+                return
+            }
+            if (s.includes(".")) {
+                setPriceMax(s);
+            } else {
+                setPriceMax(parseFloat(s));
             }
         }
     }
@@ -394,7 +425,7 @@ function Liquidity() {
     }, [token1, token2, positions])
 
 
-        async function sendSwap() {
+    async function sendSwap() {
         setSwapLoading(true);
         /*var flag;
         if (!nftId) flag = await createPosition(user.address, token1.address, token2.address, sent.toString(), get.toString())
@@ -560,6 +591,62 @@ function Liquidity() {
                 background: 'background2',
                 color: 'text2',
             }, 
+        },
+
+
+        inputBar2: {
+            position: 'relative' as 'relative',
+            width: '100%',
+            marginBottom: '5px',
+
+            '& input': {
+                fontFamily: 'primary',
+                fontSize: 2,
+                width: 'calc(100% - 30px - 2px)',
+                padding: '10px',
+                margin: '0',
+                border: 'solid 1px',
+                borderColor: 'background3',
+                background: 'background2',
+                borderRadius: '5px',
+                color: 'text',
+
+                '&:focus': {
+                    outline: 'none',
+                    borderColor: 'text',
+
+                    '& ~ label': {
+                        left: '10px',
+                        top: '0',
+                        fontSize: 1,
+                        transform: 'TranslateY(-50%)',
+                        color: 'text'
+                    }
+                },
+
+                '&:not(:placeholder-shown) ~ label': {
+                    left: '10px',
+                    top: '0',
+                    fontSize: 1,
+                    transform: 'TranslateY(-50%)',
+                }
+            },
+
+            '& label': {
+                position: 'absolute' as 'absolute',
+                left: '20px',
+                top: '50%',
+                transform: 'TranslateY(-50%)',
+                fontFamily: 'primary',
+                fontSize: 2,
+                zIndex: '10',
+                padding: '0 5px',
+                transition: '.1s',
+                transitionProperty: 'left, top',
+                cursor: 'text',
+                background: 'background2',
+                color: 'text2',
+            },
         },
 
         swapIcon: {
@@ -1068,6 +1155,7 @@ function Liquidity() {
             position: 'relative' as 'relative',
             width: '100%',
             marginBottom: '20px',
+            marginTop: '10px',
 
             '& p': {
                 margin: 0,
@@ -1151,6 +1239,22 @@ function Liquidity() {
             }
         },
 
+        rangeInputs: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+
+            '& input': {
+                width: '100px',
+            }
+        },
+
+        ranges: {
+            position: 'relative' as 'relative',
+            width: '100%',
+            marginBottom: '20px'
+        },
+
         rangeMin: {
 
         },
@@ -1159,6 +1263,29 @@ function Liquidity() {
 
         }
     }  
+
+    function setPriceMin(x: number) {
+        console.log(x);
+        if (isNaN(x)) {
+            if (price1 <= price2) {setPrice1(minPrice);}
+            else setPrice2(minPrice);
+            return
+        }
+        if (x > Math.max(price1, price2)) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return}
+        if (price1 <= price2) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice));}
+        else setPrice2(Math.max(Math.min(x, maxPrice), minPrice));
+    }
+
+    function setPriceMax(x: number) {
+        if (isNaN(x)) {
+            if (price1 > price2) {setPrice1(minPrice);}
+            else setPrice2(minPrice);
+            return
+        }
+        if (x < Math.min(price1, price2)) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return}
+        if (price1 > price2) setPrice1(Math.max(Math.min(x, maxPrice), minPrice));
+        else setPrice2(Math.max(Math.min(x, maxPrice), minPrice));
+    }
 
     return (
         <Dashboard page="liquidity">
@@ -1223,10 +1350,26 @@ function Liquidity() {
                                     </div>
                                     <div sx={style.swapZone}>
                                         <h1>🍂 Remove Liquidity</h1>
-                                        <div sx={style.rangeRow}>
-                                            <input sx={style.range} type="range" id="remove" name="remove"
-                                                min="0" max="100" value={removePercentage} onChange={(e) => {setRemovePercentage(Math.floor(parseFloat(e.target.value)))}}/>
-                                            <p>{removePercentage}%</p>
+                                        <div sx={style.rangeInput}>
+                                            <p>Price Range ({token2.symb + "/" + token1.symb})</p>
+                                            <div sx={style.ranges}>
+                                                <div sx={style.rangeBar}>
+                                                    <div/>
+                                                </div>
+                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice1(twoDecimals(parseFloat(e.target.value)))}}/>
+                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice2(twoDecimals(parseFloat(e.target.value)))}}/>
+                                                <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
+                                            </div>
+                                            <div sx={style.rangeInputs}>
+                                                <div sx={style.inputBar2}>
+                                                    <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e)}} value={Math.min(price1, price2)}/>
+                                                    <label htmlFor="range1">Price min</label>
+                                                </div>
+                                                <div sx={style.inputBar2}>
+                                                    <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e)}} value={Math.max(price1,price2)}/>
+                                                    <label htmlFor="range2">Price max</label>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div sx={style.swapInfos}>
                                             <span sx={style.swapInfoMain}><span>Removing</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)*removePercentage/100) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)*removePercentage/100) : '?'} {token2.symb}</div></span>
@@ -1262,13 +1405,25 @@ function Liquidity() {
                                 </div>
                                 <span sx={style.tokenAddress}><span>Token Address</span>{token2.address.slice(0,5) + "..." + token2.address.slice(token2.address.length - 10, token2.address.length)}</span>
                                 <div sx={style.rangeInput}>
-                                    <p>Price Range</p>
-                                    <div sx={style.rangeBar}>
-                                        <div/>
+                                    <p>Price Range ({token2.symb + "/" + token1.symb})</p>
+                                    <div sx={style.ranges}>
+                                        <div sx={style.rangeBar}>
+                                            <div/>
+                                        </div>
+                                        <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice1(twoDecimals(parseFloat(e.target.value)))}}/>
+                                        <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice2(twoDecimals(parseFloat(e.target.value)))}}/>
+                                        <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
                                     </div>
-                                    <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step="10" onChange={(e) => {setPrice1(Math.floor(parseFloat(e.target.value)))}}/>
-                                    <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step="10" onChange={(e) => {setPrice2(Math.floor(parseFloat(e.target.value)))}}/>
-                                    <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
+                                    <div sx={style.rangeInputs}>
+                                        <div sx={style.inputBar2}>
+                                            <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e)}} value={Math.min(price1, price2)}/>
+                                            <label htmlFor="range1">Price min</label>
+                                        </div>
+                                        <div sx={style.inputBar2}>
+                                            <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e)}} value={Math.max(price1,price2)}/>
+                                            <label htmlFor="range2">Price max</label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div sx={style.swapInfos}>
                                     <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {token2.symb}</div></span>
