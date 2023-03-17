@@ -40,4 +40,4 @@ function formatToString2(n: number) {
   return parseFloat(Math.abs(n).toFixed(2)).toLocaleString("en-US");
 }
 
-export { randomIntFromInterval, nFormatter, formatToString, formatToString2 };
+export { randomIntFromInterval, nFormatter, formatToString, formatToString2, twoDecimals };
