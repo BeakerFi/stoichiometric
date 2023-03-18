@@ -21,7 +21,6 @@ const TokensCtx: React.FC<Props> = (props) => {
             const x = await getTokensAndPools();
             setTokens(x.tokens);
             setPools(x.pools);
-            console.log(x.pools[0]);
             setTokensLoading(false);
         };
         setToks();

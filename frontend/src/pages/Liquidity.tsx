@@ -18,7 +18,9 @@ import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
 import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "utils/maths";
-import { createPosition, addToPosition, claimFees, removeLiquidity, closePosition } from "utils/connectToWallet";
+
+const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
+
 
 function Liquidity() {
 
@@ -30,7 +32,7 @@ function Liquidity() {
     
     const { device, windowSize } = useContext(ResponsiveContext);
 
-    const { tokens } = useContext(TokensContext);
+    const { tokens, pools } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens, positions } = useContext(UserContext);
 
@@ -39,17 +41,17 @@ function Liquidity() {
     const [tokensList, setTokensList] = useState(tokens);
 
     const [token1Owned, setToken1Owned] = useState<"?" | number>("?");
-    const [token2Owned, setToken2Owned] = useState<"?" | number>("?");
+    const [stableOwned, setStableOwned] = useState<"?" | number>("?");
 
     const [price, setPrice] = useState<number>(0);
 
     const [sent, setSent] = useState<number>(0);
     const [get, setGet] = useState<number>(0);
 
-    const [minPrice, setMinPrice] = useState<number>(2);
-    const [maxPrice, setMaxPrice] = useState<number>(45);
-    const [price1, setPrice1] = useState<number>(2.5);
-    const [price2, setPrice2] = useState<number>(35);
+    const [minPrice, setMinPrice] = useState<number>(1);
+    const [maxPrice, setMaxPrice] = useState<number>(100);
+    const [price1, setPrice1] = useState<number>(1);
+    const [price2, setPrice2] = useState<number>(100);
 
     const [priceImpact, setPriceImpact] = useState("0");
 
@@ -64,37 +66,44 @@ function Liquidity() {
     }
 
     const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
-    const [token2, setToken2] = useState({name: "", symb: "", address: "", icon_url: ""});
 
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
-        var tk2 = searchParams.get('tk2');
 
-        if (!tk1 || !tk2) {
-            setSearchParams({tk1: 'XRD', tk2: 'WBTC'})
+        if (!tk1) {
+            setSearchParams({tk1: 'XRD'})
         }
     }, [])
 
     useEffect(() => {
+        if (pools[token1.address]) {
+            setMinPrice(parseFloat(pools[token1.address]["min_rate"]));
+            setMaxPrice(parseFloat(pools[token1.address]["max_rate"]));
+            setPrice1(parseFloat(pools[token1.address]["min_rate"]));
+            setPrice2(parseFloat(pools[token1.address]["max_rate"]))
+        } else {
+            setMinPrice(1);
+            setMaxPrice(100);
+            setPrice1(1);
+            setPrice2(100);
+        }
+    }, [token1, pools])
+
+    useEffect(() => {
         if (tokens) {
             var tk1 = searchParams.get('tk1');
-            var tk2 = searchParams.get('tk2');
 
-            if (tk1 && tk2) {
+            if (tk1 ) {
                 tk1 = tk1.toLowerCase();
-                tk2 = tk2.toLowerCase();
             }
 
-            if (tk1 != tk2 && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk1) && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk2)) {
+            if (tk1 && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk1)) {
                 var tok1 = tokens.filter((x:any) => x.symb.toLowerCase() == tk1)[0]
-                var tok2 = tokens.filter((x:any) => x.symb.toLowerCase() == tk2)[0]
                 setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
-                setToken2({name:tok2!.name, symb: tok2!.symb, address: tok2!.address, icon_url: tok2!.icon_url});
-                setSearchParams({tk1: tk1!.toUpperCase(), tk2: tk2!.toUpperCase()})
+                setSearchParams({tk1: tk1!.toUpperCase()})
             } else {
                 setToken1({name: "Radix", symb: "XRD", address: "resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp", icon_url: "https://switchere.com/i/currencies/XRD.svg"});
-                setToken2({name: "Wrapped Bitcoin", symb: "WBTC", address: "resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"});
-                setSearchParams({tk1: 'XRD', tk2: 'WBTC'})
+                setSearchParams({tk1: 'XRD'})
             }
         }
 
@@ -103,24 +112,47 @@ function Liquidity() {
     const token1AddressRef = useRef(token1.address)
     token1AddressRef.current = token1.address
 
-    const token2AddressRef = useRef(token2.address)
-    token2AddressRef.current = token2.address
-
     const [token1InPool, setToken1InPool] = useState(0);
-    const [token2InPool, setToken2InPool] = useState(0);
+    const [stableInPool, setStableInPool] = useState(0);
 
-    function calculateGet(n: number) {
-        return (token2InPool*n/token1InPool)
+
+    function findRatio(x: number) {
+        var currentStep = pools[token1.address]["current_step"];
+        let stableRatio: number; 
+        for (const step in pools[token1.address]["steps"]) {
+            if (step[0] == currentStep) {
+                stableRatio = parseFloat(step[1]["amount_stable"])/(parseFloat(step[1]["amount_stable"]) + parseFloat(step[1]["rate"])*parseFloat(step[1]["amount_other"]));
+                return stableRatio;
+            }
+        }
+        return 1;
     }
 
-    function calculateSent(n: number) {
-        return (token1InPool*n/token2InPool)
+    function calculateGet(x: number) {
+        var stableRatio = findRatio(x);
+        var currentStep = pools[token1.address]["current_step"];
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        if (currentStep > maxStep) {setSent(0); return 10;}
+        if (currentStep < minStep) return 0;
+        return (maxStep - currentStep + 1)*(stableRatio * x/(currentStep - minStep + 1))
+    }
+
+
+    function calculateSent(x: number) {
+        var stableRatio = findRatio(x);
+        var currentStep = pools[token1.address]["current_step"];
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        if (currentStep > maxStep) {return 0;}
+        if (currentStep < minStep) {setGet(0); return 10;}
+        return (currentStep - minStep + 1)*(stableRatio * x/(maxStep - currentStep + 1))
     }
 
     function calculateMax1(x: number | string) {
         if (typeof(x) == "string") return "?"
         if (token1Owned == "?") return "?"
-        if (token2Owned == "?") return "?"
+        if (stableOwned == "?") return "?"
         if (isNaN(x)) return "?"
         if (price == 0) return "?"
         else {
@@ -136,14 +168,14 @@ function Liquidity() {
     function calculateMax2(x: number | string) {
         if (typeof(x) == "string") return "?"
         if (token1Owned == "?") return "?"
-        if (token2Owned == "?") return "?"
+        if (stableOwned == "?") return "?"
         if (isNaN(x)) return "?"
         if (price == 0) return "?"
         else {
             var s = calculateGet(x)
             if (isNaN(s)) return "?"
             else {
-                if (token2Owned < s) return formatToString(token2Owned);
+                if (stableOwned < s) return formatToString(stableOwned);
                 else return formatToString(s);
             }
         }
@@ -178,6 +210,8 @@ function Liquidity() {
             }
         }
     }
+
+    useEffect(() => {if (pools[token1.address]) setGet(calculateGet(sent))}, [price1, price2]);
 
     const sentChange = (event: any) => {
         var s = event.target.value;
@@ -223,7 +257,7 @@ function Liquidity() {
 
     useEffect(() => {
         const n = 100*Math.abs(
-            (token2InPool/(token2InPool - get))*(sent + token1InPool)/token1InPool-1
+            (stableInPool/(stableInPool - get))*(sent + token1InPool)/token1InPool-1
         )
         if (isNaN(n)) setPriceImpact("?")
         else setPriceImpact(formatToString2(n))
@@ -232,71 +266,37 @@ function Liquidity() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            if(token1.address && token2.address) {
-                const infos = await getPrice(token1.address, token2.address);
-                if (infos && infos!['token1_address'] == token1AddressRef.current && infos!['token2_address'] == token2AddressRef.current) {
-                    if (infos!['token1_amount'] > 0) {
-                        setToken1InPool(parseFloat(infos!["token1_amount"]));
-                        setToken2InPool(parseFloat(infos!["token2_amount"]));
-                        setPrice(infos!["token2_amount"]/infos!["token1_amount"]);
-                    }
-                }
+            if(token1.address && stable.address) {
+                setPrice((parseFloat(pools[token1.address]["min_rate"])*(parseFloat(pools[token1.address]["rate_step"])**parseFloat(pools[token1.address]["current_step"]))));
             }
         }
         getPoolInfos();
-    }, [token1, token2, tokensOwned])
+    }, [token1, tokensOwned])
 
     useEffect(() => {
         const n = tokensOwned[token1.address];
         if (n == "undefined") setToken1Owned(0);
         else setToken1Owned(parseFloat(n));
-        const m = tokensOwned[token2.address];
-        if (m == "undefined") setToken2Owned(0);
-        else setToken2Owned(parseFloat(n));
-    }, [tokensOwned, token1, token2])
-    
-    function invert() {
-        const temp = {...token2};
-        setToken2(token1);
-        setToken1(temp);
-        var tk1 = searchParams.get('tk1')!.toUpperCase();
-        var tk2 = searchParams.get('tk2')!.toUpperCase();
-        setSearchParams({tk1: tk2, tk2: tk1})
-    }
+        const m = tokensOwned[stable.address];
+        if (m == "undefined") setStableOwned(0);
+        else setStableOwned(parseFloat(n));
+    }, [tokensOwned, token1])
 
     useEffect(() => {
         resetValues();
-    }, [token1, token2])
+    }, [token1])
 
     const [token1Select, setToken1Select] = useState(false);
-    const [token2Select, setToken2Select] = useState(false);
 
     function resetSelect() {
         setSearch('');
         setToken1Select(false);
-        setToken2Select(false);
     }
 
     function selectToken(token: any) {
         if (token1Select) {
-            if (token.address == token2.address) {
-                invert()
-            }
-            else { 
-                setToken1(token)
-                var tk2 = searchParams.get('tk2')!.toUpperCase();
-                setSearchParams({tk1: token.symb.toUpperCase(), tk2: tk2})
-            }
-        }
-        if (token2Select) {
-            if (token.address == token1.address) {
-                invert()
-            }
-            else { 
-                setToken2(token);
-                var tk1 = searchParams.get('tk1')!.toUpperCase();
-                setSearchParams({tk1: tk1, tk2: token.symb.toUpperCase()})
-            }
+            setToken1(token)
+            setSearchParams({tk1: token.symb.toUpperCase()})
         }
         resetSelect();
         resetValues();
@@ -419,8 +419,8 @@ function Liquidity() {
     }
 
     useEffect(() => {
-        setNftId(findPosition(token1.address, token2.address));
-    }, [token1, token2, positions])
+        setNftId(findPosition(token1.address, stable.address));
+    }, [token1, positions])
 
 
     async function sendSwap() {
@@ -694,6 +694,35 @@ function Liquidity() {
             }
         },
 
+        token2: {
+            width: '110px',
+            height: '100%',
+            position: 'absolute' as 'absolute',
+            right: '10px',
+            top: '0',
+            cursor: 'not-allowed',
+
+            display: 'flex',
+            alignItems: 'center',
+
+            '& img': {
+                height: '50%',
+                aspectRatio: '1',
+                borderRadius: '1000px',
+                objectFit: 'contain' as 'contain',
+                marginRight: '10px'
+            },
+
+            '& p': {
+                margin: '0',
+                padding: '0',
+                color: 'text',
+                fontFamily: 'primary',
+                fontSize: 2,
+                fontWeight: '500'
+            },
+        },
+
         expand: {
             height: '12px',
             aspectRatio: '1',
@@ -747,6 +776,10 @@ function Liquidity() {
             display: 'flex',
             justifyContent: 'space-between',
             overflow: 'hidden',
+
+            '&:nth-of-type(1)': {
+                marginBottom: '25px'
+            },
 
 
             '& span': {
@@ -856,7 +889,7 @@ function Liquidity() {
             padding: '20px',
             background: 'background2',
             position: 'absolute' as 'absolute',
-            left: `${token1Select || token2Select ? '0' : '100%'}`,
+            left: `${token1Select? '0' : '100%'}`,
             transition: '.2s',
             top: '0',
             zIndex: '20',
@@ -1327,7 +1360,6 @@ function Liquidity() {
                                                             setChosePosition(false);
                                                             setInvertPosition(false);
                                                             setToken1(pool.token_x);
-                                                            setToken2(pool.token_y);
                                                             setNftId(pool.id);
                                                         }}>
                                                             <img src={pool.token_x.icon_url}/>
@@ -1341,16 +1373,16 @@ function Liquidity() {
                                     </div>
                                     <div sx={style.chosePosition}  onClick={() => setChosePosition(true)}>
                                         <img src={token1.icon_url}/>
-                                        <img src={token2.icon_url}/>
-                                        <p>{token1.symb} - {token2.symb}</p>
+                                        <img src={stable.icon_url}/>
+                                        <p>{token1.symb} - {stable.symb}</p>
                                         <div sx={style.expand2}/>
                                     </div>
                                     <div sx={style.swapZone}>
                                         <h1>🌻 My Fees</h1>
                                         <div sx={style.swapInfos}>
-                                            <span sx={style.swapInfoMain}><span>Total Locked</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)) : '?'} {token2.symb}</div></span>
+                                            <span sx={style.swapInfoMain}><span>Total Locked</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)) : '?'} {stable.symb}</div></span>
                                             <span sx={style.swapInfo}><span>Value</span>${formatToString(positionInfos.value_locked)}</span>
-                                            <span sx={style.swapInfo}><span>Fees</span>{formatToString2(positionInfos.x_fees)} {token1.symb} + {formatToString2(positionInfos.y_fees)} {token2.symb}</span>                                            
+                                            <span sx={style.swapInfo}><span>Fees</span>{formatToString2(positionInfos.x_fees)} {token1.symb} + {formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
                                             <span sx={style.swapInfo}><span>Current ROI</span>No Data</span>
                                         </div>
                                         <button sx={feesLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
@@ -1358,7 +1390,7 @@ function Liquidity() {
                                     <div sx={style.swapZone}>
                                         <h1>🍂 Remove Liquidity</h1>
                                         <div sx={style.rangeInput}>
-                                            <p>Price Range ({token2.symb + "/" + token1.symb})</p>
+                                            <p>Price Range ({stable.symb + "/" + token1.symb})</p>
                                             <div sx={style.ranges}>
                                                 <div sx={style.rangeBar}>
                                                     <div/>
@@ -1380,7 +1412,7 @@ function Liquidity() {
                                         </div>
                                         <div sx={style.swapInfos}>
                                             <button>Load Data</button>
-                                            <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {token2.symb}</div></span>
+                                            <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {stable.symb}</div></span>
                                             <span sx={style.swapInfo}><span>Value</span>$?</span>
                                         </div>
                                         <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
@@ -1393,7 +1425,7 @@ function Liquidity() {
                                 <h1>🌱 Provide Liquidity</h1>
                                 <div sx={style.inputBar}>
                                     <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
-                                    <label htmlFor="send">{user.address ? `You can lock ${calculateMax1(token1Owned)} ${token1.symb}`: "You lock"}</label>
+                                    <label htmlFor="send">You lock</label>
                                     <div sx={style.token} onClick={() => setToken1Select(true)}>
                                         <img src={token1.icon_url}/>
                                         <p>{token1.symb}</p>
@@ -1401,19 +1433,17 @@ function Liquidity() {
                                     </div>
                                 </div>
                                 <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
-                                <div sx={style.swapIcon} onClick={invert}/>
                                 <div sx={style.inputBar}>
                                     <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={getChange} value={get}/>
-                                    <label htmlFor="get">{user.address ? `You can lock ${calculateMax2(token1Owned)} ${token2.symb}`: "You lock"}</label>
-                                    <div sx={style.token} onClick={() => setToken2Select(true)}>
-                                        <img src={token2.icon_url}/>
-                                        <p>{token2.symb}</p>
-                                        <div sx={style.expand}/>
+                                    <label htmlFor="get">You lock</label>
+                                    <div sx={style.token2}>
+                                        <img src={stable.icon_url}/>
+                                        <p>{stable.symb}</p>
                                     </div>
                                 </div>
-                                <span sx={style.tokenAddress}><span>Token Address</span>{token2.address.slice(0,5) + "..." + token2.address.slice(token2.address.length - 10, token2.address.length)}</span>
+                                <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
                                 <div sx={style.rangeInput}>
-                                    <p>Price Range ({token2.symb + "/" + token1.symb})</p>
+                                    <p>Price Range ({stable.symb + "/" + token1.symb})</p>
                                     <div sx={style.ranges}>
                                         <div sx={style.rangeBar}>
                                             <div/>
@@ -1424,21 +1454,18 @@ function Liquidity() {
                                     </div>
                                     <div sx={style.rangeInputs}>
                                         <div sx={style.inputBar2}>
-                                            <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e)}} value={Math.min(price1, price2)}/>
+                                            <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e);}} value={Math.min(price1, price2)}/>
                                             <label htmlFor="range1">Price min</label>
                                         </div>
                                         <div sx={style.inputBar2}>
-                                            <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e)}} value={Math.max(price1,price2)}/>
+                                            <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e);}} value={Math.max(price1,price2)}/>
                                             <label htmlFor="range2">Price max</label>
                                         </div>
                                     </div>
                                 </div>
                                 <div sx={style.swapInfos}>
-                                    <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {token2.symb}</div></span>
-                                    <span sx={style.swapInfo}><span>Pool Rate</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {token2.symb}</span>
-                                    <span sx={style.swapInfo}><span>Expected ROI</span>No Data</span>
-                                    <span sx={style.swapInfo}><span>TVL</span>No Data</span>
-                                    <span sx={style.swapInfo}><span>Share of Pool</span>No Data</span>
+                                    <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
+                                    <span sx={style.swapInfo}><span>Current Price</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {stable.symb}</span>
                                 </div>
 
                                 {

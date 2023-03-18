@@ -1,4 +1,4 @@
-import { getTokens, getNbTokens } from "./connectToApi";
+import { getTokens, getNbTokens, getPool } from "./connectToApi";
 
 const api_url = 'https://beaker.fi:8888'
 
@@ -41,29 +41,23 @@ async function getPositionInfos(id: string) {
   return positionData
 }
 
-async function getPools() {
+async function getPools(tokens: string[]) {
 
-  const api_url = 'https://beaker.fi:8888'
+  let pools: any = {};
 
-  const request = new Request( api_url + '/pools', {
-    method: 'GET',
-    headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-  });
+  for (var i = 0; i < tokens.length; ++i) {
+    const pool: any = await getPool(tokens[i]);
+    pools[pool[0]] = pool[1];
+  }
 
-  let pools: any[] = [];
-  await fetch(request)
-  .then(data => data.json())
-  .then(arr => pools = arr)
-  .catch( e => console.log(e) )
-
-  console.log("pools", pools)
+  console.log(pools)
 
   return pools
 }
 
 async function getTokensAndPools() {
   const tokens = await getTokens();
-  const pools = await getPools();
+  const pools = await getPools(tokens.map(x => x.address));
   return { tokens, pools };
 }
 
@@ -77,8 +71,6 @@ async function getPrice(token1: string,token2: string) {
     method: 'GET',
     headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
   });
-
-  console.log(request);
 
   let pool_info
   await fetch(request)

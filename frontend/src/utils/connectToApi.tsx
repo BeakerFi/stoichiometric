@@ -25,7 +25,7 @@ async function getTokens() {
 
         // @ts-ignore
         const metadata = data["metadata"]["items"];
-        tokens_list.push( {name: metadata[2]["value"], symb: metadata[3]["value"], address: token, icon_url: metadata[1]["value"]});
+        tokens_list.push( {name: metadata[1]["value"], symb: metadata[2]["value"], address: token, icon_url: metadata[0]["value"]});
     }
 
     return tokens_list;
@@ -62,10 +62,8 @@ async function getPool(token: string) {
 
     let pools = await getPoolList();
 
-    let pool = pools[token];
-
     const obj: EntityDetailsRequest = {
-        "address": pool.pool
+        "address": pools[0]["pool"]
     }
 
     let data: any;
@@ -80,14 +78,14 @@ async function getPool(token: string) {
 
     let pool_steps: any[] = [];
 
-    for (const pool_step of data[5]) {
+    for (const pool_step of data[6]) {
         let step = pool_step[0];
-        let p_step = getPoolStep(pool_step[1])
+        let p_step = await getPoolStep(pool_step[1])
 
         pool_steps.push([step, p_step])
     }
 
-    return {rate_step: data[0], current_step: data[1], min_rate: data[2], max_rate: data[3], stable_prot_fees: data[4], other_prot_fees: data[5], steps: pool_steps};
+    return [token, {rate_step: data[0], current_step: data[1], min_rate: data[2], max_rate: data[3], stable_prot_fees: data[4], other_prot_fees: data[5], steps: pool_steps}];
 }
 
 async function getPoolStep(address: string) {
@@ -131,4 +129,4 @@ async function getPoolList() {
 }
 
 
-export { getTokens, getNbTokens }
+export { getTokens, getNbTokens, getPool }

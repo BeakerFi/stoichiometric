@@ -28,12 +28,11 @@ function Swap() {
 
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
 
-
     const { addAlert } = useContext(SnackbarContext);
     
     const { device, windowSize } = useContext(ResponsiveContext);
 
-    const { tokens } = useContext(TokensContext);
+    const { tokens, pools } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens } = useContext(UserContext);
 
@@ -47,12 +46,14 @@ function Swap() {
 
     const [sent, setSent] = useState<number>(0);
     const [get, setGet] = useState<number>(0);
+    const [intermediateGet, setIntermediateGet] = useState<number>(0);
 
     const [priceImpact, setPriceImpact] = useState("0");
 
     function resetValues() {
         setSent(0);
         setGet(0);
+        setIntermediateGet(0);
         setPriceImpact("0");
     }
 
@@ -86,7 +87,7 @@ function Swap() {
                 setSearchParams({tk1: tk1!.toUpperCase(), tk2: tk2!.toUpperCase()})
             } else {
                 setToken1({name: "Radix", symb: "XRD", address: "resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp", icon_url: "https://switchere.com/i/currencies/XRD.svg"});
-                setToken2({name: "Wrapped Bitcoin", symb: "WBTC", address: "resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"});
+                setToken2({name: "Wrapped Bitcoin", symb: "WBTC", address: "resource_tdx_b_1qpev6f8v2su68ak5p2fswd6gqml3u7q0lkrtfx99c4ts3zxlah", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"});
                 setSearchParams({tk1: 'XRD', tk2: 'WBTC'})
             }
         }
@@ -102,8 +103,57 @@ function Swap() {
     const [token1InPool, setToken1InPool] = useState(0);
     const [token2InPool, setToken2InPool] = useState(0);
 
+    function findIndex(n:number, list: any[]) {
+        for (var i = 0; i < list.length; ++i) if (list[i][0] == n) return i
+        return -1;
+    }
+
     function calculateGet(n: number) {
-        return (token2InPool*n/(n + token1InPool))
+        if (token1.address == stable.address) {
+            const pool = pools[token2.address];
+        } else if (token2.address == stable.address) {
+            const pool = pools[token1.address];
+        } else {
+            const pool1 = pools[token1.address];
+            var temp = n;
+            var recieved = 0;
+            var actualPool = pool1["current_step"];
+            var index = findIndex(actualPool, pool1["steps"]);
+            while (temp > 0 && index >= 0) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+                index = index - 1;
+            }
+
+            const pool2 = pools[token2.address];
+            var recieved2 = 0;
+            actualPool = pool2["current_step"];
+            index = findIndex(actualPool, pool2["steps"]);
+            while (recieved > 0 && index < pool2["steps"].length) {
+                var recieved3 = recieved;
+                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]/pool2["steps"][index][1]["rate"], recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3*pool2["steps"][index][1]["rate"]);
+                index = index + 1;
+            }
+            return recieved2;
+        }
+        return 0
+    }
+
+    function calculateIntermediate(n: number) {
+        const pool1 = pools[token1.address];
+        var temp = n;
+        var recieved = 0;
+        var actualPool = pool1["current_step"];
+        var index = findIndex(actualPool, pool1["steps"]);
+        while (temp > 0 && index >= 0) {
+            var temp2 = temp;
+            temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
+            recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+            index = index - 1;
+        }
+        return recieved;
     }
 
     function calculateMax(x: number | string) {
@@ -127,13 +177,15 @@ function Swap() {
             if (s.includes(".")) {
                 setSent(s);
                 var x = calculateGet(parseFloat(s));
-                if (isNaN(x)) setGet(0);
-                else setGet(x);
+                var y = calculateIntermediate(parseFloat(s));
+                if (isNaN(x)) { setGet(0); setIntermediateGet(0); }
+                else { setGet(x); setIntermediateGet(y); }
             } else {
                 setSent(parseFloat(s));
                 var x = calculateGet(parseFloat(s));
-                if (isNaN(x)) setGet(0);
-                else setGet(x);
+                var y = calculateIntermediate(parseFloat(s));
+                if (isNaN(x)) { setGet(0); setIntermediateGet(0); }
+                else { setGet(x); setIntermediateGet(y); }
             }
         }
     }
@@ -728,7 +780,7 @@ function Swap() {
                                     <div sx={style.swapIcon2} onClick={invert}/>
                                     <div sx={style.stableBar}>
                                         <div sx={style.inputBar}>
-                                            <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get}/>
+                                            <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={intermediateGet}/>
                                             <label htmlFor="get">{user.address ? `Intermediate transaction`: "You get"}</label>
                                             <div sx={style.token2}>
                                                 <img src={stable.icon_url}/>
