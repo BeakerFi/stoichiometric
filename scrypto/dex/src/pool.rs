@@ -191,24 +191,20 @@ mod pool {
             &mut self,
             mut bucket_stable: Bucket,
             mut bucket_other: Bucket,
-            start_step: u16,
-            stop_step: u16,
+            steps: Vec<(u16, Decimal, Decimal)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-            // We put the same amount of tokens at each step
-            let nb_steps = stop_step - start_step + 1;
-            let stable_per_step = bucket_stable.amount() / nb_steps;
-            let other_per_step = bucket_other.amount() / nb_steps;
 
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for i in start_step..stop_step + 1 {
+            for (step, amount_stable, amount_other) in steps
+            {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
-                    bucket_stable.take(stable_per_step),
-                    bucket_other.take(other_per_step),
-                    i,
+                    bucket_stable.take(amount_stable),
+                    bucket_other.take(amount_other),
+                    step,
                     position,
                 );
                 ret_stable.put(tmp_stable);
