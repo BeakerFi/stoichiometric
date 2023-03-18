@@ -89,11 +89,14 @@ mod issuer {
 
             let issuer_rules = AccessRules::new()
                 .method("take_loan", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("repay_loans",AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("add_collateral",AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("remove_collateral",AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("liquidate",AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("liquidate_list",AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("repay_loans", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("add_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("remove_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("liquidate", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("liquidate_list", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("repay_flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("get_lender_state", AccessRule::AllowAll, AccessRule::DenyAll)
                 .default(
                     rule!(require(admin_badge.resource_address())),
                     AccessRule::DenyAll
@@ -282,6 +285,11 @@ mod issuer {
         pub fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress) {
             let lender = self.get_lender(&lender_collateral);
             lender.change_parameters(loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive, oracle);
+        }
+
+        pub fn get_lender_state(&self, collateral_token: ResourceAddress) -> Vec<Decimal> {
+            let lender = self.get_lender(&collateral_token);
+            lender.get_state()
         }
 
         #[inline]

@@ -112,6 +112,16 @@ mod lender {
             self.oracle = oracle;
         }
 
+        pub fn get_state(&self) -> Vec<Decimal>{
+            vec![
+                self.collateral.amount(),
+                self.loan_to_value,
+                self.interest_rate,
+                self.liquidation_threshold,
+                self.liquidation_incentive,
+            ]
+        }
+
         fn get_oracle_price(&self) -> Decimal {
 
             let mut oracle = OracleComponent::at(self.oracle);
