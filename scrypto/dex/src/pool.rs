@@ -139,18 +139,23 @@ mod pool {
         /// Adds liquidity to the pool at the given step.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
-        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `bucket_a` - Bucket containing first token to add as liquidity
+        /// * `bucket_b` - Bucket containing second token to add as liquidity
         /// * `step` - Step at which to provide liquidity
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_step(
             &mut self,
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
             step: u16,
             mut position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step_position = position.get_step(step);
+            let (bucket_stable, bucket_other) = if bucket_a.resource_address() == self.stable_protocol_fees.resource_address(){
+                (bucket_a, bucket_b)
+            } else {
+                (bucket_b, bucket_a)
+            };
 
             // Get or create the given step
             let pool_step = match self.steps.get_mut(&step) {
@@ -184,8 +189,7 @@ mod pool {
         /// # Arguments
         /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
         /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
-        /// * `start_step` - Start step at which to provide liquidity
-        /// * `stop_step` - Stop step at which to provide liquidity
+        /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_steps(
             &mut self,

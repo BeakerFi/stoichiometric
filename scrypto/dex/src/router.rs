@@ -311,8 +311,7 @@ mod router {
         /// # Arguments
         /// * `bucket_a` - Bucket containing the first token to be added as liquidity
         /// * `bucket_b` - Bucket containing the second token to be added as liquidity
-        /// * `start_step` - First step to which to add liquidity
-        /// * `stop_step` - Last step to which to add liquidity
+        /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
         pub fn add_liquidity_at_steps(
             &mut self,
