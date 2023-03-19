@@ -6,6 +6,7 @@ pub struct Loan {
     pub collateral_token: ResourceAddress,
 
     /// Amount of tokens given as collateral
+    #[mutable]
     pub collateral_amount: Decimal,
 
     /// Amount of stablecoins lent

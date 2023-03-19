@@ -95,7 +95,7 @@ impl IssuerState {
         self.update_reserves(&output);
 
         lazy_static!{
-            static ref ISSUER_RE: Regex = Regex::new(r#"Tuple\(Map<ResourceAddress, Own>\((\w*)\), Map<ResourceAddress, Tuple>\((.*)\), ResourceAddress\("(\w*)"\), ResourceAddress\("(\w*)"\), (\w*)u64, ResourceAddress\("(\w*)"\), (\w*)u64,"#).unwrap();
+            static ref ISSUER_RE: Regex = Regex::new(r#"Tuple\(Map<ResourceAddress, Own>\((.*)\), Map<ResourceAddress, Tuple>\((.*)\), ResourceAddress\("(\w*)"\), ResourceAddress\("(\w*)"\), (\w*)u64, ResourceAddress\("(\w*)"\), (\w*)u64,"#).unwrap();
         }
 
         let issuer_cap = &ISSUER_RE.captures(&output).unwrap();
@@ -138,7 +138,7 @@ impl IssuerState {
                 && reserves.keys().all(|k| self.reserves.contains_key(k))
         );
 
-        for (key, value) in reserves {
+            for (key, value) in reserves {
             let amount = self.reserves.get(key).unwrap();
             assert_eq!(*value, *amount);
         }
@@ -147,7 +147,7 @@ impl IssuerState {
     fn update_reserves(&mut self, output: &str) {
 
         lazy_static!{
-            static ref RESOURCE_RE: Regex = Regex::new(r#"\{ amount: ([\d.]*), resource address: (\w*) \}"#).unwrap();
+            static ref RESOURCE_RE: Regex = Regex::new(r#"\{ amount: ([\d.]*), resource address: (\w*)"#).unwrap();
         }
 
         let mut reserves = HashMap::new();

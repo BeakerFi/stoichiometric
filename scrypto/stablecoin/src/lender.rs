@@ -17,19 +17,19 @@ mod lender {
         loan_to_value: Decimal,
         interest_rate: Decimal,
         liquidation_threshold: Decimal,
-        liquidation_incentive: Decimal,
+        liquidation_penalty: Decimal,
         oracle: ComponentAddress
     }
 
     impl Lender {
 
-        pub fn new(collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress) -> LenderComponent {
+        pub fn new(collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress) -> LenderComponent {
             Self{
                 collateral: Vault::new(collateral_address),
                 loan_to_value,
                 interest_rate,
                 liquidation_threshold,
-                liquidation_incentive,
+                liquidation_penalty,
                 oracle
             }
                 .instantiate()
@@ -74,16 +74,14 @@ mod lender {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
             let loan_days_duration = Decimal::from(current_time - loan.loan_date) / SECONDS_PER_DAY;
             let minimum_collateral =  loan.amount_lent *(Decimal::ONE +  loan_days_duration * loan.interest_rate)/ (self.loan_to_value * price);
-            assert!(new_collateral_amount >= minimum_collateral);
+            assert!(new_collateral_amount >= minimum_collateral, "The new collateral amount should be at least {}", minimum_collateral);
 
             loan.collateral_amount = new_collateral_amount;
             (loan, self.collateral.take(collateral))
         }
 
-        pub fn liquidate(&mut self, stablecoins_amount: Decimal, mut loan: Loan) -> (Decimal, Decimal, Bucket, Bucket, Loan) {
+        pub fn liquidate(&mut self, stablecoins_amount: Decimal, mut loan: Loan) -> (Decimal, Bucket, Bucket, Loan) {
             let interests = self.compute_loan_interests(&loan);
-            let amount_lent = loan.amount_lent;
-
             let price = self.get_oracle_price();
 
             let collateral_value = loan.collateral_amount * price;
@@ -91,24 +89,29 @@ mod lender {
 
             assert!(collateral_value / loan_value <= self.liquidation_threshold,
                     "Cannot liquidate this loan because liquidation threshold was not hit");
-            assert!(stablecoins_amount >= (loan.amount_lent + interests), "You need to provide {} stablecoins to liquidate this loan", loan_value);
 
-            let collateral_for_liquidator = (loan.amount_lent *(Decimal::ONE + self.liquidation_incentive)/price).min(loan.collateral_amount);
-            let liquidator_bucket = self.collateral.take(collateral_for_liquidator);
-            let reserve_bucket = self.collateral.take(loan.collateral_amount - collateral_for_liquidator);
+            let minimum_stablecoins_input = ( loan_value * self.liquidation_threshold - loan.collateral_amount*(Decimal::ONE - self.liquidation_penalty)*price )/(self.liquidation_threshold - Decimal::ONE);
 
-            loan.collateral_amount = Decimal::ZERO;
-            loan.amount_lent = Decimal::ZERO;
+            assert!(stablecoins_amount >= minimum_stablecoins_input, "You need to provide {} stablecoins to liquidate this loan", minimum_stablecoins_input);
 
-            (interests, amount_lent, liquidator_bucket, reserve_bucket, loan)
+            let new_collateral_amount = loan.collateral_amount * (Decimal::ONE - self.liquidation_penalty) - minimum_stablecoins_input/price;
+
+            let collateral_to_share = loan.collateral_amount - new_collateral_amount;
+            let liquidator_bucket = self.collateral.take(collateral_to_share * dec!("0.9"));
+            let reserve_bucket = self.collateral.take(collateral_to_share * dec!("0.1"));
+
+            loan.collateral_amount = new_collateral_amount;
+            loan.amount_lent = loan.amount_lent - minimum_stablecoins_input;
+
+            (minimum_stablecoins_input, liquidator_bucket, reserve_bucket, loan)
         }
 
-        pub fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress)
+        pub fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress)
         {
             self.loan_to_value = loan_to_value;
             self.interest_rate = interest_rate;
             self.liquidation_threshold = liquidation_threshold;
-            self.liquidation_incentive = liquidation_incentive;
+            self.liquidation_penalty = liquidation_penalty;
             self.oracle = oracle;
         }
 
@@ -118,7 +121,7 @@ mod lender {
                 self.loan_to_value,
                 self.interest_rate,
                 self.liquidation_threshold,
-                self.liquidation_incentive,
+                self.liquidation_penalty,
             ]
         }
 

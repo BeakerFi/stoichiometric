@@ -1,11 +1,13 @@
 use std::process::Command;
 use scrypto::math::Decimal;
+use lazy_static::lazy_static;
+use regex::Regex;
 use scrypto::prelude::dec;
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use crate::dumb_oracle_sqrt::{DumbOracleBlueprint, DumbOracleMethods};
 use crate::issuer_sqrt::{IssuerBlueprint, IssuerMethods};
-use crate::issuer_state::{IssuerState, LenderState};
+use crate::issuer_state::{IssuerState};
 
 pub fn run_command(command: &mut Command) -> String {
     let output = command.output().expect("Failed to run command line");
@@ -74,6 +76,55 @@ pub fn set_oracle_price(test_env: &mut TestEnvironment, token: &str, new_price: 
 
     test_env.set_current_package(&current_package);
     test_env.set_current_component(&current_component);
+}
+
+pub fn assert_current_has_loan(test_env: &TestEnvironment, loan_id: &str, collateral_token: &str, collateral_amount: Decimal, amount_lent: Decimal, loan_date: i64, loan_to_value: Decimal, interest_rate: Decimal) {
+
+    let current_account = test_env.get_current_account_address();
+    let output = run_command(Command::new("resim").arg("show").arg(current_account));
+
+    lazy_static!{
+        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.)*"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
+    }
+
+    for loan_capture in LOAN_RE.captures_iter(&output) {
+
+        if loan_id.to_string() == String::from(&loan_capture[1]) {
+
+
+            let collateral_token_found = String::from(&loan_capture[2]);
+            let loan_date_found = String::from(&loan_capture[3]).parse::<i64>().unwrap();
+            let loan_to_value_found = Decimal::from(&loan_capture[4]);
+            let interest_rate_found = Decimal::from(&loan_capture[5]);
+            let collateral_amount_found = Decimal::from(&loan_capture[6]);
+            let amount_lent_found = Decimal::from(&loan_capture[7]);
+
+            assert_eq!(test_env.get_resource(collateral_token).clone(), collateral_token_found);
+            assert_eq!(collateral_amount, collateral_amount_found);
+            assert_eq!(amount_lent, amount_lent_found);
+            assert_eq!(loan_date, loan_date_found);
+            assert_eq!(loan_to_value, loan_to_value_found);
+            assert_eq!(interest_rate, interest_rate_found);
+
+            return;
+        }
+    }
+
+}
+
+pub fn assert_current_has_no_loan_id(test_env: &TestEnvironment, loan_id: &str) {
+
+    let current_account = test_env.get_current_account_address();
+    let output = run_command(Command::new("resim").arg("show").arg(current_account));
+
+    lazy_static!{
+        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.)*"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
+    }
+
+    for loan_capture in LOAN_RE.captures_iter(&output) {
+        let loan_id_found = &loan_capture[1];
+        assert_ne!(loan_id_found.to_string(), loan_id.to_string());
+    }
 }
 
 fn new_oracle(test_env: &mut TestEnvironment, token: &str) -> String {

@@ -93,7 +93,7 @@ mod issuer {
                 .method("add_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("liquidate", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("liquidate_list", AccessRule::AllowAll, AccessRule::DenyAll)
+                //.method("liquidate_list", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("repay_flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_lender_state", AccessRule::AllowAll, AccessRule::DenyAll)
@@ -172,6 +172,7 @@ mod issuer {
             }
 
             self.burn_bucket(stablecoins_to_burn);
+            self.resource_minter.authorize(|| borrow_resource_manager!(self.loan_address).burn(loans));
 
             (repayment, buckets)
         }
@@ -211,19 +212,20 @@ mod issuer {
 
             let lender = self.get_lender(&loan.collateral_token);
 
-            let (interests, amount_lent, liquidator_bucket, reserve_bucket, new_loan_data) = lender.liquidate(repayment.amount(), loan);
+            let (amount_to_burn, liquidator_bucket, reserve_bucket, new_loan_data) = lender.liquidate(repayment.amount(), loan);
 
-            let bucket_to_burn = repayment.take(amount_lent);
+            let bucket_to_burn = repayment.take(amount_to_burn);
             self.burn_bucket(bucket_to_burn);
 
-            self.put_in_reserves(repayment.take(interests));
             self.put_in_reserves(reserve_bucket);
 
-            borrow_resource_manager!(self.loan_address).update_non_fungible_data(&non_fungible_id, new_loan_data);
+            self.resource_minter.authorize(|| {
+                borrow_resource_manager!(self.loan_address).update_non_fungible_data(&non_fungible_id, new_loan_data);
+            });
 
             (repayment, liquidator_bucket)
         }
-
+        /*
         pub fn liquidate_list(&mut self, mut repayment: Bucket, non_fungible_ids: Vec<NonFungibleLocalId>) -> (Bucket, Vec<Bucket>) {
 
             let mut buckets: Vec<Bucket> = Vec::new();
@@ -247,6 +249,7 @@ mod issuer {
 
             (repayment, buckets)
         }
+        */
 
         pub fn flash_mint(&mut self, amount_to_mint: Decimal) -> (Bucket, Bucket) {
             let stablecoin_amount = self.mint(amount_to_mint);

@@ -25,6 +25,6 @@ mod dumb_oracle {
             self.price
         }
 
-        fn new_observation(&mut self, _token: ResourceAddress) {}
+        pub fn new_observation(&mut self, _token: ResourceAddress) {}
     }
 }

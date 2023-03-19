@@ -1,7 +1,7 @@
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::Blueprint;
 use sqrt::method::{Arg, Method};
-use sqrt::method::Arg::{ComponentAddressArg, DecimalArg, FungibleBucketArg, NonFungibleProofArg, ResourceAddressArg};
+use sqrt::method::Arg::{ComponentAddressArg, DecimalArg, FungibleBucketArg, NonFungibleBucketArg, NonFungibleLocalId, NonFungibleProofArg, ResourceAddressArg, StringArg, VecArg};
 use sqrt::method_args;
 
 pub(crate) const LOAN_NAME: &str = "Stoichiometric Loan";
@@ -74,7 +74,7 @@ impl Method for IssuerMethods {
                 {
                     method_args!(
                         FungibleBucketArg(STABLECOIN_NAME.to_string(), repayment_amount.clone()),
-                        NonFungibleProofArg(LOAN_NAME.to_string(), loan_ids.clone())
+                        NonFungibleBucketArg(LOAN_NAME.to_string(), loan_ids.clone())
                     )
                 }
             IssuerMethods::AddCollateral(collateral_token, collateral_amount, loan_id) =>
@@ -93,16 +93,23 @@ impl Method for IssuerMethods {
                 }
             IssuerMethods::Liquidate(repayment_amount, loan_id) =>
                 {
+                    let boxed_arg = Box::new(StringArg(loan_id.clone()));
                     method_args!(
                         FungibleBucketArg(STABLECOIN_NAME.to_string(), repayment_amount.clone()),
-                        NonFungibleProofArg(LOAN_NAME.to_string(), vec![loan_id.clone()])
+                        NonFungibleLocalId(boxed_arg)
                     )
                 }
             IssuerMethods::LiquidateList(repayment_amount, loan_ids) =>
                 {
+                    let mut vec = vec![];
+                    for loan_id in loan_ids {
+                        let boxed_loan_id = Box::new(StringArg(loan_id.clone()));
+                        let nfr_id = NonFungibleLocalId(boxed_loan_id);
+                        vec.push(nfr_id);
+                    }
                     method_args!(
                         FungibleBucketArg(STABLECOIN_NAME.to_string(), repayment_amount.clone()),
-                        NonFungibleProofArg(LOAN_NAME.to_string(), loan_ids.clone())
+                        VecArg(vec)
                     )
                 }
             IssuerMethods::ChangeLenderParameters(collateral_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive, oracle) =>

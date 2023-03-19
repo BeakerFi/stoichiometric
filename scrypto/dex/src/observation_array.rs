@@ -113,13 +113,3 @@ impl ObservationArray {
         stop_index
     }
 }
-
-#[cfg(test)]
-mod observation_array_test{
-    use crate::observation_array::{Observation, ObservationArray};
-
-    #[test]
-    fn test_push()
-    {
-    }
-}
