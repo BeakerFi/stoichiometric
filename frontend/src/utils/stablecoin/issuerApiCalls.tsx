@@ -1,5 +1,5 @@
 import {EntityDetailsRequest,} from "@radixdlt/babylon-gateway-api-sdk";
-import {radix_api_url} from "./constants";
+import {radix_api_url} from "../constants";
 
 async function getLenderInformation(lender_address: string) {
 
