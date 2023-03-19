@@ -7,6 +7,8 @@ const dAppId = "account_tdx_b_1pq8yjqm777eg2jhla6sdye5swlkt7wyj65tqjzgav44qw9m04
 
 const radix_api_url = "https://betanet.radixdlt.com"
 
+const backend_api_url = 'https://beaker.fi:8888'
+
 
 /*
     Dex constants
@@ -29,4 +31,4 @@ const loan_address = "resource_tdx_b_1qqwunyhu96jtwpwjwup3jndmws0xht3ul3ncqa2r23
 
 
 
-export {dAppId, radix_api_url, router_address, position_address, issuer_address, stablecoin_address, loan_address}
+export {dAppId, radix_api_url, backend_api_url, router_address, position_address, issuer_address, stablecoin_address, loan_address}
