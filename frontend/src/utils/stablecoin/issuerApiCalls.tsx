@@ -41,19 +41,21 @@ async function getLenderInformation(lender_address: string) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
 
-    console.log(obj);
     console.log(data);
 
+    if (!data) return undefined;
+
     // @ts-ignore
-    const loan_to_value = data[2];
+    const loan_to_value = data[1];
     // @ts-ignore
-    const daily_interest_rate = data[3];
+    const daily_interest_rate = data[2];
     // @ts-ignore
-    const liquidation_threshold = data[4];
+    const liquidation_threshold = data[3];
     // @ts-ignore
-    const liquidation_penalty = data[5];
+    const liquidation_penalty = data[4];
     // @ts-ignore
-    const oracle_address = data[6];
+    const oracle_address = data[5];
+
     const current_price = await getOraclePrice(oracle_address);
 
     return { loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
@@ -129,7 +131,7 @@ async function getOraclePrice(oracle_address: string) {
         .catch(console.error)
 
     // @ts-ignore
-    return data[1];
+    return data[0];
 }
 
 async function decode_loan(mutable_data: string, immutable_data: string){

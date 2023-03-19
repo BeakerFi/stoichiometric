@@ -26,12 +26,13 @@ async function takeLoan(account: string, collateral_token: string, collateral_am
                         Expression("ENTIRE_WORKTOP");
     `;
 
+    console.log('call');
     const result = await rdt.sendTransaction({
         transactionManifest: manifest,
         version: 1,
     })
 
-    return result.isOk;
+    return !result.isErr()
 }
 
 async function repayLoan(account: string, stablecoin_amount: string, loan_id: string) {

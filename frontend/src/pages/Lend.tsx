@@ -22,6 +22,8 @@ import { stable_coin as stable, token_default} from "utils/general/constants";
 
 import { getLenderInformation } from "utils/stablecoin/issuerApiCalls";
 
+import { takeLoan } from "utils/stablecoin/issuerContractCalls";
+
 function Swap() {
 
     let [searchParams, setSearchParams] = useSearchParams();
@@ -32,7 +34,7 @@ function Swap() {
     
     const { device, windowSize } = useContext(ResponsiveContext);
 
-    const { tokens } = useContext(TokensContext);
+    const { tokens, lenders } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens } = useContext(UserContext);
 
@@ -46,6 +48,8 @@ function Swap() {
 
     const [sent, setSent] = useState<number>(0);
     const [get, setGet] = useState<number>(0);
+
+    const [dir, setDir] = useState<number>(0);
 
     const [priceImpact, setPriceImpact] = useState("0");
 
@@ -92,7 +96,12 @@ function Swap() {
     const [stableInPool, setStableInPool] = useState(0);
 
     function calculateGet(n: number) {
-        return (stableInPool*n/(n + token1InPool))
+        return (n*price)
+    }
+
+    function calculateSent(n: number) {
+        if (price > 0) return (n/price);
+        return 0;
     }
 
     function calculateMax(x: number | string) {
@@ -140,12 +149,12 @@ function Swap() {
             }
             if (s.includes(".")) {
                 setGet(s);
-                var x = calculateGet(parseFloat(s));
+                var x = calculateSent(parseFloat(s));
                 if (isNaN(x)) setSent(0);
                 else setSent(x);
             } else {
                 setGet(parseFloat(s));
-                var x = calculateGet(parseFloat(s));
+                var x = calculateSent(parseFloat(s));
                 if (isNaN(x)) setSent(0);
                 else setSent(x);
             }
@@ -163,9 +172,10 @@ function Swap() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            const infos = await getLenderInformation(token1.address);
-            console.log(infos)
-            setPrice(infos["price"]);
+            const infos = await getLenderInformation(lenders[token1.address]);
+            console.log("infos", infos)
+            if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
+            if (infos) setDir(infos["daily_interest_rate"]);
         }
         getPoolInfos();
     }, [token1, tokensOwned])
@@ -243,6 +253,19 @@ function Swap() {
     const [choseLend, setChoseLend] = useState<boolean>(false);
 
     const [removePercentage, setRemovePercentage] = useState<number>(0);
+
+    async function sendTakeLoan(account: string, token: string, amount: string, borrow: string) {
+        setSwapLoading(true);
+        const flag = await takeLoan(account, token, amount, borrow);
+        setNbTokens();
+        resetValues();
+        if (flag) {
+            addAlert("check", "Transaction submitted!");
+        } else {
+            addAlert("error", "An error occured");
+        }
+        setSwapLoading(false);
+    }
 
     const style = {
         main: {
@@ -1024,7 +1047,7 @@ function Swap() {
 
                             { lock ? 
                                 <div sx={style.alert}>
-                                    <p>The minimum collateral needed is 457465.45 XRD</p>
+                                    <p>The minimum collateral needed is {price > 0 ? formatToString(get/price) : "?"} {token1.symb}</p>
                                 </div> 
                                 : null 
                             }
@@ -1058,12 +1081,12 @@ function Swap() {
                             <div sx={style.swapInfos}>
                                 <span sx={style.swapInfoMain}><span>Lend</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb}<div/>{typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
                                 <span sx={style.swapInfo}><span>LTV</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {stable.symb}</span>
-                                <span sx={style.swapInfo}><span>Daily Interest Rate</span>0.3%</span>
+                                <span sx={style.swapInfo}><span>Daily Interest Rate</span>{dir}</span>
                             </div>
 
                             {
                                 user.address ? 
-                                <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Lend"}</button>
+                                <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendTakeLoan(user.address, token1.address, sent.toString(), get.toString())}>{swapLoading ? "" : "Lend"}</button>
                                 : 
                                 <ConnectWallet2 />
                             }
