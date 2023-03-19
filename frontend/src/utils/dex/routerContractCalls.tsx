@@ -1,4 +1,4 @@
-import {router_address, stablecoin_address} from "../general/constants";
+import {position_address, router_address, stablecoin_address} from "../general/constants";
 import {rdt} from "../connectToWallet";
 
 async function swap_direct(account: string, token1Address: string, token2Address: string, amount: string) {
@@ -77,17 +77,188 @@ async function swap_indirect(account: string, token1Address: string, token2Addre
     return !result.isErr();
 }
 
-async function addLiquidity(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[]) {
+async function addLiquidityNoPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[]) {
 
-    let stablecoins_amount: number[];
-    let other_tokens_amount: number[];
-    let steps_id: number[];
+    let steps_string = "";
 
     for (const step of steps) {
-        
+        let step_string = `(${step[0]}u16, Decimal("${step[1]}"), Decimal("${step[2]}")), `;
+        steps_string += step_string;
     }
+    steps_string.slice(0, -2);
+
+    let manifest= `
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "withdraw_by_amount"
+                    Decimal("${stablecoin_amount}")
+                    ResourceAddress("${stablecoin_address}");
+                
+                TAKE_FROM_WORKTOP_BY_AMOUNT
+                    Decimal("${stablecoin_amount}")
+                    ResourceAddress("${stablecoin_address}")
+                    Bucket("0");
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "withdraw_by_amount"
+                    Decimal("${other_token_amount}")
+                    ResourceAddress("${other_token}");
+                
+                TAKE_FROM_WORKTOP_BY_AMOUNT
+                    Decimal("${other_token_amount}")
+                    ResourceAddress("${other_token}")
+                    Bucket("1");
+                
+                CALL_METHOD
+                    ComponentAddress("${router_address}")
+                    "add_liquidity_at_steps"
+                    Bucket("0")
+                    Bucket("1")
+                    Array<(u16, Decimal, Decimal)>(${steps_string})
+                    None;
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "deposit_batch"
+                    Expression("ENTIRE_WORKTOP");
+    
+    `;
+
+    const result = await rdt.sendTransaction({
+        transactionManifest: manifest,
+        version: 1,
+    });
+
+    return !result.isErr();
 }
 
+async function addLiquidityToPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[], position_id: stirng) {
 
+    let steps_string = "";
 
-export { swap_direct, swap_indirect }
+    for (const step of steps) {
+        let step_string = `(${step[0]}u16, Decimal("${step[1]}"), Decimal("${step[2]}")), `;
+        steps_string += step_string;
+    }
+    steps_string.slice(0, -2);
+
+    let manifest = `
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "withdraw_by_amount"
+                    Decimal("${stablecoin_amount}")
+                    ResourceAddress("${stablecoin_address}");
+                
+                TAKE_FROM_WORKTOP_BY_AMOUNT
+                    Decimal("${stablecoin_amount}")
+                    ResourceAddress("${stablecoin_address}")
+                    Bucket("0");
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "withdraw_by_amount"
+                    Decimal("${other_token_amount}")
+                    ResourceAddress("${other_token}");
+                
+                TAKE_FROM_WORKTOP_BY_AMOUNT
+                    Decimal("${other_token_amount}")
+                    ResourceAddress("${other_token}")
+                    Bucket("1");
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "create_proof_by_ids"
+                    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_id}"))
+                    ResourceAddress("${position_address}");
+                
+                CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
+                    Array<NonFungibleLocalId>(NonFungibleLocalId("${position_id}"))
+                    ResourceAddress("${position_address}")
+                    Proof("2");
+                
+                CALL_METHOD
+                    ComponentAddress("${router_address}")
+                    "add_liquidity_at_steps"
+                    Bucket("0")
+                    Bucket("1")
+                    Array<(u16, Decimal, Decimal)>(${steps_string})
+                    Some(Proof("2"));
+                
+                DROP_ALL_PROOFS;
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "deposit_batch"
+                    Expression("ENTIRE_WORKTOP");`;
+
+    const result = await rdt.sendTransaction({
+        transactionManifest: manifest,
+        version: 1,
+    });
+
+    return !result.isErr();
+}
+
+async function removeAllLiquidity(account: string, position_id: string) {
+
+    let manifest = `
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "withdraw_by_ids"
+                    Array<NonFungibleLocalId>(NonFungibleLocalId(${position_id}))
+                    ResourceAddress("${position_address}");
+                
+                TAKE_FROM_WORKTOP_BY_IDS
+                    Array<NonFungibleLocalId>(NonFungibleLocalId(${position_id}))
+                    ResourceAddress("${position_address}")
+                    Bucket("0");
+                
+                CALL_METHOD
+                    ComponentAddress("${router_address}")
+                    "remove_all_liquidity"
+                    Bucket("0");
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "deposit_batch"
+                    Expression("ENTIRE_WORKTOP");
+    `;
+
+    const result = await rdt.sendTransaction({
+        transactionManifest: manifest,
+        version: 1,
+    });
+
+    return !result.isErr();
+}
+
+async function claimFees(account: string, position_id: string) {
+
+    let manifest = `
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "create_proof_by_ids"
+                    Array<NonFungibleLocalId>(NonFungibleLocalId(${position_id}))
+                    ResourceAddress("${position_address}");
+                
+                CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
+                    Array<NonFungibleLocalId>(${arg_0_ids})
+                    Array<NonFungibleLocalId>(NonFungibleLocalId(${position_id}))
+                    ResourceAddress("${position_address}");
+                
+                CALL_METHOD
+                    ComponentAddress("${router_address}")
+                    "claim_fees"
+                    Proof("0");
+                
+                DROP_ALL_PROOFS;
+                
+                CALL_METHOD
+                    ComponentAddress("${account}")
+                    "deposit_batch"
+                    Expression("ENTIRE_WORKTOP");
+    `;
+}
+
+export { swap_direct, swap_indirect, addLiquidityNoPosition, addLiquidityToPosition, removeAllLiquidity, claimFees }

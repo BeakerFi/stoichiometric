@@ -3,6 +3,7 @@ import {
     EntityNonFungibleIdsRequest, NonFungibleDataRequest,
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
+import {amountToLiquidate} from "./stablecoinMaths";
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -134,8 +135,7 @@ async function getOraclePrice(oracle_address: string) {
     return data[0];
 }
 
-async function decode_loan(mutable_data: string, immutable_data: string){
-
+async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: any[]){
 
     const params = new URLSearchParams();
     params.append('mutable_data_hex', mutable_data);
@@ -148,7 +148,20 @@ async function decode_loan(mutable_data: string, immutable_data: string){
 
     const res = await fetch(request)
     const data = await res.json()
-    return data
+
+    const lender = lenders[data.collateral_token];
+    let collateral_price = lender.price * data.collateral_amount;
+
+    let amount_to_liquidate = await amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
+
+    let liquidation_price = 20000;
+
+    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
 }
 
-export { getLendersList, getLenderInformation, getLoansOwnedBy }
+async function getAllLoansInformation(loan_ids: any[], lenders: any[]) {
+    const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
+    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
+}
+
+export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation }
