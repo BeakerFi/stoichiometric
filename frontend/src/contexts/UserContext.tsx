@@ -4,7 +4,7 @@ import { rdt, resetRdt } from "utils/connectToWallet";
 
 import { SnackbarContext } from "./SnackbarContext";
 
-import { getNbTokens, getPositions } from "utils/connectToBackend";
+import { getNbTokens, getPositions } from "utils/a_supprimer_connectToBackend";
 
 const UserContext = React.createContext(null as any);
 

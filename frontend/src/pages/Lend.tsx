@@ -7,7 +7,7 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice } from "utils/connectToBackend";
+import { getPrice } from "utils/a_supprimer_connectToBackend";
 
 import Star from "components/Star";
 
@@ -17,8 +17,8 @@ import ConnectWallet2 from "components/ConnectWallet2";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, randomIntFromInterval } from "utils/maths";
-import {swap_direct} from "../utils/routerMethods";
+import { formatToString, formatToString2, randomIntFromInterval } from "utils/general/generalMaths";
+import {swap_direct} from "../utils/dex/routerContractCalls";
 
 const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
 
