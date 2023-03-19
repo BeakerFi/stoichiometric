@@ -217,30 +217,36 @@ mod pool {
         /// Adds liquidity to the pool at the given steps.
         ///
         /// # Arguments
+        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
+        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
         /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_steps(
             &mut self,
-            steps: Vec<(u16, Bucket, Bucket)>,
+            mut bucket_stable: Bucket,
+            mut bucket_other: Bucket,
+            steps: Vec<(u16, Decimal, Decimal)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
+
             let mut position = position;
-            let mut ret_stable = Bucket::new(self.stable_protocol_fees.resource_address());
-            let mut ret_other = Bucket::new(self.other_protocol_fees.resource_address());
+            let mut ret_stable = Bucket::new(bucket_stable.resource_address());
+            let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for (step, token_a, token_b) in steps {
-
+            for (step, amount_stable, amount_other) in steps
+            {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
-                        token_a,
-                        token_b,
-                        step,
-                        position,
-                    );
+                    bucket_stable.take(amount_stable),
+                    bucket_other.take(amount_other),
+                    step,
+                    position,
+                );
                 ret_stable.put(tmp_stable);
                 ret_other.put(tmp_other);
                 position = tmp_pos;
             }
-
+            ret_stable.put(bucket_stable);
+            ret_other.put(bucket_other);
             (ret_stable, ret_other, position)
         }
 

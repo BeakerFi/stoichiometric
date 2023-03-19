@@ -4,9 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::manifest_call::ManifestCall;
-use sqrt::method::Arg::{
-    AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16,
-};
+use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, TupleArg, U16, VecArg};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::collections::HashMap;
@@ -166,8 +164,22 @@ pub fn add_liquidity_at_steps<'a>(
     ));
     env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
 
-    env_args.push(("start_step".to_string(), U16(start_step)));
-    env_args.push(("stop_step".to_string(), U16(stop_step)));
+
+    let mut vec_arg= vec![];
+
+    let amount_stable_per_step = amount_stable/(stop_step-start_step + 1);
+    let amount_other_per_step = amount_b/(stop_step-start_step + 1);
+
+    for i in start_step..stop_step+1 {
+        let mut arg_vec =vec![];
+        arg_vec.push(U16(i));
+        arg_vec.push(DecimalArg(amount_stable_per_step.clone()));
+        arg_vec.push(DecimalArg(amount_other_per_step.clone()));
+
+        vec_arg.push(TupleArg(arg_vec));
+    }
+
+    env_args.push(("steps".to_string(), VecArg(vec_arg)));
 
     let manifest_name = match position_id {
         None => "add_liquidity_at_steps_no_pos",

@@ -84,6 +84,12 @@ impl ObservationArray {
     fn get_first_observation_index_since(&self, timestamp: i64) -> usize
     {
         let mut start_index = self.start as usize;
+
+        if timestamp < self.data[start_index].timestamp
+        {
+            return start_index
+        }
+
         let mut stop_index: usize = self.start as usize + self.data.len();
         loop {
             if start_index == stop_index { break; };
@@ -105,15 +111,5 @@ impl ObservationArray {
         }
 
         stop_index
-    }
-}
-
-#[cfg(test)]
-mod observation_array_test{
-    use crate::observation_array::{Observation, ObservationArray};
-
-    #[test]
-    fn test_push()
-    {
     }
 }

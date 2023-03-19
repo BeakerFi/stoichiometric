@@ -1,5 +1,5 @@
 [package]
-name = "stoichiometric-dex"
+name = "stoichiometric-stablecoin"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,7 +10,8 @@ scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0"
 [dev-dependencies]
 transaction = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 radix-engine = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
-sqrt = { git = "https://github.com/PointSquare/sqrt" }
+#sqrt = { git = "https://github.com/PointSquare/sqrt" }
+sqrt = { path = "../../../sqrt" }
 regex = "1"
 lazy_static = "1.4.0"
 

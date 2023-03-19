@@ -30,8 +30,7 @@ CALL_METHOD
 	"add_liquidity_at_steps"
 	Bucket("0")
 	Bucket("1")
-	${start_step}u16
-	${stop_step}u16
+    Vec<(u16, Decimal, Decimal)>(${steps})
 	None;
 
 CALL_METHOD

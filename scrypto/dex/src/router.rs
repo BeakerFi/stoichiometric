@@ -339,17 +339,18 @@ mod router {
         /// Adds liquidity to an existing pool at given steps.
         ///
         /// # Arguments
+        /// * `bucket_a` - Bucket containing the first token to be added as liquidity
+        /// * `bucket_b` - Bucket containing the second token to be added as liquidity
         /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `opt_position_proof` - Optional Proof of an existing [`Position`] NFR
         pub fn add_liquidity_at_steps(
             &mut self,
-            steps: Vec<(u16, Bucket, Bucket)>,
+            bucket_stable: Bucket,
+            bucket_other: Bucket,
+            steps: Vec<(u16, Decimal, Decimal)>,
             opt_position_proof: Option<Proof>,
         ) -> (Bucket, Bucket, Option<Bucket>) {
-            let (_, bucket_a, bucket_b) =  steps.get(0).expect("Cannot provide empty list");
-
-            let other_resource = if bucket_a.resource_address() == self.stablecoin_address { bucket_b.resource_address() } else { bucket_a.resource_address() };
-            let mut pool = self.get_pool(other_resource);
+            let mut pool = self.get_pool(bucket_other.resource_address());
 
             match opt_position_proof {
                 Some(position_proof) => {
@@ -361,6 +362,8 @@ mod router {
                     let data = self.get_position_data(&position_nfr);
 
                     let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
+                        bucket_stable,
+                        bucket_other,
                         steps,
                         data,
                     );
@@ -369,8 +372,10 @@ mod router {
                 }
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
-                    let empty_pos = Position::from(other_resource);
+                    let empty_pos = Position::from(bucket_other.resource_address());
                     let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
+                        bucket_stable,
+                        bucket_other,
                         steps,
                         empty_pos,
                     );
@@ -522,6 +527,19 @@ mod router {
             buckets
         }
 
+        /// Makes a new oracle observations if last observations happened more than 20 seconds ago
+        pub fn new_observation(&mut self, token: ResourceAddress) {
+            let pool = self.get_pool(token);
+            pool.new_observation();
+        }
+
+        /// Returns Time-wieghted average price of a given token since a given time
+        pub fn get_twap_since(&self, token: ResourceAddress, timestamp: i64) -> Decimal
+        {
+            let pool = self.get_pool(token);
+            pool.get_twap_since(timestamp)
+        }
+
         /// Return the state of the given pool.
         ///
         /// # Arguments
@@ -551,6 +569,7 @@ mod router {
         }
 
         /// Internal method that returns the pool trading the pair stablecoin/token.
+        #[inline]
         fn get_pool(&self, token: ResourceAddress) -> LocalPoolComponent {
             match self.pools.get(&token) {
                 None => {
@@ -561,6 +580,7 @@ mod router {
         }
 
         /// Internal method that checks that a given proof is a proof of a single [`Position`] NFR.
+        #[inline]
         fn check_single_position_proof(&self, position_proof: Proof) -> ValidatedProof {
             position_proof
                 .validate_proof(ProofValidationMode::ValidateContainsAmount(
@@ -571,6 +591,7 @@ mod router {
         }
 
         /// Internal method that checks that a given proof is a proof of [`Position`](s) NFR.
+        #[inline]
         fn check_multiple_position_proof(&self, positions_proof: Proof) -> ValidatedProof {
             positions_proof
                 .validate_proof(ProofValidationMode::ValidateResourceAddress(
@@ -579,22 +600,23 @@ mod router {
                 .expect("The provided proof is invalid")
         }
 
-        #[inline]
         /// Internal method that returns the data associated to a [`Position`] NFR.
+        #[inline]
         fn get_position_data(&self, position_nfr: &NonFungible<Position>) -> Position {
             borrow_resource_manager!(self.position_address)
                 .get_non_fungible_data::<Position>(position_nfr.local_id())
         }
 
         /// Internal method that updates the data of a [`Position`] NFR.
+        #[inline]
         fn update_position(&self, position_nfr: NonFungible<Position>, new_data: Position) {
             self.position_minter
                 .authorize(|| position_nfr.update_data(new_data));
         }
 
-        #[inline]
         /// Internal method that sorts two buckets by putting the stablecoin buckets in the first
         /// position of the pair.
+        #[inline]
         fn sort_buckets(&self, bucket_a: Bucket, bucket_b: Bucket) -> (Bucket, Bucket) {
             if bucket_a.resource_address() == self.stablecoin_address {
                 (bucket_a, bucket_b)
