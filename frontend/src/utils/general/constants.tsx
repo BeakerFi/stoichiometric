@@ -29,6 +29,12 @@ const stablecoin_address = "resource_tdx_b_1qpua4ltl0s8yh7yqvwysqnulvka7jkngyafa
 
 const loan_address = "resource_tdx_b_1qqwunyhu96jtwpwjwup3jndmws0xht3ul3ncqa2r23cqghtj6j";
 
+const stable_coin = {name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}
+
+const token_default = {name: 'Wrapped Bitcoin', symb: 'WBTC', address: 'resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r', icon_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png'};
 
 
-export {dAppId, radix_api_url, backend_api_url, router_address, position_address, issuer_address, stablecoin_address, loan_address}
+
+
+
+export {dAppId, radix_api_url, backend_api_url, router_address, position_address, issuer_address, stablecoin_address, loan_address, stable_coin, token_default}

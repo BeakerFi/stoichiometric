@@ -4,7 +4,9 @@ import { rdt, resetRdt } from "utils/connectToWallet";
 
 import { SnackbarContext } from "./SnackbarContext";
 
-import { getNbTokens, getPositions } from "utils/a_supprimer_connectToBackend";
+import { getOwnedTokens } from "utils/general/generalApiCalls";
+
+import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
 const UserContext = React.createContext(null as any);
 
@@ -48,12 +50,12 @@ const UserCtx: React.FC<Props> = (props) => {
     async function setNbTokens(address?: string) {
         if (address == undefined) {
             if (user.address) {
-                const result:any = await getNbTokens(user.address);
+                const result:any = await getOwnedTokens(user.address);
                 if (result.length) setTokensOwned(result[0]);
             } else return
         }
         else {
-            const result:any = await getNbTokens(address);
+            const result:any = await getOwnedTokens(address);
             if (result && result.length) setTokensOwned(result[0]);
         }
     } 
@@ -61,11 +63,11 @@ const UserCtx: React.FC<Props> = (props) => {
     async function setMyPositions(address?: string) {
         if (address == undefined) {
             if (user.address) {
-                const result:any = await getPositions(user.address);
+                const result:any = await getOwnedPositions(user.address);
                 setPositions(result);
             } else return
         } else {
-            const result:any = await getPositions(address);
+            const result:any = await getOwnedPositions(address);
             setPositions(result);
         }
     }

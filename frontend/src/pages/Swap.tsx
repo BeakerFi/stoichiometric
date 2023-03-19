@@ -7,8 +7,6 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice } from "utils/a_supprimer_connectToBackend";
-
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
@@ -20,7 +18,7 @@ import { TokensContext } from "contexts/TokensContext";
 import { formatToString, formatToString2, randomIntFromInterval } from "utils/general/generalMaths";
 import {swap_direct} from "../utils/dex/routerContractCalls";
 
-const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
+import { stable_coin as stable, token_default } from "utils/general/constants";
 
 function Swap() {
 
@@ -67,7 +65,7 @@ function Swap() {
         var tk2 = searchParams.get('tk2');
 
         if (!tk1 || !tk2) {
-            setSearchParams({tk1: 'XRD', tk2: 'WBTC'})
+            setSearchParams({tk1: stable.symb, tk2: token_default.symb})
         }
     }, [])
 
@@ -88,9 +86,9 @@ function Swap() {
                 setToken2({name:tok2!.name, symb: tok2!.symb, address: tok2!.address, icon_url: tok2!.icon_url});
                 setSearchParams({tk1: tk1!.toUpperCase(), tk2: tk2!.toUpperCase()})
             } else {
-                setToken1({name: "Radix", symb: "XRD", address: "resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp", icon_url: "https://switchere.com/i/currencies/XRD.svg"});
-                setToken2({name: "Wrapped Bitcoin", symb: "WBTC", address: "resource_tdx_b_1qpev6f8v2su68ak5p2fswd6gqml3u7q0lkrtfx99c4ts3zxlah", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"});
-                setSearchParams({tk1: 'XRD', tk2: 'WBTC'})
+                setToken1(stable);
+                setToken2(token_default);
+                setSearchParams({tk1: stable.symb, tk2: token_default.symb})
             }
         }
 
@@ -289,16 +287,6 @@ function Swap() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            if(token1.address && token2.address) {
-                const infos = await getPrice(token1.address, token2.address);
-                if (infos && infos!['token1_address'] == token1AddressRef.current && infos!['token2_address'] == token2AddressRef.current) {
-                    if (infos!['token1_amount'] > 0) {
-                        setToken1InPool(parseFloat(infos!["token1_amount"]));
-                        setToken2InPool(parseFloat(infos!["token2_amount"]));
-                        setPrice(infos!["token2_amount"]/infos!["token1_amount"]);
-                    }
-                }
-            }
         }
         getPoolInfos();
     }, [token1, token2, tokensOwned])

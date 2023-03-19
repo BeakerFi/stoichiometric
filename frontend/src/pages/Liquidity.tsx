@@ -7,8 +7,6 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice, getPositionInfos } from "utils/a_supprimer_connectToBackend";
-
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
@@ -19,8 +17,7 @@ import { TokensContext } from "contexts/TokensContext";
 
 import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "utils/general/generalMaths";
 
-const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
-
+import { stable_coin as stable, token_default } from "utils/general/constants";
 
 function Liquidity() {
 
@@ -38,7 +35,7 @@ function Liquidity() {
 
     const [category, setCategory] = useState("all");
 
-    const [tokensList, setTokensList] = useState(tokens);
+    const [tokensList, setTokensList] = useState(tokens.filter((x:any) => x.address != stable.address));
 
     const [token1Owned, setToken1Owned] = useState<"?" | number>("?");
     const [stableOwned, setStableOwned] = useState<"?" | number>("?");
@@ -71,7 +68,7 @@ function Liquidity() {
         var tk1 = searchParams.get('tk1');
 
         if (!tk1) {
-            setSearchParams({tk1: 'XRD'})
+            setSearchParams({tk1: token_default.symb})
         }
     }, [])
 
@@ -102,8 +99,8 @@ function Liquidity() {
                 setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
                 setSearchParams({tk1: tk1!.toUpperCase()})
             } else {
-                setToken1({name: "Radix", symb: "XRD", address: "resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp", icon_url: "https://switchere.com/i/currencies/XRD.svg"});
-                setSearchParams({tk1: 'XRD'})
+                setToken1(token_default);
+                setSearchParams({tk1: token_default.symb})
             }
         }
 
@@ -308,6 +305,7 @@ function Liquidity() {
 
     function getSearch(list: any[]) {
         return list.filter(x => {
+            if (x.address == stable.address) return false;
             if (category != "all" && x.category != category) return false;
             var flag = (search.length == 0);
             for (const word of search.split(' ')) {
@@ -361,7 +359,7 @@ function Liquidity() {
     });
 
     async function getPosInfos(id: string, invert: boolean) {
-        const result:any = await getPositionInfos(id);
+        const result:any = false/*await getPositionInfos(id);
         if (result) {
             if (!invert) setPositionInfos(result);
             else setPositionInfos({
@@ -374,7 +372,7 @@ function Liquidity() {
                 x_fees: result.y_fees,
                 y_fees: result.x_fees,
             })
-        }
+        }*/
     }
 
     useEffect(() => {

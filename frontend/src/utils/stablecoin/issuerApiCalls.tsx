@@ -41,6 +41,9 @@ async function getLenderInformation(lender_address: string) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
 
+    console.log(obj);
+    console.log(data);
+
     // @ts-ignore
     const loan_to_value = data[2];
     // @ts-ignore
