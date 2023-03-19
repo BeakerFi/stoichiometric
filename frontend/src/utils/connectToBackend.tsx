@@ -1,4 +1,4 @@
-import { getTokens, getNbTokens } from "./connectToApi";
+import { getTradableTokens, getNbTokens } from "./routerApiCalls";
 
 const api_url = 'https://beaker.fi:8888'
 
@@ -62,7 +62,7 @@ async function getPools() {
 }
 
 async function getTokensAndPools() {
-  const tokens = await getTokens();
+  const tokens = await getTradableTokens();
   const pools = await getPools();
   return { tokens, pools };
 }

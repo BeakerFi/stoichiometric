@@ -1,14 +1,13 @@
-import {api_url, position_address, router_address} from "./constants";
+import {radix_api_url, position_address, router_address, stablecoin_address} from "./constants";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest
 } from "@radixdlt/babylon-gateway-api-sdk";
-import {RadixDappToolkit} from "@radixdlt/radix-dapp-toolkit";
 
 async function getTokens() {
 
-    let tokens_list: any[] = [{name: "Beta USD", symb: "BUSD", address: "resource_tdx_b_1qpev6f8v2su68ak5p2fswd6gqml3u7q0lkrtfx99c4ts3zxlah", icon_url: "https://pixlok.com/wp-content/uploads/2021/03/Dollar-Coins-PNG.jpg"}];
+    let tokens_list: any[] = [{name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}];
 
     let pools = await getPoolList();
 
@@ -19,7 +18,7 @@ async function getTokens() {
         };
 
         let data;
-        await fetch( api_url + `/entity/details`, {
+        await fetch( radix_api_url + `/entity/details`, {
             method: 'POST',
             body: JSON.stringify(obj),
             headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -44,7 +43,7 @@ async function getNbTokens(account: string) {
     };
 
     let data;
-    await fetch( api_url + `/entity/resources`, {
+    await fetch( radix_api_url + `/entity/resources`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -71,7 +70,7 @@ async function getPositions(account: string) {
     };
 
     let data;
-    await fetch(api_url + `/entity/non-fungible/ids`, {
+    await fetch(radix_api_url + `/entity/non-fungible/ids`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -95,7 +94,7 @@ async function getNFIDValue(id: string) {
         "non_fungible_id": id
     }
     let data;
-    await fetch(api_url + `/entity/non-fungible/data`, {
+    await fetch(radix_api_url + `/entity/non-fungible/data`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -117,7 +116,7 @@ async function getPool(token: string) {
     }
 
     let data: any;
-    await fetch(api_url + '/entity/details', {
+    await fetch(radix_api_url + '/entity/details', {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -145,7 +144,7 @@ async function getPoolStep(address: string) {
     }
 
     let data: any;
-    await fetch(api_url + '/entity/details', {
+    await fetch(radix_api_url + '/entity/details', {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -163,7 +162,7 @@ async function getPoolList() {
     };
 
     let data;
-    await fetch( api_url + `/entity/details`, {
+    await fetch( radix_api_url + `/entity/details`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
