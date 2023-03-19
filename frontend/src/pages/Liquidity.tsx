@@ -1389,29 +1389,7 @@ function Liquidity() {
                                     </div>
                                     <div sx={style.swapZone}>
                                         <h1>🍂 Remove Liquidity</h1>
-                                        <div sx={style.rangeInput}>
-                                            <p>Price Range ({stable.symb + "/" + token1.symb})</p>
-                                            <div sx={style.ranges}>
-                                                <div sx={style.rangeBar}>
-                                                    <div/>
-                                                </div>
-                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice1(twoDecimals(parseFloat(e.target.value)))}}/>
-                                                <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice2(twoDecimals(parseFloat(e.target.value)))}}/>
-                                                <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
-                                            </div>
-                                            <div sx={style.rangeInputs}>
-                                                <div sx={style.inputBar2}>
-                                                    <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e)}} value={Math.min(price1, price2)}/>
-                                                    <label htmlFor="range1">Price min</label>
-                                                </div>
-                                                <div sx={style.inputBar2}>
-                                                    <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e)}} value={Math.max(price1,price2)}/>
-                                                    <label htmlFor="range2">Price max</label>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <div sx={style.swapInfos}>
-                                            <button>Load Data</button>
                                             <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {stable.symb}</div></span>
                                             <span sx={style.swapInfo}><span>Value</span>$?</span>
                                         </div>

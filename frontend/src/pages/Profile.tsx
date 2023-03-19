@@ -106,6 +106,7 @@ function Profile() {
                 fontFamily: 'primary',
                 fontSize: 2,
                 cursor: 'pointer', 
+                zIndex: '1000',
                 '&:hover': {
                     opacity: '.8'
                 }
@@ -295,7 +296,7 @@ function Profile() {
                                         setUser({address: x.address, name:x.name})
 
                                     }}>
-                                        <p>{x.address.slice(0, 10) + "..." + user.address.slice(user.address.length - 15, user.address.length)}</p>
+                                        <p>{x.address.slice(0, 10) + "..." + x.address.slice(x.address.length - 15, x.address.length)}</p>
                                         <p>{x.name}</p>
                                         <div sx={style.expand}/>
                                     </div>)
@@ -312,7 +313,7 @@ function Profile() {
                     
                     <button onClick={() => {
                     logoutUser();
-                    navigate('/market');}}>Log out</button>
+                    navigate('/');}}>Log out</button>
                 </div>
             </div>
         </Dashboard>

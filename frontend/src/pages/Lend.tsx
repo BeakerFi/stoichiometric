@@ -52,7 +52,7 @@ function Swap() {
 
     function resetValues() {
         setSent(0);
-        setGet(0);
+        if (!lock) setGet(0);
         setPriceImpact("0");
     }
 
@@ -116,14 +116,39 @@ function Swap() {
             }
             if (s.includes(".")) {
                 setSent(s);
-                var x = calculateGet(parseFloat(s));
-                if (isNaN(x)) setGet(0);
-                else setGet(x);
+                if (!lock) {
+                    var x = calculateGet(parseFloat(s));
+                    if (isNaN(x)) setGet(0);
+                    else setGet(x);
+                }
             } else {
                 setSent(parseFloat(s));
+                if (!lock) {
+                    var x = calculateGet(parseFloat(s));
+                    if (isNaN(x)) setGet(0);
+                    else setGet(x);
+                }
+            }
+        }
+    }
+
+    const lentChange = (event: any) => {
+        var s = event.target.value;
+        if (!isNaN(s)) {
+            if (s.length == 0) {
+                resetValues();
+                return
+            }
+            if (s.includes(".")) {
+                setGet(s);
                 var x = calculateGet(parseFloat(s));
-                if (isNaN(x)) setGet(0);
-                else setGet(x);
+                if (isNaN(x)) setSent(0);
+                else setSent(x);
+            } else {
+                setGet(parseFloat(s));
+                var x = calculateGet(parseFloat(s));
+                if (isNaN(x)) setSent(0);
+                else setSent(x);
             }
         }
     }
@@ -212,6 +237,12 @@ function Swap() {
             addAlert("error", "An error occured");
         }
         setSwapLoading(false);
+    }
+
+    const [lock, setLock] = useState<boolean>(false);
+
+    function toggleLock() {
+        setLock(!lock);
     }
 
     const style = {
@@ -309,7 +340,7 @@ function Swap() {
                     top: '0',
                     fontSize: 1,
                     transform: 'TranslateY(-50%)',
-                }
+                },
             },
     
             '& label': {
@@ -328,8 +359,9 @@ function Swap() {
                 color: 'text2',
             }, 
 
+
             '& #get ~ label, #get': {
-                cursor: 'not-allowed'
+                cursor: `${lock ? 'not-allowed' : 'text'}`
             }
         },
 
@@ -633,6 +665,39 @@ function Swap() {
 
         stableBar: {
             width: '100%'
+        },
+
+        check: {
+            display: 'flex',
+            alignItems: 'center',
+            color: 'text',
+            fontFamily: 'primary',
+            fontSize: 1,
+            transform: 'TranslateY(-15px)',
+            width: '100%',
+
+            '& *': {
+                cursor: 'pointer'
+            }
+        },
+
+        alert :{
+            width: '60%',
+            border: 'solid 1px',
+            borderColor: 'red',
+            borderRadius: '5px',
+            padding: '5px 15px',
+
+            marginBottom: '20px',
+
+            '& p': {
+                margin: '0',
+                padding: '0',
+                fontSize: 0,
+                fontFamily: 'primary',
+                color: 'red',
+                textAlign: 'center' as 'center'
+            }
         }
     }  
 
@@ -648,7 +713,30 @@ function Swap() {
                 <div sx={style.top}>
                     <div sx={style.container}>
                         <div sx={style.swapZone}>
-                            <h1>📝 Lend SUSD</h1>
+                            <h1>📝 Borrow SUSD</h1>
+
+                            { lock ? 
+                                <div sx={style.alert}>
+                                    <p>The minimum collateral needed is 457465.45 XRD</p>
+                                </div> 
+                                : null 
+                            }
+                                                        
+                            <div sx={style.check}>
+                                <input type="checkbox" id="lock" onChange={toggleLock}/>
+                                <label htmlFor="lock">Lock the borrowed value</label>
+                            </div>
+
+                            <div sx={style.inputBar}>
+                                <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={lentChange} value={get} disabled={lock}/>
+                                <label htmlFor="get">{user.address ? `You can borrow ${calculateMax(token1Owned)} ${stable.symb}`: "You borrow"}</label>
+                                <div sx={style.token2}>
+                                    <img src={stable.icon_url}/>
+                                    <p>{stable.symb}</p>
+                                </div>
+                            </div>
+                            <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
+
                             <div sx={style.inputBar}>
                                 <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
                                 <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>
@@ -659,15 +747,7 @@ function Swap() {
                                 </div>
                             </div>
                             <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
-                            <div sx={style.inputBar}>
-                                <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get}/>
-                                <label htmlFor="get">{user.address ? `You can lend ${calculateMax(token1Owned)} ${stable.symb}`: "You lend"}</label>
-                                <div sx={style.token2}>
-                                    <img src={stable.icon_url}/>
-                                    <p>{stable.symb}</p>
-                                </div>
-                            </div>
-                            <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
+                            
                             <div sx={style.swapInfos}>
                                 <span sx={style.swapInfoMain}><span>Lend</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb}<div/>{typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
                                 <span sx={style.swapInfo}><span>LTV</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {stable.symb}</span>

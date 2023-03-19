@@ -29,6 +29,8 @@ function Swap() {
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
 
     const { addAlert } = useContext(SnackbarContext);
+
+    const [alert, setAlert] = useState<boolean>(false);
     
     const { device, windowSize } = useContext(ResponsiveContext);
 
@@ -111,8 +113,31 @@ function Swap() {
     function calculateGet(n: number) {
         if (token1.address == stable.address) {
             const pool = pools[token2.address];
+            var temp = n;
+            var recieved = 0;
+            actualPool = pool["current_step"];
+            index = findIndex(actualPool, pool["steps"]);
+
+            while (temp > 0 && index < pool["steps"].length) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]/pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2*pool["steps"][index][1]["rate"]);
+                index = index + 1;
+            }
+            return recieved;
         } else if (token2.address == stable.address) {
             const pool = pools[token1.address];
+            var temp = n;
+            var recieved = 0;
+            var actualPool = pool["current_step"];
+            var index = findIndex(actualPool, pool["steps"]);
+            while (temp > 0 && index >= 0) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]*pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2/pool["steps"][index][1]["rate"]);
+                index = index - 1;
+            }
+            return recieved;
         } else {
             const pool1 = pools[token1.address];
             var temp = n;
@@ -138,11 +163,74 @@ function Swap() {
             }
             return recieved2;
         }
-        return 0
     }
+
+    function needAlert(n: number) {
+        if (token1.address == stable.address) {
+            const pool = pools[token2.address];
+            if (!pool) return 0;
+            var temp = n;
+            var recieved = 0;
+            actualPool = pool["current_step"];
+            index = findIndex(actualPool, pool["steps"]);
+
+            while (temp > 0 && index < pool["steps"].length) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]/pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2*pool["steps"][index][1]["rate"]);
+                index = index + 1;
+            }
+            if (temp > 0) setAlert(true); else setAlert(false);
+        } else if (token2.address == stable.address) {
+            const pool = pools[token1.address];
+            if (!pool) return 0;
+            var temp = n;
+            var recieved = 0;
+            var actualPool = pool["current_step"];
+            var index = findIndex(actualPool, pool["steps"]);
+            while (temp > 0 && index >= 0) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]*pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2/pool["steps"][index][1]["rate"]);
+                index = index - 1;
+            }
+            if (temp > 0) setAlert(true); else setAlert(false);
+        } else {
+            const pool1 = pools[token1.address];
+            if (!pool1) return 0;
+            var temp = n;
+            var recieved = 0;
+            var actualPool = pool1["current_step"];
+            var index = findIndex(actualPool, pool1["steps"]);
+            while (temp > 0 && index >= 0) {
+                var temp2 = temp;
+                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+                index = index - 1;
+            }
+
+            const pool2 = pools[token2.address];
+            if (!pool2) return 0;
+            var recieved2 = 0;
+            actualPool = pool2["current_step"];
+            index = findIndex(actualPool, pool2["steps"]);
+            while (recieved > 0 && index < pool2["steps"].length) {
+                var recieved3 = recieved;
+                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]/pool2["steps"][index][1]["rate"], recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3*pool2["steps"][index][1]["rate"]);
+                index = index + 1;
+            }
+            if (temp > 0 || recieved > 0) setAlert(true); else setAlert(false);
+        }
+    }
+
+    useEffect(() => {
+        needAlert(sent)
+    }, [sent])
 
     function calculateIntermediate(n: number) {
         const pool1 = pools[token1.address];
+        if (!pool1) return 0
         var temp = n;
         var recieved = 0;
         var actualPool = pool1["current_step"];
@@ -749,6 +837,25 @@ function Swap() {
 
         stableBar: {
             width: '100%'
+        },
+
+        alert :{
+            width: '60%',
+            border: 'solid 1px',
+            borderColor: 'red',
+            borderRadius: '5px',
+            padding: '5px 15px',
+
+            marginBottom: '20px',
+
+            '& p': {
+                margin: '0',
+                padding: '0',
+                fontSize: 0,
+                fontFamily: 'primary',
+                color: 'red',
+                textAlign: 'center' as 'center'
+            }
         }
     }  
 
@@ -765,6 +872,12 @@ function Swap() {
                     <div sx={style.container}>
                         <div sx={style.swapZone}>
                             <h1>🏛 Swap Tokens</h1>
+                            { alert ? 
+                                <div sx={style.alert}>
+                                    <p>There is not enough token in the pool for you to swap everything</p>
+                                </div> 
+                                : null 
+                            }
                             <div sx={style.inputBar}>
                                 <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
                                 <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>

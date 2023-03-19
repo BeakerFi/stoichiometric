@@ -19,7 +19,7 @@ const TokensCtx: React.FC<Props> = (props) => {
         async function setToks() {
             setTokensLoading(true);
             const x = await getTokensAndPools();
-            setTokens(x.tokens);
+            setTokens(x.tokens.concat({name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"}));
             setPools(x.pools);
             setTokensLoading(false);
         };

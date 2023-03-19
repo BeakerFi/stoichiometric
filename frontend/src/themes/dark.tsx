@@ -18,6 +18,9 @@ const dark = makeTheme({
         green: '#14c784',
         red: '#ea3943',
         orange: '#f68b33',
+        green2: '#14c78422',
+        red2: '#ea394322',
+        orange2: '#f68b3322',
         shadow: 'rgba(0,0,0,0.5)',
     }
 });
