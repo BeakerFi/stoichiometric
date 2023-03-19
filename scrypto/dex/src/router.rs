@@ -31,7 +31,7 @@ external_component! {
 
         fn add_liquidity_at_step(&mut self, bucket_stable: Bucket, bucket_other: Bucket, step: u16, position: Position) -> (Bucket, Bucket, Position);
 
-        fn add_liquidity_at_steps(&mut self, steps: Vec<(u16, Bucket, Bucket)>, position: Position) -> (Bucket, Bucket, Position);
+        fn add_liquidity_at_steps(&mut self, bucket_stable: Bucket, bucket_other: Bucket, steps: Vec<(u16, Decimal, Decimal)>, position: Position) -> (Bucket, Bucket, Position);
 
         fn remove_liquidity_at_step(&mut self,step: u16,position: Position) -> (Bucket, Bucket, Position);
 
@@ -52,6 +52,10 @@ external_component! {
         fn rate_at_step(&self, step: u16) -> Decimal;
 
         fn step_at_rate(&self, rate: Decimal) -> u16;
+
+        fn new_observation(&mut self);
+
+        fn get_twap_since(&self, timestamp: i64) -> Decimal;
     }
 }
 
@@ -529,7 +533,7 @@ mod router {
 
         /// Makes a new oracle observations if last observations happened more than 20 seconds ago
         pub fn new_observation(&mut self, token: ResourceAddress) {
-            let pool = self.get_pool(token);
+            let mut pool = self.get_pool(token);
             pool.new_observation();
         }
 

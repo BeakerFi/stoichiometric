@@ -1,6 +1,27 @@
 
 use scrypto::blueprint;
 
+external_component! {
+
+    LocalLenderComponent {
+        fn take_loan(&mut self, collateral: Bucket, amount_to_loan: Decimal) -> Loan;
+
+        fn repay_loan(&mut self, repayment: Decimal, loan: Loan) -> (Decimal, Bucket);
+
+        fn add_collateral(&mut self, collateral: Bucket, loan: Loan) -> Loan;
+
+        fn remove_collateral(&mut self, collateral: Decimal, loan: Loan) -> (Loan, Bucket);
+
+        fn liquidate(&mut self, stablecoins_amount: Decimal, loan: Loan) -> (Decimal, Bucket, Bucket, Loan);
+
+        fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress);
+
+        fn get_state(&self) -> Vec<Decimal>;
+    }
+
+}
+
+
 #[blueprint]
 mod issuer {
     use crate::constants::FLASH_LOAN_FEE;
@@ -10,7 +31,7 @@ mod issuer {
 
     pub struct Issuer {
         reserves: HashMap<ResourceAddress, Vault>,
-        lenders: HashMap<ResourceAddress, LenderComponent>,
+        lenders: HashMap<ResourceAddress, ComponentAddress>,
         stablecoin_minter: Vault,
         resource_minter: Vault,
         stablecoin_address: ResourceAddress,
@@ -137,7 +158,7 @@ mod issuer {
 
         pub fn take_loan(&mut self, collateral: Bucket, amount_to_loan: Decimal) ->(Bucket, Bucket) {
 
-            let lender = self.get_lender(&collateral.resource_address());
+            let mut lender = self.get_lender(&collateral.resource_address());
             let loan = lender.take_loan(collateral, amount_to_loan);
             let loan_bucket = self.resource_minter.authorize(|| {
                     borrow_resource_manager!(self.loan_address).mint_non_fungible(
@@ -161,7 +182,8 @@ mod issuer {
             for loan_nfr in loans.non_fungibles::<Loan>() {
 
                 let loan = self.get_loan_data(&loan_nfr);
-                let lender = self.lenders.get(&loan.collateral_token).unwrap();
+                let lender_address = self.lenders.get(&loan.collateral_token).unwrap();
+                let mut lender = LocalLenderComponent::at(*lender_address);
                 let amount_lent = loan.amount_lent;
 
                 let (interests, collateral) = lender.repay_loan(repayment.amount(), loan);
@@ -185,7 +207,7 @@ mod issuer {
             let loan = self.get_loan_data(&loan_nfr);
 
             assert!(loan.collateral_token == collateral.resource_address(), "Please provide the right tokens to add as collateral");
-            let lender = self.get_lender(&loan.collateral_token);
+            let mut lender = self.get_lender(&loan.collateral_token);
 
             let new_loan_data = lender.add_collateral(collateral, loan);
             self.update_loan_data(loan_nfr, new_loan_data);
@@ -198,7 +220,7 @@ mod issuer {
             let loan_nfr = valid_proof.non_fungible::<Loan>();
             let loan = self.get_loan_data(&loan_nfr);
 
-            let lender = self.get_lender(&loan.collateral_token);
+            let mut lender = self.get_lender(&loan.collateral_token);
 
             let (new_loan_data, collateral) = lender.remove_collateral(amount, loan);
             self.update_loan_data(loan_nfr, new_loan_data);
@@ -210,7 +232,7 @@ mod issuer {
 
             let loan: Loan = borrow_resource_manager!(self.loan_address).get_non_fungible_data(&non_fungible_id);
 
-            let lender = self.get_lender(&loan.collateral_token);
+            let mut lender = self.get_lender(&loan.collateral_token);
 
             let (amount_to_burn, liquidator_bucket, reserve_bucket, new_loan_data) = lender.liquidate(repayment.amount(), loan);
 
@@ -286,7 +308,7 @@ mod issuer {
         }
 
         pub fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress) {
-            let lender = self.get_lender(&lender_collateral);
+            let mut lender = self.get_lender(&lender_collateral);
             lender.change_parameters(loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive, oracle);
         }
 
@@ -342,11 +364,14 @@ mod issuer {
         }
 
         #[inline]
-        fn get_lender(&self, resource_address: &ResourceAddress) -> &LenderComponent
+        fn get_lender(&self, resource_address: &ResourceAddress) -> LocalLenderComponent
         {
             match self.lenders.get(resource_address){
                 None => { panic!("There is no lenders for this token") },
-                Some(lender) => { lender }
+                Some(lender) =>
+                    {
+                        LocalLenderComponent::at(*lender)
+                    }
             }
         }
     }

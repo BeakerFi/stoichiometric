@@ -23,7 +23,7 @@ mod lender {
 
     impl Lender {
 
-        pub fn new(collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress) -> LenderComponent {
+        pub fn new(collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress) -> ComponentAddress {
             Self{
                 collateral: Vault::new(collateral_address),
                 loan_to_value,
@@ -33,6 +33,7 @@ mod lender {
                 oracle
             }
                 .instantiate()
+                .globalize()
         }
 
         pub fn take_loan(&mut self, collateral: Bucket, amount_to_loan: Decimal) -> Loan {
