@@ -1,12 +1,13 @@
 import {radix_api_url, stablecoin_address} from "./constants";
 import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
-import {getPoolInfo, getPoolList} from "../dex/routerApiCalls";
+import {getPoolInfo, getPoolsList} from "../dex/routerApiCalls";
+import {getLendersList} from "../stablecoin/issuerApiCalls";
 
 async function getTokens() {
 
     let tokens_list: any[] = [{name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}];
 
-    let pools = await getPoolList();
+    let pools = await getPoolsList();
 
     for (const {token, } of pools) {
 
@@ -60,10 +61,11 @@ async function getOwnedTokens(account: string) {
 }
 
 
-async function getTokensAndPools() {
+async function getTokensPoolsAndLenders() {
     const tokens = await getTokens();
-    const pools = await getPoolList();
-    return { tokens, pools };
+    const pools = await getPoolsList();
+    const lenders = await getLendersList();
+    return { tokens, pools, lenders };
 }
 
-export { getTokens, getOwnedTokens, getTokensAndPools }
+export { getTokens, getOwnedTokens, getTokensPoolsAndLenders }

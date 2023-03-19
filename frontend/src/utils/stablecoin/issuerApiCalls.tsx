@@ -2,7 +2,28 @@ import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest, NonFungibleDataRequest,
 } from "@radixdlt/babylon-gateway-api-sdk";
-import {backend_api_url, loan_address, radix_api_url} from "../general/constants";
+import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
+
+async function getLendersList() {
+    const obj: EntityDetailsRequest = {
+        "address": issuer_address
+    };
+
+    let data;
+    await fetch( radix_api_url + `/entity/details`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then( (response) => response.json() )
+        .then( (tmp_data) => data = tmp_data )
+        .catch(console.error);
+
+    // @ts-ignore
+    return data["details"]["state"]["data_json"][1].map(row => {
+        return {token: row[0], lender: row[1]}
+    });
+}
 
 async function getLenderInformation(lender_address: string) {
 
@@ -125,4 +146,4 @@ async function decode_loan(mutable_data: string, immutable_data: string){
     return data
 }
 
-export { getLenderInformation, getLoansOwnedBy }
+export { getLendersList, getLenderInformation, getLoansOwnedBy }

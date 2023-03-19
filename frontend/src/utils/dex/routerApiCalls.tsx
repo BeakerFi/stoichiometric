@@ -51,7 +51,7 @@ async function getNFIDValue(id: string) {
 
 async function getPoolInfo(token: string) {
 
-    let pools = await getPoolList();
+    let pools = await getPoolsList();
 
     const obj: EntityDetailsRequest = {
         "address": pools[0]["pool"]
@@ -98,7 +98,7 @@ async function getPoolStep(address: string) {
     return {amount_stable: data[0], amount_other: data[1], rate: data[2], stable_fees_per_liq: data[3], other_fees_per_liq: data[4], stable_fees: data[5], other_fees: data[5]}
 }
 
-async function getPoolList() {
+async function getPoolsList() {
     const obj: EntityDetailsRequest = {
         "address": router_address
     };
@@ -120,4 +120,4 @@ async function getPoolList() {
 }
 
 
-export {getPoolInfo, getPoolList, getOwnedPositions}
+export {getPoolInfo, getPoolsList, getOwnedPositions}

@@ -77,6 +77,17 @@ async function swap_indirect(account: string, token1Address: string, token2Addre
     return !result.isErr();
 }
 
+async function addLiquidity(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[]) {
+
+    let stablecoins_amount: number[];
+    let other_tokens_amount: number[];
+    let steps_id: number[];
+
+    for (const step of steps) {
+        
+    }
+}
+
 
 
 export { swap_direct, swap_indirect }

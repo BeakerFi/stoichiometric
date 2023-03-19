@@ -53,7 +53,7 @@ function Liquidity() {
     const [price1, setPrice1] = useState<number>(1);
     const [price2, setPrice2] = useState<number>(100);
 
-    const [priceImpact, setPriceImpact] = useState("0");
+    const [priceImpact, setPriceImpact] = useState("0");
 
     const [myPosition, setMyPosition] = useState(false);
 
