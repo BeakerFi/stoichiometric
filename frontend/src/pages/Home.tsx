@@ -196,7 +196,7 @@ function Home() {
                     Don't trust firms, trust <span sx={style.highlight}>debt.</span>
                 </h1>
                 <h3 sx={style.subtitle}>
-                    Use our <span sx={style.highlight}>stablecoin</span> model to get rid of <span sx={style.highlight}>volatility</span>
+                    Use our <span sx={style.highlight}>decentralised stablecoin</span> without trusting <span sx={style.highlight}>unreliable</span> companies
                 </h3>
                 { device == "mobile" ?
                     <div sx={style.socialRow}>

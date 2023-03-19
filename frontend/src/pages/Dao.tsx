@@ -11,6 +11,8 @@ import Star from "components/Star";
 
 import Snackbar from "components/Snackbar";
 
+import ConnectWallet2 from "components/ConnectWallet2";
+
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 import { ResponsiveContext } from "contexts/ResponsiveContext";
@@ -26,11 +28,12 @@ function Dao() {
     const { themeStyle, toggleTheme, setColor, color } = useContext(ThemeContext);
     const { addAlert } = useContext(SnackbarContext);
 
-    const voteList = [{title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address'}, {title: 'Vote arthur', subtitle: 'ent', score: "9/102", address: 'text_address'},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address'},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address'},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address'},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address'}]
+    const voteList = [{title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true, approved: true}, 
+    {title: 'Vote arthur', subtitle: 'ent', score: "9/102", address: 'text_address', finished:false, approved: false},
+    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:false,  approved: false},
+    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true,  approved: false},
+    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true,  approved: false},
+    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished: false,  approved: true}]
 
     const [addProposal, setAddProposal] = useState<boolean>(false);
 
@@ -58,7 +61,7 @@ function Dao() {
         },
 
         vote: {
-            width: '90%',
+            width: '80%',
             marginRight: '20px',
             padding: '0 20px',
             background: 'background2',
@@ -156,11 +159,115 @@ function Dao() {
 
         addProposalZone: {
             background: 'background2',
-            width: 'calc(100% - 40px)',
-            height: '50px',
             marginBottom: '20px',
             borderRadius: '5px',
             padding: '20px',
+
+            display: 'flex',
+            flexDirection: 'column' as 'column',
+            alignItems: 'center',
+            width: '660px',
+
+            '& *': {
+                color: 'text',
+                fontFamily: 'primary',
+            },
+
+            '& label': {
+                fontSize: 2,
+                fontWeight: '600',
+                marginBottom: '10px',
+                width: '100%',
+                cursor: 'pointer',
+            },
+
+            '& input, textarea': {
+                background: 'transparent',
+                width: 'calc(100% - 20px)',
+                border: 'solid 1px',
+
+                borderColor: 'background3',
+                borderRadius: '5px',
+                fontSize: 1,
+                marginBottom: '20px',
+                padding: '5px 10px',
+            },
+
+            '& textarea': {
+                height: '200px',
+                resize: 'none' as 'none'
+            },
+
+        },
+
+        send: {
+            background: 'primary',
+            border: 'none',
+            borderRadius: '5px',
+            fontSize: '1',
+            padding: '10px 20px',
+            cursor: 'pointer',
+
+            '&:hover': {
+                opacity: '.8'
+            }
+        },
+
+        property: {
+            fontSize: 1,
+            color: 'text',
+            fontFamily: 'primary',
+            border: 'solid 1px',
+            borderColor: 'background3',
+            borderRadius: '5px',
+            padding: '5px 20px',
+            position: 'relative' as 'relative',
+            paddingRight: '40px',
+            marginBottom: '20px',
+            cursor: 'pointer',
+
+            '&:hover': {
+                borderColor: 'text',
+
+                '& div': {
+                    opacity: '1'
+                }
+            }
+        },
+
+        expand: {
+            height: '12px',
+            aspectRatio: '1',
+            background: 'text',
+            opacity: '.3',
+            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
+                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            transform: 'TranslateY(-50%) Rotate(90deg)',
+            position: 'absolute' as 'absolute',
+            right: '10px',
+            top: '50%',
+        },
+
+        date: {
+            position: 'absolute' as 'absolute',
+            right: '20px',
+            top: '20px',
+            fontFamily: 'primary',
+            fontSize: 1,
+            color: 'text2',
+            
+            '& span': {
+                fontWeight: '600',
+                color: 'text'
+            }
+        },
+
+        approved: {
+            color: 'green !important'
+        },
+
+        declined: {
+            color: 'red !important'
         }
     }
 
@@ -179,6 +286,14 @@ function Dao() {
                     {
                         addProposal ? 
                         <div sx={style.addProposalZone}>
+                            <label htmlFor="title">Title</label>
+                            <input type="text" id="title"/>
+                            <label htmlFor="subtitle">Description</label>
+                            <textarea id="subtitle"/>
+                            <div sx={style.property}>
+                                Change<div sx={style.expand}/>
+                            </div>
+                            {user.address ? <button sx={style.send}>Submit</button> : <ConnectWallet2/>}
                         </div>
                         : null
                     }
@@ -189,6 +304,7 @@ function Dao() {
                                     <div sx={style.column}>
                                         <h3>{x.title}</h3>
                                         <h4>{x.subtitle}</h4>
+                                        <p sx={style.date}>{x.finished ? "Vote" : "Vote ending in"} {x.finished ? x.approved ? <span sx={style.approved}>approved</span> : <span sx={style.declined}>declined</span> : <span>3 days</span>}</p>
                                         <div sx={style.caracteristics}>
                                             <ul>
                                                 <li>
@@ -210,10 +326,13 @@ function Dao() {
                                         <p>{x.score}</p>
                                     </div>
                                 </div>
+
+                                { x.finished ? null :
                                 <div sx={style.voteButtons}>
                                     <button>+</button>
                                     <button>-</button>
                                 </div>
+                                }
                             </div>
                         )
                     }) : null}

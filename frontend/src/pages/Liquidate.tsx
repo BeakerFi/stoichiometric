@@ -258,7 +258,7 @@ function Liquidate() {
                                         <div sx={style.lend}>
                                                 <p>Collateral <span>{x.quantity} {x.token.symb} <img src={x.token.icon_url}/></span></p>
                                                 <p>Borrowed <span>{x.borrowed} {stable.symb} <img src={stable.icon_url}/></span></p>
-                                                { x.healthFactor > 1 || !user.ddress ? 
+                                                { x.healthFactor > 1 || !user.address ? 
                                                 <div sx={style.barContainer}>
                                                     <div sx={style.bar}>
                                                         <div sx={{right: `Min(100%, ${1/x.healthFactor*100}%)`, background: `${Math.random() < .3 ? "green" : Math.random() > .5 ? "orange" : "red"}`}}/>

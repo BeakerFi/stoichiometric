@@ -245,6 +245,12 @@ function Swap() {
         setLock(!lock);
     }
 
+    const [myLoans, setMyLoans] = useState<boolean>(false);
+
+    const [choseLend, setChoseLend] = useState<boolean>(false);
+
+    const [removePercentage, setRemovePercentage] = useState<number>(0);
+
     const style = {
         main: {
             display: 'flex',
@@ -698,8 +704,239 @@ function Swap() {
                 color: 'red',
                 textAlign: 'center' as 'center'
             }
+        },
+
+        buttons: {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            width: '100%',
+            marginBottom: '10px',
+
+            '& span': {
+                fontFamily: 'primary',
+                fontSize: 1,
+                borderRadius: '5px',
+                padding: '5px 10px',
+            }
+        },
+
+        active: {
+            background: 'background2',
+            color: 'text',
+        },
+
+        inactive: {
+            color: 'text2',
+            cursor: 'pointer',
+            '&: hover': {
+                background: 'background2',
+            }
+        },
+
+        myPositionColumn: {
+            position: 'relative' as 'relative',
+        },
+
+        chosePosition: {
+            padding: '20px',
+            height: 'auto',
+            width: 'calc(100% - 40px)',
+            background: 'background2',
+            color: 'shadow',
+            boxShadow: '0px 1px 4px',
+            borderRadius: '5px',
+            display: 'flex',
+            alignItems: 'center',
+            overflow: "hidden",
+            position: 'relative' as 'relative',
+            marginBottom: '20px',
+            cursor: 'pointer',
+
+            '& p': {
+                margin: '0',
+                padding: '0',
+                color: 'text',
+                fontFamily: 'primary',
+                fontSize: 1,
+                fontWeight: '500'
+            },
+
+            '& img': {
+                height: '25px',
+                aspectRatio: '1',
+                borderRadius: '1000px',
+                objectFit: 'contain' as 'contain',
+                marginRight: '10px',
+                '&:nth-child(1)': {
+                    transform: 'Translate(0, -3px)'
+                },
+                '&:nth-child(2)': {
+                    transform: 'Translate(-15px, 3px)',
+                    marginRight: '0px',
+                }
+            },
+
+            '&:hover div': {
+                opacity: 1
+            }
+        },
+
+        chosePositionZone: {
+            position: 'absolute' as 'absolute',
+            top: `0px`,
+            left: `${choseLend ? '0px' : '100%'}`,
+            height: 'calc(100% - 60px)',
+            width: 'calc(100% - 40px)',
+            padding: '20px',
+            background: 'background2',
+            color: 'shadow',
+            borderRadius: '5px',
+            display: 'flex',
+            alignItems: 'center',
+            cursor: 'default',
+            zIndex: '1000',
+            transition: '.2s',
+            flexDirection: 'column' as 'column',
+
+            '& h2': {
+                margin: '0',
+                padding: '0',
+                color: 'text',
+                fontFamily: 'primary',
+                fontSize: 2,
+                fontWeight: '600',
+                width: '100%',
+                textAlign: 'center' as 'center',
+                position: 'relative' as 'relative',
+                marginBottom: '20px'
+            }
+        },
+
+        chosePositionContainer: {
+            height: '100%',
+            width: '100%',
+            position: 'absolute' as 'absolute',
+            left: 0,
+            top: 0,
+            overflow: 'hidden',
+        },
+
+        poolChoice: {
+            display: 'flex',
+            width: 'calc(100% - 40px)',
+            padding: '15px 20px',
+            alignItems: 'center',
+            cursor: 'pointer',
+            '&: hover': {
+                background: 'background3'
+            },
+            '& p': {
+                margin: '0',
+                padding: '0',
+                color: 'text',
+                fontFamily: 'primary',
+                fontSize: 1,
+                fontWeight: '500'
+            },
+
+            '& img': {
+                height: '25px',
+                aspectRatio: '1',
+                borderRadius: '1000px',
+                objectFit: 'contain' as 'contain',
+                marginRight: '10px',
+                '&:nth-child(1)': {
+                    transform: 'Translate(0, -3px)'
+                },
+                '&:nth-child(2)': {
+                    transform: 'Translate(-15px, 3px)',
+                    marginRight: '0px',
+                }
+            },
+        },
+
+        expand2: {
+            height: '12px',
+            aspectRatio: '1',
+            background: 'text',
+            opacity: '.3',
+            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
+                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            transform: 'TranslateY(-50%)',
+            position: 'absolute' as 'absolute',
+            right: '20px',
+            top: '50%',
+        },
+
+        poolsList: {
+            overflow: 'scroll',
+            '-ms-overflow-style': 'none',
+            'scrollbar-width': 'none',
+            '::-webkit-scrollbar': {
+                display: 'none'
+            },
+            width: '100%',
+        },
+
+        rangeRow: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            marginBottom: '20px',
+
+            '& p': {
+                margin: '0',
+                padding: '0',
+                color: 'text',
+                fontFamily: 'primary',
+                fontSize: 1,
+            },
+        },
+
+        range: {
+            width: '90%',
+            '-webkit-appearance': 'none',
+            background: 'transparent',
+            height: '100%',
+
+            '&:hover::-webkit-slider-thumb': {
+                background: 'primary'
+            },
+
+            '&:focus': {
+                outline: 'none'
+            },
+
+            '&::-webkit-slider-runnable-track': {
+                width: '100%',
+                height: '5px',
+                cursor: 'pointer',
+                animate: '0.2s',
+                color: 'shadow',
+                boxShadow: 'none',
+                background: 'background3',
+                borderRadius: '50px',
+                border: 'none',
+              },
+
+            '&::-webkit-slider-thumb': {
+                boxShadow: '0px 1px 4px',
+                border: 'none',
+                height: '20px',
+                width: '20px',
+                borderRadius: '50px',
+                background: 'background3',
+                cursor: 'pointer',
+                '-webkit-appearance': 'none',
+                marginTop: '-7.5px',
+              }
         }
+
     }  
+
+    const lendsList = [{token:{icon_url:"", symb:"XRD"}}]
 
     return (
         <Dashboard page="lend">
@@ -711,7 +948,84 @@ function Swap() {
 
             <div sx={style.main}>
                 <div sx={style.top}>
+
                     <div sx={style.container}>
+                        <div sx={style.buttons}>
+                            <span sx={myLoans && user.address ? style.inactive : style.active} onClick={() => {setMyLoans(false)}}>Borrow SUSD</span>
+                            { user.address ?
+                                <span sx={myLoans ? style.active : style.inactive} onClick={() => {setMyLoans(true);}}>My Loans</span>
+                                : null}
+                        </div>
+
+                        { myLoans && user.address ? 
+                           
+                           (<div sx={style.myPositionColumn}>
+                                <div sx={style.chosePositionContainer}>
+                                    <div sx={style.chosePositionZone}>
+                                        <h2><div sx={style.close} onClick={() => setChoseLend(false)}/>Your Loans</h2>
+                                        <div sx={style.poolsList}>
+                                            {  lendsList.map((pool: any) => {
+                                                return (
+                                                    <div sx={style.poolChoice} onClick={() => {
+                                                        setChoseLend(true)
+                                                    }}>
+                                                        <img src={pool.token.icon_url}/>
+                                                        <p>{pool.token.symb}</p>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div sx={style.chosePosition}  onClick={() => setChoseLend(true)}>
+                                    <img src={token1.icon_url}/>
+                                    <p>{token1.symb}</p>
+                                    <div sx={style.expand2}/>
+                                </div>
+                                <div sx={style.swapZone}>
+                                    <h1>🐰 Repay the Loan</h1>
+                                    <div sx={style.swapInfos}>
+                                        <span sx={style.swapInfoMain}><span>Total Locked</span>342 XRD</span>
+                                        <span sx={style.swapInfo}><span>Total Borrowed</span>3.4 SUSD</span>
+                                        <span sx={style.swapInfo}><span>Interest</span>0.04 SUSD</span>                                           
+                                    </div>
+                                    <button sx={false ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton}>{false ? "" : "Repay"}</button>
+
+                                </div>
+                                <div sx={style.swapZone}>
+                                    <h1>🐷 Add Collateral</h1>
+                                    <div sx={style.inputBar}>
+                                    <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={lentChange} value={get} disabled={lock}/>
+                                        <label htmlFor="get">{user.address ? `Adding ${calculateMax(token1Owned)} ${stable.symb}`: "You add"}</label>
+                                        <div sx={style.token2}>
+                                            <img src={token1.icon_url}/>
+                                            <p>{token1.symb}</p>
+                                        </div>
+                                    </div>
+                                    <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
+
+                                    <button sx={false ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton}>{false ? "" : "Add"}</button>
+                                </div>
+                                <div sx={style.swapZone}>
+                                    <h1>🦊 Remove Collateral</h1>
+                                    <div sx={style.rangeRow}>
+                                            <input sx={style.range} type="range" id="remove" name="remove"
+                                                min="0" max="100" value={removePercentage} onChange={(e) => {setRemovePercentage(Math.floor(parseFloat(e.target.value)))}}/>
+                                            <p>{removePercentage}%</p>
+                                        </div>
+                                    <div sx={style.swapInfos}>
+                                        <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb}</div></span>
+                                        <span sx={style.swapInfo}><span>Value</span>$?</span>
+                                    </div>
+                                    <button sx={false ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton}>{false ? "" : "Remove"}</button>
+
+                                </div>
+                            </div>
+                        )
+
+
+                        :
+
                         <div sx={style.swapZone}>
                             <h1>📝 Borrow SUSD</h1>
 
@@ -739,7 +1053,7 @@ function Swap() {
 
                             <div sx={style.inputBar}>
                                 <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
-                                <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>
+                                <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You lock"}</label>
                                 <div sx={style.token} onClick={() => setToken1Select(true)}>
                                     <img src={token1.icon_url}/>
                                     <p>{token1.symb}</p>
@@ -784,7 +1098,7 @@ function Swap() {
                                     })}
                                 </div>
                             </div>
-                        </div>
+                        </div>}
                     </div>
                 </div>
             </div>
