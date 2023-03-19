@@ -1,5 +1,5 @@
 import {EntityDetailsRequest,} from "@radixdlt/babylon-gateway-api-sdk";
-import {radix_api_url} from "../constants";
+import {backend_api_url, radix_api_url} from "../general/constants";
 
 async function getLenderInformation(lender_address: string) {
 
@@ -32,7 +32,6 @@ async function getLenderInformation(lender_address: string) {
     return { loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
 }
 
-
 async function getOraclePrice(oracle_address: string) {
 
     const obj: EntityDetailsRequest = {
@@ -51,6 +50,23 @@ async function getOraclePrice(oracle_address: string) {
 
     // @ts-ignore
     return data[1];
+}
+
+async function decode_loan(mutable_data: string, immutable_data: string){
+
+
+    const params = new URLSearchParams();
+    params.append('mutable_data_hex', mutable_data);
+    params.append('immutable_data_hex', immutable_data);
+
+    const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
+        method: 'GET',
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    });
+
+    const res = await fetch(request)
+    const data = await res.json()
+    return data
 }
 
 export { getLenderInformation }

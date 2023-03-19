@@ -1,7 +1,7 @@
 import {
     RadixDappToolkit,
 } from '@radixdlt/radix-dapp-toolkit'
-import {dAppId} from "./constants";
+import {dAppId} from "./general/constants";
 
 function createPosition() {
 

@@ -1,5 +1,5 @@
-import {router_address, stablecoin_address} from "./constants";
-import {rdt} from "./connectToWallet";
+import {router_address, stablecoin_address} from "../general/constants";
+import {rdt} from "../connectToWallet";
 
 async function swap_direct(account: string, token1Address: string, token2Address: string, amount: string) {
     const manifest = `

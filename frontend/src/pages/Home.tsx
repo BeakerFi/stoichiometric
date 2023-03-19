@@ -5,7 +5,7 @@ import { ResponsiveContext } from 'contexts/ResponsiveContext';
 
 import { NavLink } from "react-router-dom";
 
-import { randomIntFromInterval, nFormatter } from "utils/maths";
+import { randomIntFromInterval, nFormatter } from "utils/general/generalMaths";
 
 import Button from "components/Button";
 import Star from "components/Star";

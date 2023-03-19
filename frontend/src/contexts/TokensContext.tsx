@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { getTokensAndPools } from "utils/connectToBackend";
+import { getTokensAndPools } from "utils/a_supprimer_connectToBackend";
 
 const TokensContext = React.createContext(null as any);
 

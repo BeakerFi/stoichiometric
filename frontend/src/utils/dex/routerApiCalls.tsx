@@ -1,68 +1,12 @@
-import {radix_api_url, position_address, router_address, stablecoin_address} from "./constants";
+import {radix_api_url, position_address, router_address, stablecoin_address} from "../general/constants";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest
 } from "@radixdlt/babylon-gateway-api-sdk";
 
-async function getTokens() {
 
-    let tokens_list: any[] = [{name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}];
-
-    let pools = await getPoolList();
-
-    for (const {token, } of pools) {
-
-        const obj: EntityDetailsRequest = {
-            "address": token
-        };
-
-        let data;
-        await fetch( radix_api_url + `/entity/details`, {
-            method: 'POST',
-            body: JSON.stringify(obj),
-            headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-        })
-            .then( (response) => response.json() )
-            .then( (tmp_data) => data = tmp_data )
-            .catch(console.error);
-
-        // @ts-ignore
-        const metadata = data["metadata"]["items"];
-        tokens_list.push( {name: metadata[1]["value"], symb: metadata[2]["value"], address: token, icon_url: metadata[0]["value"]});
-    }
-
-    return tokens_list;
-}
-
-async function getNbTokens(account: string) {
-    let nbTokensList: any[] = [];
-
-    const obj: EntityDetailsRequest = {
-        "address": account
-    };
-
-    let data;
-    await fetch( radix_api_url + `/entity/resources`, {
-        method: 'POST',
-        body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-    })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data )
-        .catch(console.error);
-
-    // @ts-ignore
-    const fungible = data["fungible_resources"]["items"];
-
-    for (var i = 0; i < fungible.length; ++i) {
-        nbTokensList[fungible[i]["address"]] = parseFloat(fungible[i]["amount"]["value"])
-    }
-
-    return [nbTokensList, account];
-}
-
-async function getPositions(account: string) {
+async function getOwnedPositions(account: string) {
 
     const obj: EntityNonFungibleIdsRequest = {
         "address": account,
@@ -105,7 +49,7 @@ async function getNFIDValue(id: string) {
 
 }
 
-async function getPool(token: string) {
+async function getPoolInfo(token: string) {
 
     let pools = await getPoolList();
 
@@ -176,4 +120,4 @@ async function getPoolList() {
 }
 
 
-export { getTokens, getNbTokens, getPool }
+export {getPoolInfo, getPoolList, getOwnedPositions}
