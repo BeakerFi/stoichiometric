@@ -7,8 +7,6 @@ import { ResponsiveContext } from "contexts/ResponsiveContext";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 
-import { getPrice } from "utils/a_supprimer_connectToBackend";
-
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
@@ -20,14 +18,15 @@ import { TokensContext } from "contexts/TokensContext";
 import { formatToString, formatToString2, randomIntFromInterval } from "utils/general/generalMaths";
 import {swap_direct} from "../utils/dex/routerContractCalls";
 
-const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
+import { stable_coin as stable, token_default} from "utils/general/constants";
+
+import { getLenderInformation } from "utils/stablecoin/issuerApiCalls";
 
 function Swap() {
 
     let [searchParams, setSearchParams] = useSearchParams();
 
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
-
 
     const { addAlert } = useContext(SnackbarContext);
     
@@ -39,7 +38,7 @@ function Swap() {
 
     const [category, setCategory] = useState("all");
 
-    const [tokensList, setTokensList] = useState(tokens);
+    const [tokensList, setTokensList] = useState(tokens.filter((x:any) => x.address != stable.address));
 
     const [token1Owned, setToken1Owned] = useState<"?" | number>("?");
 
@@ -62,7 +61,7 @@ function Swap() {
         var tk1 = searchParams.get('tk1');
 
         if (!tk1) {
-            setSearchParams({tk1: 'XRD'})
+            setSearchParams({tk1: token_default.symb})
         }
     }, [])
 
@@ -79,8 +78,8 @@ function Swap() {
                 setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
                 setSearchParams({tk1: tk1!.toUpperCase()})
             } else {
-                setToken1({name: "Radix", symb: "XRD", address: "resource_tdx_b_1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq8z96qp", icon_url: "https://switchere.com/i/currencies/XRD.svg"});
-                setSearchParams({tk1: 'XRD'})
+                setToken1(token_default);
+                setSearchParams({tk1: token_default.symb})
             }
         }
 
@@ -164,16 +163,9 @@ function Swap() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            if(token1.address && stable.address) {
-                const infos = await getPrice(token1.address, stable.address);
-                if (infos && infos!['token1_address'] == token1AddressRef.current) {
-                    if (infos!['token1_amount'] > 0) {
-                        setToken1InPool(parseFloat(infos!["token1_amount"]));
-                        setStableInPool(parseFloat(infos!["token2_amount"]));
-                        setPrice(infos!["token2_amount"]/infos!["token1_amount"]);
-                    }
-                }
-            }
+            const infos = await getLenderInformation(token1.address);
+            console.log(infos)
+            setPrice(infos["price"]);
         }
         getPoolInfos();
     }, [token1, tokensOwned])
@@ -207,6 +199,7 @@ function Swap() {
 
     function getSearch(list: any[]) {
         return list.filter(x => {
+            if (x.address == stable.address) return false;
             if (category != "all" && x.category != category) return false;
             var flag = (search.length == 0);
             for (const word of search.split(' ')) {

@@ -2,9 +2,11 @@ import {radix_api_url, stablecoin_address} from "./constants";
 import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
 import {getPoolInfo, getPoolList} from "../dex/routerApiCalls";
 
+import { stable_coin } from "./constants";
+
 async function getTokens() {
 
-    let tokens_list: any[] = [{name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}];
+    let tokens_list: any[] = [stable_coin];
 
     let pools = await getPoolList();
 
@@ -26,7 +28,7 @@ async function getTokens() {
 
         // @ts-ignore
         const metadata = data["metadata"]["items"];
-        tokens_list.push( {name: metadata[1]["value"], symb: metadata[2]["value"], address: token, icon_url: metadata[0]["value"]});
+        tokens_list.push( {name: metadata[2]["value"], symb: metadata[3]["value"], address: token, icon_url: metadata[1]["value"]});
     }
 
     return tokens_list;
