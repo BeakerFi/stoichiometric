@@ -28,6 +28,7 @@ const TokensCtx: React.FC<Props> = (props) => {
             setLenders(l);
             setTokens(x.tokens);
             setPools(x.pools);
+            console.log(x.pools)
             setTokensLoading(false);
             //const z = await getAllLoansInformation(y, x.lenders);
             //setLoans(z);

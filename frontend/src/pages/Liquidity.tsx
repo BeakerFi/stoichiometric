@@ -19,6 +19,8 @@ import { formatToString, formatToString2, nFormatter, randomIntFromInterval, two
 
 import { stable_coin as stable, token_default } from "utils/general/constants";
 
+import { addLiquidityNoPosition, addLiquidityToPosition } from "utils/dex/routerContractCalls";
+
 function Liquidity() {
 
     let [searchParams, setSearchParams] = useSearchParams();
@@ -116,34 +118,43 @@ function Liquidity() {
     function findRatio(x: number) {
         var currentStep = pools[token1.address]["current_step"];
         let stableRatio: number; 
-        for (const step in pools[token1.address]["steps"]) {
+        for (var i = 0; i < pools[token1.address]["steps"].length; ++i) {
+            const step = pools[token1.address]["steps"][i];
             if (step[0] == currentStep) {
                 stableRatio = parseFloat(step[1]["amount_stable"])/(parseFloat(step[1]["amount_stable"]) + parseFloat(step[1]["rate"])*parseFloat(step[1]["amount_other"]));
-                return stableRatio;
+                return [stableRatio, parseFloat(step[1]["rate"])]
             }
         }
-        return 1;
+        return [1, 1];
     }
 
-    function calculateGet(x: number) {
-        var stableRatio = findRatio(x);
+    function calculateGet(x: number) { /* A CHANGER */
+        var result = findRatio(x);
+        var stableRatio = result[0];
+        var price = result[1];
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         if (currentStep > maxStep) {setSent(0); return 10;}
         if (currentStep < minStep) return 0;
-        return (maxStep - currentStep + 1)*(stableRatio * x/(currentStep - minStep + 1))
+        if (stableRatio == 0) return 0;
+        if (stableRatio == 1) return 0;
+        return ((currentStep - minStep + 1)*(x/(maxStep - currentStep + 1) * price)*stableRatio/(1 - stableRatio))
     }
 
 
-    function calculateSent(x: number) {
-        var stableRatio = findRatio(x);
+    function calculateSent(x: number) { /* A CHANGER */
+        var result = findRatio(x);
+        var stableRatio = result[0];
+        var price = result[1];
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         if (currentStep > maxStep) {return 0;}
         if (currentStep < minStep) {setGet(0); return 10;}
-        return (currentStep - minStep + 1)*(stableRatio * x/(maxStep - currentStep + 1))
+        if (stableRatio == 0) return 0;
+        if (stableRatio == 1) return 0;
+        return ((maxStep - currentStep + 1)*(x/(currentStep - minStep + 1)/ price)*(1 - stableRatio)/(stableRatio))
     }
 
     function calculateMax1(x: number | string) {
@@ -423,9 +434,20 @@ function Liquidity() {
 
     async function sendSwap() {
         setSwapLoading(true);
-        /*var flag;
-        if (!nftId) flag = await createPosition(user.address, token1.address, token2.address, sent.toString(), get.toString())
-        else flag = await addToPosition(user.address, token1.address, token2.address, sent.toString(), get.toString(), nftId)
+        var flag;
+        var steps: any[] = [];
+        var currentStep= parseFloat(pools[token1.address]["current_step"]);
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+
+        for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0])
+        if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
+        for (var i = currentStep + 1; i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
+
+        console.log("steps", steps);
+
+        if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
+        else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)
         setNbTokens();
         resetValues();
         if (flag) {
@@ -434,7 +456,6 @@ function Liquidity() {
             addAlert("error", "An error occured");
         }
         setSwapLoading(false);
-        */
     }
 
     const [feesLoading, setFeesLoading] = useState(false);
@@ -1441,7 +1462,7 @@ function Liquidity() {
                                 </div>
                                 <div sx={style.swapInfos}>
                                     <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
-                                    <span sx={style.swapInfo}><span>Current Price</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {stable.symb}</span>
+                                    <span sx={style.swapInfo}><span>Current Price</span>1 {token1.symb} = {price == 0 ? "?" : formatToString(price)} {stable.symb}</span>
                                 </div>
 
                                 {

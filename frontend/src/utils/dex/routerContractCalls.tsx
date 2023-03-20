@@ -82,48 +82,50 @@ async function addLiquidityNoPosition(account: string, other_token: string, stab
     let steps_string = "";
 
     for (const step of steps) {
-        let step_string = `(${step[0]}u16, Decimal("${step[1]}"), Decimal("${step[2]}")), `;
+        let step_string = `Tuple(${step[0]}u16, Decimal("${step[1]}"), Decimal("${step[2]}")), `;
         steps_string += step_string;
     }
-    steps_string.slice(0, -2);
+    steps_string = steps_string.slice(0, -2);
 
     let manifest= `
-                CALL_METHOD
-                    ComponentAddress("${account}")
-                    "withdraw_by_amount"
-                    Decimal("${stablecoin_amount}")
-                    ResourceAddress("${stablecoin_address}");
-                
-                TAKE_FROM_WORKTOP_BY_AMOUNT
-                    Decimal("${stablecoin_amount}")
-                    ResourceAddress("${stablecoin_address}")
-                    Bucket("0");
-                
-                CALL_METHOD
-                    ComponentAddress("${account}")
-                    "withdraw_by_amount"
-                    Decimal("${other_token_amount}")
-                    ResourceAddress("${other_token}");
-                
-                TAKE_FROM_WORKTOP_BY_AMOUNT
-                    Decimal("${other_token_amount}")
-                    ResourceAddress("${other_token}")
-                    Bucket("1");
-                
-                CALL_METHOD
-                    ComponentAddress("${router_address}")
-                    "add_liquidity_at_steps"
-                    Bucket("0")
-                    Bucket("1")
-                    Array<(u16, Decimal, Decimal)>(${steps_string})
-                    None;
-                
-                CALL_METHOD
-                    ComponentAddress("${account}")
-                    "deposit_batch"
-                    Expression("ENTIRE_WORKTOP");
-    
+    CALL_METHOD
+        ComponentAddress("${account}")
+        "withdraw_by_amount"
+        Decimal("${stablecoin_amount}")
+        ResourceAddress("${stablecoin_address}");
+
+    TAKE_FROM_WORKTOP_BY_AMOUNT
+        Decimal("${stablecoin_amount}")
+        ResourceAddress("${stablecoin_address}")
+        Bucket("0");
+
+    CALL_METHOD
+        ComponentAddress("${account}")
+        "withdraw_by_amount"
+        Decimal("${other_token_amount}")
+        ResourceAddress("${other_token}");
+
+    TAKE_FROM_WORKTOP_BY_AMOUNT
+        Decimal("${other_token_amount}")
+        ResourceAddress("${other_token}")
+        Bucket("1");
+
+    CALL_METHOD
+        ComponentAddress("${router_address}")
+        "add_liquidity_at_steps"
+        Bucket("0")
+        Bucket("1")
+        Array<Tuple>(${steps_string})
+        None;
+
+    CALL_METHOD
+        ComponentAddress("${account}")
+        "deposit_batch"
+        Expression("ENTIRE_WORKTOP");
+
     `;
+
+    console.log(manifest);
 
     const result = await rdt.sendTransaction({
         transactionManifest: manifest,

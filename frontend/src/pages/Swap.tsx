@@ -124,8 +124,8 @@ function Swap() {
 
             while (temp > 0 && index < pool["steps"].length) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]/pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2*pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]*pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2/pool["steps"][index][1]["rate"]);
                 index = index + 1;
             }
             return recieved;
@@ -137,8 +137,8 @@ function Swap() {
             var index = findIndex(actualPool, pool["steps"]);
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]*pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2/pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]/pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2*pool["steps"][index][1]["rate"]);
                 index = index - 1;
             }
             return recieved;
@@ -150,8 +150,8 @@ function Swap() {
             var index = findIndex(actualPool, pool1["steps"]);
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]/pool1["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2*pool1["steps"][index][1]["rate"]);
                 index = index - 1;
             }
 
@@ -161,8 +161,8 @@ function Swap() {
             index = findIndex(actualPool, pool2["steps"]);
             while (recieved > 0 && index < pool2["steps"].length) {
                 var recieved3 = recieved;
-                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]/pool2["steps"][index][1]["rate"], recieved);
-                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3*pool2["steps"][index][1]["rate"]);
+                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]*pool2["steps"][index][1]["rate"], recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3/pool2["steps"][index][1]["rate"]);
                 index = index + 1;
             }
             return recieved2;
@@ -176,12 +176,13 @@ function Swap() {
             var temp = n;
             var recieved = 0;
             actualPool = pool["current_step"];
+
             index = findIndex(actualPool, pool["steps"]);
 
             while (temp > 0 && index < pool["steps"].length) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]/pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2*pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]*pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2/pool["steps"][index][1]["rate"]);
                 index = index + 1;
             }
             if (temp > 0) setAlert(true); else setAlert(false);
@@ -194,8 +195,8 @@ function Swap() {
             var index = findIndex(actualPool, pool["steps"]);
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]*pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2/pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]/pool["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2*pool["steps"][index][1]["rate"]);
                 index = index - 1;
             }
             if (temp > 0) setAlert(true); else setAlert(false);
@@ -208,8 +209,8 @@ function Swap() {
             var index = findIndex(actualPool, pool1["steps"]);
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]/pool1["steps"][index][1]["rate"], temp);
+                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2*pool1["steps"][index][1]["rate"]);
                 index = index - 1;
             }
 
@@ -220,8 +221,8 @@ function Swap() {
             index = findIndex(actualPool, pool2["steps"]);
             while (recieved > 0 && index < pool2["steps"].length) {
                 var recieved3 = recieved;
-                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]/pool2["steps"][index][1]["rate"], recieved);
-                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3*pool2["steps"][index][1]["rate"]);
+                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]*pool2["steps"][index][1]["rate"], recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3/pool2["steps"][index][1]["rate"]);
                 index = index + 1;
             }
             if (temp > 0 || recieved > 0) setAlert(true); else setAlert(false);
@@ -292,7 +293,31 @@ function Swap() {
 
     useEffect(() => {
         async function getPoolInfos() {
-            setPrice(0);
+            if (token1.address == stable.address) {
+                const pool = pools[token2.address];
+                var actualPool = pool["current_step"];
+                var index = findIndex(actualPool, pool["steps"]);
+    
+                if (pool["steps"][index][1]["rate"] > 0) setPrice(1/pool["steps"][index][1]["rate"]);
+                else setPrice(0);
+            } else if (token2.address == stable.address) {
+                const pool = pools[token1.address];
+                var actualPool = pool["current_step"];
+                var index = findIndex(actualPool, pool["steps"]);
+    
+                setPrice(pool["steps"][index][1]["rate"]);
+            } else {
+                const pool1 = pools[token1.address];
+                var actualPool = pool1["current_step"];
+                var index = findIndex(actualPool, pool1["steps"]);
+
+                const pool2 = pools[token1.address];
+                var actualPool = pool2["current_step"];
+                var index = findIndex(actualPool, pool2["steps"]);
+    
+                if (pool1["steps"][index][1]["rate"] > 0) setPrice(pool2["steps"][index][1]["rate"]/pool1["steps"][index][1]["rate"]);
+                else setPrice(0);
+            }
         }
         getPoolInfos();
     }, [token1, token2, tokensOwned])
