@@ -5,18 +5,10 @@ pub enum ProposalStatus {
     VotingStage,
     Accepted,
     Rejected,
-    Executed
+    NotEnoughVotes
 }
 
 impl ProposalStatus {
-
-    pub fn is_accepted(&self) -> bool
-    {
-        match self {
-            ProposalStatus::Accepted => true,
-            _ => false
-        }
-    }
 
     pub fn is_voting_stage(&self) -> bool
     {

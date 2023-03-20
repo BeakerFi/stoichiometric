@@ -61,17 +61,18 @@ mod pool {
         /// Instantiates a new [`PoolComponent`] and returns it.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing the initial liquidity in stablecoins
-        /// * `bucket_other` - Bucket containing the initial liquidity in the other token
+        /// * `stable` - ResourceAddress of the stablecoin
+        /// * `bucket_other` - ResourceAddress of the other token
+        /// * `initial_rate` - Initial exhcange rate of the pool
         /// * `min_rate` - Minimum exchange rate of the pool
         /// * `max_rate` - Maximum exchange rate of the pool
         pub fn new(
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            stable: ResourceAddress,
+            other: ResourceAddress,
             initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
-        ) -> (PoolComponent, Bucket, Bucket, Position) {
+        ) -> PoolComponent {
             assert!(
                 min_rate > Decimal::ZERO,
                 "The minimum rate should be positive"
@@ -100,22 +101,13 @@ mod pool {
                 current_step,
                 min_rate,
                 steps: HashMap::new(),
-                stable_protocol_fees: Vault::new(bucket_stable.resource_address()),
-                other_protocol_fees: Vault::new(bucket_other.resource_address()),
+                stable_protocol_fees: Vault::new(stable),
+                other_protocol_fees: Vault::new(other),
                 oracle: OracleComponent::new()
             }
             .instantiate();
 
-            // Adds the initial liquidity
-            let position = Position::from(bucket_other.resource_address());
-            let (stable_ret, other_ret, pos_ret) = component.add_liquidity_at_step(
-                bucket_stable,
-                bucket_other,
-                current_step,
-                position,
-            );
-
-            (component, stable_ret, other_ret, pos_ret)
+            component
         }
 
         /// Adds liquidity to the pool at the closest rate to the given rate.

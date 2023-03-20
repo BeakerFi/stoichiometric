@@ -5,7 +5,7 @@ external_component! {
         fn vote_for(&mut self, voter_card_proof: Proof);
         fn vote_against(&mut self, voter_card_proof: Proof);
         fn is_voting_stage(&self) -> bool;
-        fn is_accepted(&self) -> bool;
+        fn execute(&mut self) -> Option<ProposedChange>;
     }
 }
 
@@ -16,6 +16,10 @@ mod dao {
     use stoichiometric_dex::position::Position;
     use stoichiometric_stablecoin::issuer::IssuerComponent;
     use crate::voter_card::VoterCard;
+    use crate::proposed_change::ProposedChange;
+    use crate::proposal::ProposalComponent;
+    use crate::proposal_receipt::ProposalReceipt;
+    use crate::utils::get_current_time;
 
     pub struct Dao {
         dex_router: ComponentAddress,
@@ -31,12 +35,15 @@ mod dao {
         proposals: HashMap<u64, ComponentAddress>,
         proposal_id: u64,
         locked_stablecoins: Vault,
-        locked_positions: Vault
+        locked_positions: Vault,
+        total_voting_power: Decimal,
+        vote_period: i64,
+        vote_validity_threshold: Decimal,
     }
 
     impl Dao {
 
-        pub fn new() -> ComponentAddress {
+        pub fn new(vote_period: i64, vote_validity_threshold: Decimal) -> ComponentAddress {
 
             // Creates the protocol admin badge which will control everything
             let protocol_admin_badge: Bucket = ResourceBuilder::new_fungible()
@@ -89,8 +96,9 @@ mod dao {
                 .create_with_no_initial_supply();
 
             let proposal_receipt_address = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Stoichiometric proposal receipt")
-                .updateable_metadata(rule!(require(resource_minter.resource_address())), AccessRule::DenyAll)
+                .metadata("name", "Stoichiometric DAO proposal receipt")
+                .mintable(rule!(require(protocol_admin_badge.resource_address())), AccessRule::DenyAll)
+                .burnable(rule!(require(protocol_admin_badge.resource_address())), AccessRule::DenyAll)
                 .create_with_no_initial_supply();
 
             let (dex_router, position_address) = RouterComponent::new(protocol_admin_badge.resource_address(), stablecoin_address);
@@ -116,8 +124,10 @@ mod dao {
                 proposals: HashMap::new(),
                 proposal_id: 0,
                 locked_stablecoins: Vault::new(stablecoin_address),
-                locked_positions: Vault::new(position_address)
-
+                locked_positions: Vault::new(position_address),
+                total_voting_power: Decimal::ZERO,
+                vote_period,
+                vote_validity_threshold
             }
                 .instantiate();
 
@@ -153,13 +163,13 @@ mod dao {
                 }
             };
 
-            voter_card.add_stablecoins(stablecoins.amount());
+            self.total_voting_power += voter_card.add_stablecoins(stablecoins.amount());
 
             for position in positions.non_fungibles::<Position>() {
                 let id = position.local_id().clone();
                 let position_data = self.get_position_data(&id);
 
-                voter_card.add_position(&position_data, id);
+                self.total_voting_power += voter_card.add_position(&position_data, id);
             }
 
             self.update_voter_card_data(&voter_card_id, voter_card);
@@ -177,6 +187,7 @@ mod dao {
 
             assert!(!last_proposal_voted.is_voting_stage(), "Cannot unlock tokens and positions from a VoterCard that is actively particpating in a vote!");
 
+            self.total_voting_power -= voter_card_data.voting_power;
             let stablecoin_bucket = self.locked_stablecoins.take(voter_card_data.stablecoins_locked);
             let mut positions_bucket = Bucket::new(self.position_address);
             for position_id in voter_card_data.positions_locked_ids {
@@ -190,6 +201,97 @@ mod dao {
             });
 
             (stablecoin_bucket, positions_bucket)
+        }
+
+        pub fn make_proposal(&mut self, proposed_change: ProposedChange) -> Bucket {
+            let current_time = get_current_time();
+            let vote_end = current_time + self.vote_period;
+            let vote_threshold = self.total_voting_power * self.vote_validity_threshold;
+
+            let voter_card_updater = self.protocol_admin_badge.authorize(|| {
+                borrow_resource_manager!(self.resource_minter.resource_address()).mint(Decimal::ONE)
+            });
+
+            let proposal_comp = ProposalComponent::new(self.proposal_id, vote_end, vote_threshold, proposed_change, self.voter_card_address, voter_card_updater, self.protocol_admin_badge.resource_address());
+            self.proposals.insert(self.proposal_id, proposal_comp);
+
+            let receipt_data = ProposalReceipt{ proposal_id: self.proposal_id };
+            let receipt = self.resource_minter.authorize(|| {
+                borrow_resource_manager!(self.proposal_receipt_address).mint_non_fungible(&NonFungibleLocalId::Integer(self.proposal_id.into()), receipt_data)
+            });
+
+            self.proposal_id += 1;
+
+            receipt
+        }
+
+        pub fn execute_proposal(&mut self, proposal_receipt: Bucket) -> Option<Vec<Bucket>> {
+            assert!(proposal_receipt.resource_address() == self.proposal_receipt_address, "Please provide a proposal receipt");
+            assert!(proposal_receipt.amount() == Decimal::ONE, "Can only execute one proposal at a time");
+
+            let proposal_data: ProposalReceipt = borrow_resource_manager!(self.proposal_receipt_address).get_non_fungible_data(proposal_receipt.non_fungible::<ProposalReceipt>().local_id());
+            let proposal = self.get_proposal(proposal_data.proposal_id);
+
+            let changes_to_execute = self.protocol_admin_badge.authorize(|| {
+                proposal.execute()
+            });
+
+            self.resource_minter.authorize(|| {
+                borrow_resource_manager!(self.proposal_receipt_address).burn(proposal_receipt)
+            });
+
+            match changes_to_execute {
+                None => None,
+                Some(changes) => self.execute_proposed_change(changes)
+            }
+
+
+        }
+
+        fn execute_proposed_change(&mut self, proposed_change: ProposedChange) -> Option<Vec<Bucket>> {
+
+            match proposed_change
+            {
+                ProposedChange::ChangeVotePeriod(new_period) =>
+                    {
+                        self.voting_period = new_period;
+                        None
+                    }
+
+                ProposedChange::ChangeMinimumVoteThreshold(new_threshold) =>
+                    {
+                        self.vote_validity_threshold = new_threshold;
+                        None
+                    }
+
+                ProposedChange::GrantIssuingRight =>
+                    {
+                        let new_stablecoin_minter = self.protocol_admin_badge.authorize(||
+                            {
+                                borrow_resource_manager!(self.stablecoin_minter.resource_address()).mint(Decimal::ONE)
+                            });
+                        Some(vec![new_stablecoin_minter])
+                    }
+
+                ProposedChange::RemoveIssuingRight() =>
+                    {
+                        self.protocol_admin_badge.authorize(||
+                            {
+                                borrow_resource_manager!(self.stablecoin_minter.resource_address())
+                            });
+                        None
+                    }
+
+                ProposedChange::AllowClaim(claimed_resources) => { }
+
+                ProposedChange::AddNewCollateralToken(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty) => { }
+
+                ProposedChange::ChangeLenderParameters(lender, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty) => { }
+
+                ProposedChange::ChangeLenderOracle(lender, oracle_address) => { }
+
+                ProposedChange::AddTokensToIssuerReserves(tokens_to_transfer) => { }
+            }
         }
 
         fn get_proposal(&self, proposal_id: u64) -> ProposalLocalComponent {

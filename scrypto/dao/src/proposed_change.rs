@@ -10,11 +10,17 @@ pub enum ProposedChange
     /// Changes the minimum amount of votes that have to be casted to consider a vote valid
     ChangeMinimumVoteThreshold(Decimal),
 
-    /// Allows claiming of a certain amount of resource by a voter id
-    AllowClaim(ResourceAddress, Decimal, u64),
+    /// Grants a stablecoin minting badge
+    GrantIssuingRight,
+
+    /// Recalls a stablecoin minting badge
+    RemoveIssuingRight(),
+
+    /// Allows claiming of a certain amount of resource from the dao reserves
+    AllowClaim(Vec<(ResourceAddress, Decimal)>),
 
     /// Adds a new token as possible collateral. Taking this decision will also create a pool for the given token
-    AddNewCollateralToken(ResourceAddress),
+    AddNewCollateralToken(ResourceAddress, Decimal, Decimal, Decimal, Decimal),
 
     /// Changes the parameters of a given stablecoin lender
     ChangeLenderParameters(ResourceAddress, Decimal, Decimal, Decimal, Decimal),

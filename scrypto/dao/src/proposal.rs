@@ -6,6 +6,7 @@ mod proposal {
     use crate::proposed_change::ProposedChange;
     use crate::voter_card::VoterCard;
     use crate::proposal_status::ProposalStatus;
+    use crate::utils::get_current_time;
 
     pub struct Proposal{
         proposal_id: u64,
@@ -21,20 +22,21 @@ mod proposal {
 
     impl Proposal{
 
-        pub fn new(proposal_id: u64, vote_end: i64, votes_for: Decimal, votes_against: Decimal, votes_threshold: Decimal, proposed_change: ProposedChange, voter_card_address: ResourceAddress,voter_card_updater: Bucket) -> ComponentAddress
+        pub fn new(proposal_id: u64, vote_end: i64, votes_threshold: Decimal, proposed_change: ProposedChange, voter_card_address: ResourceAddress, voter_card_updater: Bucket, admin_badge: ResourceAddress) -> ComponentAddress
         {
             let proposal_rules = AccessRules::new()
+                .method("vote_for", rule!(allow_all), AccessRule::AllowAll)
+                .method("vote_against", rule!(allow_all), AccessRule::AllowAll)
                 .default(
-                    rule!(allow_all),
-                    AccessRule::DenyAll,
+                    rule!(require(admin_badge)),
+                    AccessRule::DenyAll
                 );
-
             let mut component = Self{
                 proposal_id,
                 proposal_status: ProposalStatus::VotingStage,
                 vote_end,
-                votes_for,
-                votes_against,
+                votes_for: Decimal::ZERO,
+                votes_against: Decimal::ZERO,
                 votes_threshold,
                 proposed_change,
                 voter_card_address,
@@ -54,16 +56,37 @@ mod proposal {
             self.vote(voter_card_proof, false);
         }
 
-        pub fn is_voting_stage(&self) -> bool {
+        pub fn is_voting_stage(&self) -> bool
+        {
             self.proposal_status.is_voting_stage()
         }
 
-        pub fn is_accepted(&self) -> bool {
-            self.proposal_status.is_accepted()
+        pub fn execute(&mut self) -> Option<ProposedChange>
+        {
+            let current_time = get_current_time();
+            assert!(current_time >= self.vote_end, "Vote has not finished yet!");
+
+            if self.votes_for + self.votes_against >= self.votes_threshold {
+
+                if self.votes_for > self.votes_against {
+                    self.proposal_status = ProposalStatus::Accepted;
+                    return Some(self.proposed_change.clone());
+                }
+                else
+                {
+                    self.proposal_status = ProposalStatus::Rejected;
+                    return Some(self.proposed_change.clone());
+                }
+            }
+            else {
+                self.proposal_status = ProposalStatus::NotEnoughVotes;
+                return None;
+            }
+
         }
 
         fn vote(&mut self, voter_card_proof: Proof, vote_for: bool)  {
-            let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
+            let current_time = get_current_time();
             assert!(current_time <= self.vote_end, "Cannot vote for this proposal anymore!");
 
             let validated_proof = voter_card_proof.validate_proof(ProofValidationMode::ValidateResourceAddress(

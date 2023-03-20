@@ -27,7 +27,6 @@ use scrypto::blueprint;
 
 #[blueprint]
 mod router {
-
     use crate::pool::PoolComponent;
     use crate::position::Position;
 
@@ -144,60 +143,31 @@ mod router {
         /// Can only be called by the owner of the admin badge
         ///
         /// # Arguments
-        /// * `bucket_a` - Bucket containing the first token to be traded by the pool.
-        /// * `bucket_b` - Bucket containing the second token to be traded by the pool.
+        /// * `token` - ResourceAddress of the new token to create a pool for.
         /// * `initial_rate` - Initial exchange rate of the pool.
         /// * `min_rate` -  Minimum exchange rate of the pool.
         /// * `max_rate` - Maximum exchange rate of the pool.
         pub fn create_pool(
             &mut self,
-            bucket_a: Bucket,
-            bucket_b: Bucket,
+            token: ResourceAddress,
             initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
-        ) -> (Bucket, Bucket, Bucket) {
+        ) {
             assert!(
-                bucket_a.resource_address() != bucket_b.resource_address(),
+                token != self.stablecoin_address,
                 "Two pools cannot trade the same token"
             );
-            assert!(
-                bucket_a.resource_address() == self.stablecoin_address
-                    || bucket_b.resource_address() == self.stablecoin_address,
-                "Every pool should be Stablecoin/Other"
-            );
-
-            // Reorder the buckets correctly and computes the right rates
-            let (bucket_stable, bucket_other, rate_init, rate_min, rate_max) =
-                if bucket_a.resource_address() == self.stablecoin_address {
-                    (bucket_a, bucket_b, initial_rate, min_rate, max_rate)
-                } else {
-                    (
-                        bucket_b,
-                        bucket_a,
-                        Decimal::ONE / initial_rate,
-                        Decimal::ONE / max_rate,
-                        Decimal::ONE / min_rate,
-                    )
-                };
 
             assert!(
-                self.pools.get(&bucket_other.resource_address()).is_none(),
+                self.pools.get(&token).is_none(),
                 "A pool trading these tokens already exists"
             );
 
-            let (pool, ret_stable, ret_other, position) =
-                PoolComponent::new(bucket_stable, bucket_other, rate_init, rate_min, rate_max);
-            self.pools.insert(ret_other.resource_address(), pool);
-            let ret_pos = self.position_minter.authorize(|| {
-                borrow_resource_manager!(self.position_address).mint_non_fungible(
-                    &NonFungibleLocalId::Integer(self.position_id.into()),
-                    position,
-                )
-            });
-            self.position_id += 1;
+            let pool = PoolComponent::new(self.stablecoin_address, token.clone(), initial_rate, min_rate, max_rate);
+            self.pools.insert(token, pool);
 
-            (ret_stable, ret_other, ret_pos)
+
         }
 
         /// Adds liquidity to an existing pool at a given rate.
