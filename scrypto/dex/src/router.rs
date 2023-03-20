@@ -55,14 +55,9 @@ mod router {
         /// Instantiates and globalizes a new [`RouterComponent`] and returns its address and an admin badge.
         ///
         /// # Arguments
-        /// * `stablecoin_address` - ResourceAddress of the stablecoin to be used by the pools.
-        pub fn new(stablecoin_address: ResourceAddress) -> (ComponentAddress, Bucket) {
-            // Creates the admin badge
-            let admin_badge: Bucket = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .metadata("name", "Router admin badge")
-                .burnable(rule!(allow_all), AccessRule::DenyAll)
-                .mint_initial_supply(Decimal::ONE);
+        /// * `admin_badge` - ResourceAddress of the admin badge controlling the router.
+        /// * `stablecoin` - ResourceAddress of the stablecoin to be used by the pools.
+        pub fn new(admin_badge: ResourceAddress, stablecoin: ResourceAddress) -> ComponentAddress {
 
             // Creates the position minter
             let position_minter = ResourceBuilder::new_fungible()
@@ -125,23 +120,22 @@ mod router {
                 .method("get_pool_state", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("step_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
                 .default(
-                    rule!(require(admin_badge.resource_address())),
+                    rule!(require(admin_badge)),
                     AccessRule::DenyAll,
                 );
 
             let mut component = Self {
-                stablecoin_address,
+                stablecoin_address: stablecoin,
                 pools: HashMap::new(),
                 position_minter: Vault::with_bucket(position_minter),
                 position_address: position_resource,
                 position_id: 0,
-                admin_badge: admin_badge.resource_address(),
+                admin_badge: admin_badge,
             }
             .instantiate();
 
             component.add_access_check(router_rules);
-            let component = component.globalize();
-            (component, admin_badge)
+            component.globalize()
         }
 
         /// Creates a new stablecoin/token pool.

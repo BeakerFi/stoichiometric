@@ -23,29 +23,7 @@ mod issuer {
 
     impl Issuer {
 
-        pub fn new() -> (ComponentAddress, Bucket) {
-
-            // Creates the admin badge
-            let admin_badge: Bucket = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .metadata("name", "Issuer admin badge")
-                .burnable(rule!(allow_all), AccessRule::DenyAll)
-                .mint_initial_supply(Decimal::ONE);
-
-            // Creates the stablecoin minter
-            let stablecoin_minter = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .mint_initial_supply(Decimal::ONE);
-
-            // Creates the stablecoin resource
-            let stablecoin_address = ResourceBuilder::new_fungible()
-                .divisibility(18)
-                .mintable(rule!(require(stablecoin_minter.resource_address())), AccessRule::DenyAll)
-                .burnable(rule!(require(stablecoin_minter.resource_address())), AccessRule::DenyAll)
-                .updateable_metadata(rule!(require(stablecoin_minter.resource_address())), AccessRule::DenyAll)
-                .metadata("name", "Stoichiometric USD")
-                .metadata("symbol", "SUSD")
-                .create_with_no_initial_supply();
+        pub fn new(admin_badge: ResourceAddress, stablecoin_minter: Bucket, stablecoin_address: ResourceAddress) -> ComponentAddress {
 
             // Creates the resource minter
             let resource_minter = ResourceBuilder::new_fungible()
@@ -98,7 +76,7 @@ mod issuer {
                 .method("repay_flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_lender_state", AccessRule::AllowAll, AccessRule::DenyAll)
                 .default(
-                    rule!(require(admin_badge.resource_address())),
+                    rule!(require(admin_badge)),
                     AccessRule::DenyAll
                 );
 
@@ -113,14 +91,13 @@ mod issuer {
                 loan_id: 0,
                 flash_mint_address,
                 flash_mint_id: 0,
-                admin_badge: admin_badge.resource_address()
+                admin_badge
             }
                 .instantiate();
 
             component.add_access_check(issuer_rules);
-            let component = component.globalize();
 
-            (component, admin_badge)
+            component.globalize()
         }
 
         pub fn new_lender(&mut self, collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress) {
@@ -285,9 +262,15 @@ mod issuer {
             repayment
         }
 
-        pub fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress) {
+        pub fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal) {
             let lender = self.get_lender(&lender_collateral);
-            lender.change_parameters(loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive, oracle);
+            lender.change_parameters(loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive);
+        }
+
+        pub fn change_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress)
+        {
+            let lender = self.get_lender(&lender_collateral);
+            lender.change_oracle(oracle);
         }
 
         pub fn get_lender_state(&self, collateral_token: ResourceAddress) -> Vec<Decimal> {

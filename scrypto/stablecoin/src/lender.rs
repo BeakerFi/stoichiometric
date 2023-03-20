@@ -106,12 +106,16 @@ mod lender {
             (minimum_stablecoins_input, liquidator_bucket, reserve_bucket, loan)
         }
 
-        pub fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress)
+        pub fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal)
         {
             self.loan_to_value = loan_to_value;
             self.interest_rate = interest_rate;
             self.liquidation_threshold = liquidation_threshold;
             self.liquidation_penalty = liquidation_penalty;
+        }
+
+        pub fn change_oracle(&mut self, oracle: ComponentAddress)
+        {
             self.oracle = oracle;
         }
 
