@@ -1,6 +1,6 @@
 import {radix_api_url, stablecoin_address} from "./constants";
 import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
-import {getPoolInfo, getPoolsList} from "../dex/routerApiCalls";
+import {getPoolInfo, getPoolsList, getPoolsListInfo} from "../dex/routerApiCalls";
 import {getLendersList} from "../stablecoin/issuerApiCalls";
 
 import { stable_coin } from "./constants";
@@ -65,7 +65,7 @@ async function getOwnedTokens(account: string) {
 
 async function getTokensPoolsAndLenders() {
     const tokens = await getTokens();
-    const pools = await getPoolsList();
+    const pools = await getPoolsListInfo();
     const lenders = await getLendersList();
     return { tokens, pools, lenders };
 }

@@ -16,9 +16,11 @@ import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
 import { formatToString, formatToString2, randomIntFromInterval } from "utils/general/generalMaths";
-import {swap_direct} from "../utils/dex/routerContractCalls";
+
 
 import { stable_coin as stable, token_default } from "utils/general/constants";
+
+import { swap_direct, swap_indirect } from "../utils/dex/routerContractCalls";
 
 function Swap() {
 
@@ -107,6 +109,10 @@ function Swap() {
         for (var i = 0; i < list.length; ++i) if (list[i][0] == n) return i
         return -1;
     }
+
+    useEffect(() => {
+        console.log(pools);
+    }, [pools])
 
     function calculateGet(n: number) {
         if (token1.address == stable.address) {
@@ -368,7 +374,9 @@ function Swap() {
 
     async function sendSwap() {
         setSwapLoading(true);
-        const flag = await swap_direct(user.address, token1.address, token2.address, sent.toString())
+        let flag: boolean;
+        if (token1.address != stable.address && token2.address != stable.address) flag = await swap_indirect(user.address, token1.address, token2.address, sent.toString());
+        else flag = await swap_direct(user.address, token1.address, token2.address, sent.toString())
         setNbTokens();
         resetValues();
         if (flag) {

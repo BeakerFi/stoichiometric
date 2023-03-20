@@ -49,9 +49,7 @@ async function getNFIDValue(id: string) {
 
 }
 
-async function getPoolInfo(token: string) {
-
-    let pools = await getPoolsList();
+async function getPoolInfo(token: string, pools: any[]) {
 
     const obj: EntityDetailsRequest = {
         "address": pools[0]["pool"]
@@ -76,7 +74,7 @@ async function getPoolInfo(token: string) {
         pool_steps.push([step, p_step])
     }
 
-    return [token, {rate_step: data[0], current_step: data[1], min_rate: data[2], max_rate: data[3], stable_prot_fees: data[4], other_prot_fees: data[5], steps: pool_steps}];
+    return {rate_step: data[0], current_step: data[1], min_rate: data[2], max_rate: data[3], stable_prot_fees: data[4], other_prot_fees: data[5], steps: pool_steps};
 }
 
 async function getPoolStep(address: string) {
@@ -119,5 +117,17 @@ async function getPoolsList() {
     });
 }
 
+async function getPoolsListInfo() {
+    const pools = await getPoolsList();
 
-export {getPoolInfo, getPoolsList, getOwnedPositions}
+    let poolsList = [];
+
+    for (var i = 0; i<pools.length; ++i) {
+        poolsList[pools[i]["token"]] = await getPoolInfo(pools[i]["token"], pools);
+    }
+
+    return poolsList
+}
+
+
+export {getPoolInfo, getPoolsList, getOwnedPositions, getPoolsListInfo}

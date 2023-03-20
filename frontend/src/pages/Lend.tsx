@@ -173,7 +173,6 @@ function Swap() {
         async function getPoolInfos() {
             setPrice(0);
             const infos = await getLenderInformation(lenders[token1.address]);
-            console.log("infos", infos)
             if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
             if (infos) setDir(infos["daily_interest_rate"]);
         }

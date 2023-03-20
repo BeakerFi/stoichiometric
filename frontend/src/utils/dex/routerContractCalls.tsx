@@ -133,7 +133,7 @@ async function addLiquidityNoPosition(account: string, other_token: string, stab
     return !result.isErr();
 }
 
-async function addLiquidityToPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[], position_id: stirng) {
+async function addLiquidityToPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[], position_id: string) {
 
     let steps_string = "";
 
@@ -243,7 +243,6 @@ async function claimFees(account: string, position_id: string) {
                     ResourceAddress("${position_address}");
                 
                 CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
-                    Array<NonFungibleLocalId>(${arg_0_ids})
                     Array<NonFungibleLocalId>(NonFungibleLocalId(${position_id}))
                     ResourceAddress("${position_address}");
                 

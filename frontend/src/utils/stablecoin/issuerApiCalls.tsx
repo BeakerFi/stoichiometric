@@ -1,9 +1,11 @@
 import {
     EntityDetailsRequest,
-    EntityNonFungibleIdsRequest, NonFungibleDataRequest,
+    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleIdsCollectionItem, NonFungibleIdsRequest, NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
+
+
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -41,8 +43,6 @@ async function getLenderInformation(lender_address: string) {
         .then((response) => response.json())
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
-
-    console.log(data);
 
     if (!data) return undefined;
 
@@ -98,12 +98,12 @@ async function getHex(loan_id: string) {
     };
 
     let data;
-    await fetch(radix_api_url + `/entity/non-fungible/data`, {
+    await fetch(radix_api_url + `/non-fungible/data`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
-        .then((response) => response.json())
+        .then((response) => response)
         .then((tmp_data) => data = tmp_data)
         .catch(console.error);
 
@@ -156,7 +156,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     let liquidation_price = 20000;
 
-    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
+    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
 }
 
 async function getAllLoansInformation(loan_ids: any[], lenders: any[]) {
@@ -164,4 +164,37 @@ async function getAllLoansInformation(loan_ids: any[], lenders: any[]) {
     return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
 }
 
-export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation }
+async function getAllCollection(): Promise<string[]> {
+
+    try {
+      let cursor: string | null | undefined = '';
+      const ids:string[] = [];
+  
+      while (cursor !== undefined) {
+        const obj: NonFungibleIdsRequest = {
+            "address": loan_address,
+            "cursor" : cursor
+        };
+        await fetch(radix_api_url + '/non-fungible/ids', {
+          method: 'POST',
+          body: JSON.stringify(obj),
+          headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const response = data as NonFungibleIdsResponse;
+            response.non_fungible_ids.items.forEach( item => {
+              ids.push(item.non_fungible_id)
+            });
+            cursor = response.non_fungible_ids.next_cursor;
+          })
+          .catch(console.error);
+      }
+  
+      return ids;
+    } catch {
+      throw new Error("error");
+    }
+  }
+
+export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation, getAllCollection }
