@@ -57,7 +57,7 @@ mod router {
         /// # Arguments
         /// * `admin_badge` - ResourceAddress of the admin badge controlling the router.
         /// * `stablecoin` - ResourceAddress of the stablecoin to be used by the pools.
-        pub fn new(admin_badge: ResourceAddress, stablecoin: ResourceAddress) -> ComponentAddress {
+        pub fn new(admin_badge: ResourceAddress, stablecoin: ResourceAddress) -> (ComponentAddress, ResourceAddress) {
 
             // Creates the position minter
             let position_minter = ResourceBuilder::new_fungible()
@@ -128,14 +128,14 @@ mod router {
                 stablecoin_address: stablecoin,
                 pools: HashMap::new(),
                 position_minter: Vault::with_bucket(position_minter),
-                position_address: position_resource,
+                position_address: position_resource.clone(),
                 position_id: 0,
                 admin_badge: admin_badge,
             }
             .instantiate();
 
             component.add_access_check(router_rules);
-            component.globalize()
+            (component.globalize(), position_resource)
         }
 
         /// Creates a new stablecoin/token pool.
