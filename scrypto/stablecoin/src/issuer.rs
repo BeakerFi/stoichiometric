@@ -202,31 +202,6 @@ mod issuer {
 
             (repayment, liquidator_bucket)
         }
-        /*
-        pub fn liquidate_list(&mut self, mut repayment: Bucket, non_fungible_ids: Vec<NonFungibleLocalId>) -> (Bucket, Vec<Bucket>) {
-
-            let mut buckets: Vec<Bucket> = Vec::new();
-            let mut bucket_to_burn = Bucket::new(self.stablecoin_address);
-
-            for non_fungible_id in non_fungible_ids {
-                let loan: Loan = borrow_resource_manager!(self.loan_address).get_non_fungible_data(&non_fungible_id);
-                let lender = self.get_lender(&loan.collateral_token);
-
-                let (interests, amount_lent, liquidator_bucket, reserve_bucket, new_loan_data) = lender.liquidate(repayment.amount(), loan);
-
-                bucket_to_burn.put(repayment.take(amount_lent));
-                self.put_in_reserves(repayment.take(interests));
-                self.put_in_reserves(reserve_bucket);
-                buckets.push(liquidator_bucket);
-
-                borrow_resource_manager!(self.loan_address).update_non_fungible_data(&non_fungible_id, new_loan_data);
-            }
-
-            self.burn_bucket(bucket_to_burn);
-
-            (repayment, buckets)
-        }
-        */
 
         pub fn flash_mint(&mut self, amount_to_mint: Decimal) -> (Bucket, Bucket) {
             let stablecoin_amount = self.mint(amount_to_mint);
@@ -271,6 +246,12 @@ mod issuer {
         {
             let lender = self.get_lender(&lender_collateral);
             lender.change_oracle(oracle);
+        }
+
+        pub fn give_tokens(&mut self, tokens: Vec<Bucket>) {
+            for bucket in tokens {
+                self.put_in_reserves(bucket);
+            }
         }
 
         pub fn get_lender_state(&self, collateral_token: ResourceAddress) -> Vec<Decimal> {

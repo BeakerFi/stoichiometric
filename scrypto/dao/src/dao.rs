@@ -9,6 +9,22 @@ external_component! {
     }
 }
 
+external_component! {
+    RouterLocalComponent {
+        fn create_pool(&mut self, token: ResourceAddress, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal);
+        fn claim_protocol_fees(&mut self) -> Vec<Bucket>;
+    }
+}
+
+external_component! {
+    IssuerLocalComponent {
+        fn new_lender(&mut self, collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress);
+        fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal);
+        fn change_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress);
+        fn give_tokens(&mut self, tokens: Vec<Bucket>);
+    }
+}
+
 
 #[blueprint]
 mod dao {
@@ -39,6 +55,7 @@ mod dao {
         total_voting_power: Decimal,
         vote_period: i64,
         vote_validity_threshold: Decimal,
+        reserves: HashMap<ResourceAddress, Vault>
     }
 
     impl Dao {
@@ -127,7 +144,8 @@ mod dao {
                 locked_positions: Vault::new(position_address),
                 total_voting_power: Decimal::ZERO,
                 vote_period,
-                vote_validity_threshold
+                vote_validity_threshold,
+                reserves: HashMap::new()
             }
                 .instantiate();
 
@@ -230,7 +248,7 @@ mod dao {
             assert!(proposal_receipt.amount() == Decimal::ONE, "Can only execute one proposal at a time");
 
             let proposal_data: ProposalReceipt = borrow_resource_manager!(self.proposal_receipt_address).get_non_fungible_data(proposal_receipt.non_fungible::<ProposalReceipt>().local_id());
-            let proposal = self.get_proposal(proposal_data.proposal_id);
+            let mut proposal = self.get_proposal(proposal_data.proposal_id);
 
             let changes_to_execute = self.protocol_admin_badge.authorize(|| {
                 proposal.execute()
@@ -254,7 +272,7 @@ mod dao {
             {
                 ProposedChange::ChangeVotePeriod(new_period) =>
                     {
-                        self.voting_period = new_period;
+                        self.vote_period = new_period;
                         None
                     }
 
@@ -273,24 +291,79 @@ mod dao {
                         Some(vec![new_stablecoin_minter])
                     }
 
-                ProposedChange::RemoveIssuingRight() =>
+                ProposedChange::RemoveIssuingRight(_vault_bytes) =>
                     {
-                        self.protocol_admin_badge.authorize(||
-                            {
-                                borrow_resource_manager!(self.stablecoin_minter.resource_address())
+                        /* Not doable yet, but the recalling and burning the minter should be done like that:
+                            self.protocol_admin_badge.authorize(|| {
+                                let resource_manager = borrow_resource_manager!(self.stablecoin_minter.resource_address());
+                                let minter = resource_manager.recall(vault_bytes);
+                                resource_manager.burn(minter);
+
                             });
+                            self.protocol_admin_badge.authorize(|| {
+                                borrow_resource_manager!(self.stablecoin_minter.resource_address(
+                            });
+                         */
                         None
                     }
 
-                ProposedChange::AllowClaim(claimed_resources) => { }
+                ProposedChange::AllowClaim(claimed_resources) => {
 
-                ProposedChange::AddNewCollateralToken(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty) => { }
+                    let mut vec_bucket = vec![];
+                    for (token, amount) in &claimed_resources {
+                        let bucket = self.reserves.get_mut(token).expect("There are no reserves for some of the tokens").take(*amount);
+                        vec_bucket.push(bucket)
+                    }
+                    Some(vec_bucket)
+                }
 
-                ProposedChange::ChangeLenderParameters(lender, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty) => { }
+                ProposedChange::AddNewCollateralToken(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, initial_rate, minimum_rate, maximum_rate, oracle) =>
+                    {
+                        let mut router = RouterLocalComponent::at(self.dex_router);
+                        let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
 
-                ProposedChange::ChangeLenderOracle(lender, oracle_address) => { }
+                        self.protocol_admin_badge.authorize(|| {
+                            router.create_pool(new_token.clone(), initial_rate, minimum_rate, maximum_rate);
+                            issuer.new_lender(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, oracle);
+                        });
 
-                ProposedChange::AddTokensToIssuerReserves(tokens_to_transfer) => { }
+                        None
+                    }
+
+                ProposedChange::ChangeLenderParameters(lender, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty) =>
+                    {
+                        let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
+
+                        self.protocol_admin_badge.authorize(|| {
+                            issuer.change_lender_parameters(lender, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty);
+                        });
+
+                        None
+                    }
+
+                ProposedChange::ChangeLenderOracle(lender, oracle_address) =>
+                    {
+                        let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
+
+                        self.protocol_admin_badge.authorize(|| {
+                            issuer.change_oracle(lender, oracle_address);
+                        });
+
+                        None
+                    }
+
+                ProposedChange::AddTokensToIssuerReserves(tokens_to_transfer) =>
+                    {
+                        let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
+                        let mut buckets_to_give = vec![];
+                        for (token, amount) in &tokens_to_transfer {
+                            let bucket = self.reserves.get_mut(token).expect("There are no reserves for some of the tokens").take(*amount);
+                            buckets_to_give.push(bucket);
+                        }
+                        issuer.give_tokens(buckets_to_give);
+
+                        None
+                    }
             }
         }
 

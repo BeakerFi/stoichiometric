@@ -14,13 +14,13 @@ pub enum ProposedChange
     GrantIssuingRight,
 
     /// Recalls a stablecoin minting badge
-    RemoveIssuingRight(),
+    RemoveIssuingRight(Vec<u8>),
 
     /// Allows claiming of a certain amount of resource from the dao reserves
     AllowClaim(Vec<(ResourceAddress, Decimal)>),
 
     /// Adds a new token as possible collateral. Taking this decision will also create a pool for the given token
-    AddNewCollateralToken(ResourceAddress, Decimal, Decimal, Decimal, Decimal),
+    AddNewCollateralToken(ResourceAddress, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, ComponentAddress),
 
     /// Changes the parameters of a given stablecoin lender
     ChangeLenderParameters(ResourceAddress, Decimal, Decimal, Decimal, Decimal),
