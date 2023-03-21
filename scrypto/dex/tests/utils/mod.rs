@@ -1,5 +1,5 @@
 use crate::pool_state::PoolState;
-use crate::router_sqrt::{RouterBlueprint, RouterMethods, POSITION_NAME};
+use crate::router_sqrt::{RouterBlueprint, RouterMethods, POSITION_NAME, ADMIN_BADGE_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
@@ -29,29 +29,26 @@ pub fn instantiate() -> TestEnvironment {
     test_env.publish_package("router", router_package);
     test_env.create_fixed_supply_token("usd", dec!(10000000));
     test_env.create_fixed_supply_token("btc", dec!(10000000));
+    test_env.create_fixed_supply_token(ADMIN_BADGE_NAME, Decimal::ONE);
     test_env.new_component(
         "router_comp",
         "router_bp",
-        vec![ResourceAddressArg("usd".to_string())],
+        vec![ResourceAddressArg(ADMIN_BADGE_NAME.to_string()), ResourceAddressArg("usd".to_string())],
     );
     test_env
 }
 
 pub fn create_pool(
     test_env: &mut TestEnvironment,
-    stable_amount: Decimal,
     other: &str,
-    other_amount: Decimal,
+    initial_rate: Decimal,
     min_rate: Decimal,
     max_rate: Decimal,
 ) -> PoolState {
     test_env
         .call_method(RouterMethods::CreatePool(
-            "usd".to_string(),
-            stable_amount,
             other.to_string(),
-            other_amount,
-            stable_amount / other_amount,
+            initial_rate,
             min_rate,
             max_rate,
         ))
@@ -138,10 +135,9 @@ pub fn add_liquidity_at_step<'a>(
 pub fn add_liquidity_at_steps<'a>(
     test_env: &'a mut TestEnvironment,
     amount_stable: Decimal,
-    token_b: &'a str,
-    amount_b: Decimal,
-    start_step: u16,
-    stop_step: u16,
+    other: &'a str,
+    amount_other: Decimal,
+    steps: Vec<(u16, Decimal, Decimal)>,
     position_id: Option<String>,
 ) -> ManifestCall<'a> {
     let mut env_args = Vec::new();
@@ -154,32 +150,26 @@ pub fn add_liquidity_at_steps<'a>(
         ComponentAddressArg(test_env.get_current_component_name().to_string()),
     ));
     env_args.push((
-        "token_a_address".to_string(),
+        "stablecoin_address".to_string(),
         ResourceAddressArg("usd".to_string()),
     ));
-    env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
+    env_args.push(("stablecoin_amount".to_string(), DecimalArg(amount_stable)));
     env_args.push((
-        "token_b_address".to_string(),
-        ResourceAddressArg(token_b.to_string()),
+        "other_token".to_string(),
+        ResourceAddressArg(other.to_string()),
     ));
-    env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
+    env_args.push(("other_token_amount".to_string(), DecimalArg(amount_other)));
 
+    let mut step_string = String::new();
 
-    let mut vec_arg= vec![];
-
-    let amount_stable_per_step = amount_stable/(stop_step-start_step + 1);
-    let amount_other_per_step = amount_b/(stop_step-start_step + 1);
-
-    for i in start_step..stop_step+1 {
-        let mut arg_vec =vec![];
-        arg_vec.push(U16(i));
-        arg_vec.push(DecimalArg(amount_stable_per_step.clone()));
-        arg_vec.push(DecimalArg(amount_other_per_step.clone()));
-
-        vec_arg.push(TupleArg(arg_vec));
+    for (step, stable_amount, other_amount) in steps {
+        let new_string = format!("Tuple({}u16, Decimal(\"{}\"), Decimal(\"{}\"))", step, stable_amount, other_amount);
+        step_string = format!("{}{} ,", step_string, new_string);
     }
+    step_string.pop();
+    step_string.pop();
 
-    env_args.push(("steps".to_string(), VecArg(vec_arg)));
+    env_args.push(("steps_string".to_string(), StringArg(step_string)));
 
     let manifest_name = match position_id {
         None => "add_liquidity_at_steps_no_pos",

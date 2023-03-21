@@ -1,5 +1,5 @@
 use scrypto::prelude::Decimal;
-use sqrt::blueprint::Blueprint;
+use sqrt::blueprint::{AdminBadge, Blueprint};
 use sqrt::method::Arg::{
     DecimalArg, FungibleBucketArg, NonFungibleBucketArg, NonFungibleProofArg, ResourceAddressArg,
     U16,
@@ -21,13 +21,13 @@ impl Blueprint for RouterBlueprint {
         "Router"
     }
 
-    fn has_admin_badge(&self) -> bool {
-        true
+    fn has_admin_badge(&self) -> AdminBadge {
+        AdminBadge::External(ADMIN_BADGE_NAME.to_string())
     }
 }
 
 pub enum RouterMethods {
-    CreatePool(String, Decimal, String, Decimal, Decimal, Decimal, Decimal),
+    CreatePool(String, Decimal, Decimal, Decimal),
     RemoveLiquidityAtStep(String, String, u16),
     RemoveLiquidityAtSteps(String, String, u16, u16),
     RemoveLiquidityAtRate(String, String, Decimal),
@@ -40,7 +40,7 @@ pub enum RouterMethods {
 impl Method for RouterMethods {
     fn name(&self) -> &str {
         match self {
-            RouterMethods::CreatePool(_, _, _, _, _, _, _) => "create_pool",
+            RouterMethods::CreatePool(_, _, _, _,) => "create_pool",
             RouterMethods::RemoveLiquidityAtStep(_, _, _) => "remove_liquidity_at_step",
             RouterMethods::RemoveLiquidityAtSteps(_, _, _, _) => "remove_liquidity_at_steps",
             RouterMethods::RemoveLiquidityAtRate(_, _, _) => "remove_liquidity_at_rate",
@@ -54,17 +54,13 @@ impl Method for RouterMethods {
     fn args(&self) -> Option<Vec<Arg>> {
         match self {
             RouterMethods::CreatePool(
-                token_a,
-                token_a_amount,
-                token_b,
-                token_b_amount,
+                token,
                 initial_rate,
                 min_rate,
                 max_rate,
             ) => {
                 method_args!(
-                    FungibleBucketArg(token_a.clone(), token_a_amount.clone()),
-                    FungibleBucketArg(token_b.clone(), token_b_amount.clone()),
+                    ResourceAddressArg(token.clone()),
                     DecimalArg(initial_rate.clone()),
                     DecimalArg(min_rate.clone()),
                     DecimalArg(max_rate.clone())
@@ -109,7 +105,7 @@ impl Method for RouterMethods {
 
     fn needs_admin_badge(&self) -> bool {
         match self {
-            RouterMethods::CreatePool(_, _, _, _, _, _, _) | RouterMethods::ClaimProtocolFees => {
+            RouterMethods::CreatePool(_, _, _, _) | RouterMethods::ClaimProtocolFees => {
                 true
             }
             _ => false,

@@ -6,23 +6,23 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("${caller_address}")
     "withdraw_by_amount"
-    Decimal("${token_a_amount}")
-    ResourceAddress("${token_a_address}");
+    Decimal("${stablecoin_amount}")
+    ResourceAddress("${stablecoin_address}");
 
 TAKE_FROM_WORKTOP_BY_AMOUNT
-    Decimal("${token_a_amount}")
-    ResourceAddress("${token_a_address}")
+    Decimal("${stablecoin_amount}")
+    ResourceAddress("${stablecoin_address}")
     Bucket("0");
 
 CALL_METHOD
     ComponentAddress("${caller_address}")
     "withdraw_by_amount"
-    Decimal("${token_b_amount}")
-    ResourceAddress("${token_b_address}");
+    Decimal("${other_token_amount}")
+    ResourceAddress("${other_token}");
 
 TAKE_FROM_WORKTOP_BY_AMOUNT
-    Decimal("${token_b_amount}")
-    ResourceAddress("${token_b_address}")
+    Decimal("${other_token_amount}")
+    ResourceAddress("${other_token}")
     Bucket("1");
 
 CALL_METHOD
@@ -38,10 +38,10 @@ CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS
 
 CALL_METHOD
     ComponentAddress("${component_address}")
-	"add_liquidity_at_steps"
-	Bucket("0")
-	Bucket("1")
-    Vec<(u16, Decimal, Decimal)>(${steps})
+    "add_liquidity_at_steps"
+    Bucket("0")
+    Bucket("1")
+    Array<Tuple>(${steps_string})
     Some(Proof("2"));
 
 DROP_ALL_PROOFS;
