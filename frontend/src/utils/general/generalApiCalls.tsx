@@ -1,7 +1,11 @@
 import {radix_api_url, router_address} from "./constants";
-import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";;
+import {EntityDetailsRequest, EntityDetailsResponse} from "@radixdlt/babylon-gateway-api-sdk";;
 
-import {lender, pool, token} from "types";
+import {EntityDetailsResponseComponentDetails, lender, pool, token} from "types";
+import { getPoolInformation } from "utils/dex/routerApiCalls";
+import { getLenderInformation, getLendersList } from "utils/stablecoin/issuerApiCalls";
+
+
 
 async function getToken(address: string): Promise<token>{
 
@@ -53,38 +57,55 @@ async function getOwnedTokens(account: string) {
 }
 
 async function getRawPoolsList() {
+
+
     const obj: EntityDetailsRequest = {
         "address": router_address
     };
 
-    let data;
-    await fetch( radix_api_url + `/entity/details`, {
+    const response = await fetch( radix_api_url + `/entity/details`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data )
-        .catch(console.error);
 
-    // @ts-ignore
-    return data["details"]["state"]["data_json"][1].map(row => {
+    let data = await response.json() as EntityDetailsResponse
+
+    if (data.details?.discriminator == 'component' ){
+        const component_details = data.details as EntityDetailsResponseComponentDetails
+        return component_details.state.data_json[1].map( (row:any) => {
         return {token: row[0], pool_address: row[1]}
     });
 }
+}
 
-async function getTokensPoolsAndLenders() {
+async function getLendersInfos(){
+    let raw_lender_list = await getLendersList();
 
+    return Promise.all(raw_lender_list.map(async (raw_lender:any) => {
+        return getLenderInformation(raw_lender.token);
+      }));
+
+}
+
+async function getTokensAndPools(){
     let raw_list = await getRawPoolsList();
 
-    const tokens: token[] = await Promise.all(raw_list.map((raw_pool: { token: string, pool_address: string; }) => {
+    const tokens: token[] = await Promise.all(raw_list.map(async (raw_pool: { token: string, pool_address: string; }) => {
         return getToken(raw_pool.token);
-    }));
+      }));
+      
+    const pools: pool[] = await Promise.all(raw_list.map(async (raw_pool: { token: string, pool_address: string; }, index: number) => {
+        return getPoolInformation(tokens[index], raw_pool.pool_address);
+      }));
 
-    const pools: pool[] = [];
-    const lenders: lender[] = [];
+    return {tokens,pools}
 
-
+}
+async function getTokensPoolsAndLenders() {
+      
+    const [lenders, {tokens,pools}]= await Promise.all([getLendersInfos(), getTokensAndPools()]);
+      
     return { tokens, pools, lenders };
 }
 

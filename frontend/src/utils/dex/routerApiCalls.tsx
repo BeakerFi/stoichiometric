@@ -101,20 +101,5 @@ async function getPoolStep(step_id: number, step_address: string): Promise<step>
     return {step_id: step_id, stablecoin_amount: parseFloat(data[0]), other_token_amount: data[1], rate: data[2]}
 }
 
-async function getPoolsListInformation(tokens: token[]): Promise<pool[]> {
 
-    let poolsList = await Promise.all(tokens.map(
-        token => {
-            await getPoolInformation(token, )
-        }
-    ));
-
-    for (let i = 0; i<pools.length; ++i) {
-        poolsList[pools[i]["token"]] = await getPoolInformation(pools[i]["token"], pools);
-    }
-
-    return poolsList
-}
-
-
-export {getPoolInformation, getOwnedPositions, getPoolsListInformation}
+export {getPoolInformation, getOwnedPositions}
