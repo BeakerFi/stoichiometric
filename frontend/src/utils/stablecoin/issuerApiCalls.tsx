@@ -107,6 +107,9 @@ async function getHex(loan_id: string) {
         .then((tmp_data) => data = tmp_data)
         .catch(console.error);
 
+
+    console.log("data", data);
+
     // @ts-ignore
     let mutable_hex = data["mutable_data_hex"];
     // @ts-ignore
@@ -197,4 +200,4 @@ async function getAllCollection(): Promise<string[]> {
     }
   }
 
-export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation, getAllCollection }
+export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation, getAllCollection}

@@ -8,7 +8,12 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
+import {position} from "types";
+import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
+import { TokensContext } from "./TokensContext";
+
 const UserContext = React.createContext(null as any);
+
 
 interface Props {
     children: any;
@@ -22,13 +27,17 @@ interface User {
 const UserCtx: React.FC<Props> = (props) => {
     const { addAlert } = useContext(SnackbarContext);
 
+    const { lenders } = useContext(TokensContext);
+
     const [user, setUser] = useState<User>({address: null, name: null})
 
     const [accountsList, setAccountsList] = useState<User[]>([]);
 
     const [connectionLoading, setConnectionLoading] = useState(false);
 
-    const [positions, setPositions] = useState<any[]>([]);
+    const [positions, setPositions] = useState<position[]>([]);
+
+    const [myLoans, setMyLoans] = useState<any[]>([]);
 
     const [achievements, setAchievements] = useState({
         ach_0: false,
@@ -64,11 +73,15 @@ const UserCtx: React.FC<Props> = (props) => {
         if (address == undefined) {
             if (user.address) {
                 const result:any = await getOwnedPositions(user.address);
+                const loans: any = await getLoansOwnedBy(user.address);
                 setPositions(result);
+                setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return
         } else {
             const result:any = await getOwnedPositions(address);
+            const loans: any = await getLoansOwnedBy(address);
             setPositions(result);
+            setMyLoans(await getAllLoansInformation(loans, lenders));
         }
     }
 
@@ -78,6 +91,17 @@ const UserCtx: React.FC<Props> = (props) => {
             setAccountsList(state.accounts ? state.accounts.map(x => { return {address: x.address, name: x.label}}) : [])         
         });
     }, []);
+
+    useEffect(() => {
+        async function setLoans() {
+            if (user.address) {
+                const loans: any = await getLoansOwnedBy(user.address);
+                setMyLoans(await getAllLoansInformation(loans, lenders));
+            } else return 
+        }
+        setLoans()
+        
+    }, [lenders])
 
     useEffect(() => {
         console.log("positions", positions);
@@ -116,7 +140,7 @@ const UserCtx: React.FC<Props> = (props) => {
     }
 
     return (
-        <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser}}>
+        <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans}}>
             {props.children}
         </UserContext.Provider>
     )

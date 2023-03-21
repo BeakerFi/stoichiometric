@@ -39,7 +39,7 @@ function Swap() {
 
     const { tokens, lenders } = useContext(TokensContext);
 
-    const { user, tokensOwned, setNbTokens } = useContext(UserContext);
+    const { user, tokensOwned, setNbTokens, myLoans } = useContext(UserContext);
 
     const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
 
@@ -233,7 +233,7 @@ function Swap() {
         setLock(!lock);
     }
 
-    const [myLoans, setMyLoans] = useState<boolean>(false);
+    const [boolMyLoans, setBoolMyLoans] = useState<boolean>(false);
 
     const [choseLend, setChoseLend] = useState<boolean>(false);
 
@@ -252,8 +252,6 @@ function Swap() {
         setSwapLoading(false);
     }  
 
-    const lendsList = [{token:{icon_url:"", symb:"XRD", address: "", name:""}, id:""}]
-
     const style = styleFunction(device, swapLoading, token1Select, choseLend, lock);
 
     return (
@@ -271,19 +269,19 @@ function Swap() {
 
                     <div sx={style.container}>
                         <div sx={style.buttons}>
-                            <span sx={myLoans && user.address ? style.inactive : style.active} onClick={() => {setMyLoans(false)}}>Borrow SUSD</span>
+                            <span sx={boolMyLoans && user.address ? style.inactive : style.active} onClick={() => {setBoolMyLoans(false)}}>Borrow SUSD</span>
                             { user.address ?
-                                <span sx={myLoans ? style.active : style.inactive} onClick={() => {setMyLoans(true);}}>My Loans</span>
+                                <span sx={boolMyLoans ? style.active : style.inactive} onClick={() => {setBoolMyLoans(true);}}>My Loans</span>
                                 : null}
                         </div>
 
-                        { myLoans && user.address ? 
+                        { boolMyLoans && user.address ? 
                             (<div sx={style.myPositionColumn}>
                                 <div sx={style.chosePositionContainer}>
                                     <div sx={style.chosePositionZone}>
                                         <h2><div sx={style.close} onClick={() => setChoseLend(false)}/>Your Loans</h2>
                                         <div sx={style.poolsList}>
-                                            {  lendsList.map((pool: pool) => {
+                                            {  myLoans.map((pool: pool) => {
                                                 return (
                                                     <div sx={style.poolChoice} onClick={() => {
                                                         setChoseLend(true)

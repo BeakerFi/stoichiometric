@@ -22,15 +22,15 @@ root.render(
     <ResponsiveCtx>
       <SnackbarCtx>
         <ThemeCtx>
-          <UserCtx>
-            <BurgerCtx>
-              <TokensCtx>
-                <BrowserRouter>
-                  <App />
-                </BrowserRouter>
-              </TokensCtx>
-            </BurgerCtx>
-          </UserCtx>
+          <TokensCtx>
+            <UserCtx>
+              <BurgerCtx>
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+              </BurgerCtx>
+            </UserCtx>
+          </TokensCtx>
         </ThemeCtx>
       </SnackbarCtx>
     </ResponsiveCtx>
