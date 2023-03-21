@@ -1,6 +1,8 @@
 use scrypto::prelude::*;
 
-#[derive(NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
+#[derive(
+    NonFungibleData, ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone,
+)]
 pub struct Loan {
     /// Token used as collateral
     pub collateral_token: ResourceAddress,
@@ -24,16 +26,21 @@ pub struct Loan {
 }
 
 impl Loan {
-
-    pub fn from(collateral_token: ResourceAddress, collateral_amount: Decimal, amount_lent: Decimal, loan_date: i64, loan_to_value: Decimal, interest_rate: Decimal) -> Self
-    {
-        Self{
+    pub fn from(
+        collateral_token: ResourceAddress,
+        collateral_amount: Decimal,
+        amount_lent: Decimal,
+        loan_date: i64,
+        loan_to_value: Decimal,
+        interest_rate: Decimal,
+    ) -> Self {
+        Self {
             collateral_token,
             collateral_amount,
             amount_lent,
             loan_date,
             loan_to_value,
-            interest_rate
+            interest_rate,
         }
     }
 }

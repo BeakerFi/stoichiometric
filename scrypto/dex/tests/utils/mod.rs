@@ -1,10 +1,12 @@
 use crate::pool_state::PoolState;
-use crate::router_sqrt::{RouterBlueprint, RouterMethods, POSITION_NAME, ADMIN_BADGE_NAME};
+use crate::router_sqrt::{RouterBlueprint, RouterMethods, ADMIN_BADGE_NAME, POSITION_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::manifest_call::ManifestCall;
-use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16};
+use sqrt::method::Arg::{
+    AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16,
+};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::collections::HashMap;
@@ -33,7 +35,10 @@ pub fn instantiate() -> TestEnvironment {
     test_env.new_component(
         "router_comp",
         "router_bp",
-        vec![ResourceAddressArg(ADMIN_BADGE_NAME.to_string()), ResourceAddressArg("usd".to_string())],
+        vec![
+            ResourceAddressArg(ADMIN_BADGE_NAME.to_string()),
+            ResourceAddressArg("usd".to_string()),
+        ],
     );
     test_env
 }
@@ -163,7 +168,10 @@ pub fn add_liquidity_at_steps<'a>(
     let mut step_string = String::new();
 
     for (step, stable_amount, other_amount) in steps {
-        let new_string = format!("Tuple({}u16, Decimal(\"{}\"), Decimal(\"{}\"))", step, stable_amount, other_amount);
+        let new_string = format!(
+            "Tuple({}u16, Decimal(\"{}\"), Decimal(\"{}\"))",
+            step, stable_amount, other_amount
+        );
         step_string = format!("{}{} ,", step_string, new_string);
     }
     step_string.pop();

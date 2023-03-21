@@ -56,8 +56,10 @@ mod router {
         /// # Arguments
         /// * `admin_badge` - ResourceAddress of the admin badge controlling the router.
         /// * `stablecoin` - ResourceAddress of the stablecoin to be used by the pools.
-        pub fn new(admin_badge: ResourceAddress, stablecoin: ResourceAddress) -> (ComponentAddress, ResourceAddress) {
-
+        pub fn new(
+            admin_badge: ResourceAddress,
+            stablecoin: ResourceAddress,
+        ) -> (ComponentAddress, ResourceAddress) {
             // Creates the position minter
             let position_minter = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
@@ -118,10 +120,7 @@ mod router {
                 .method("swap", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_pool_state", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("step_at_rate", AccessRule::AllowAll, AccessRule::DenyAll)
-                .default(
-                    rule!(require(admin_badge)),
-                    AccessRule::DenyAll,
-                );
+                .default(rule!(require(admin_badge)), AccessRule::DenyAll);
 
             let mut component = Self {
                 stablecoin_address: stablecoin,
@@ -164,10 +163,14 @@ mod router {
                 "A pool trading these tokens already exists"
             );
 
-            let pool = PoolComponent::new(self.stablecoin_address, token.clone(), initial_rate, min_rate, max_rate);
+            let pool = PoolComponent::new(
+                self.stablecoin_address,
+                token.clone(),
+                initial_rate,
+                min_rate,
+                max_rate,
+            );
             self.pools.insert(token, pool);
-
-
         }
 
         /// Adds liquidity to an existing pool at a given rate.
@@ -295,24 +298,16 @@ mod router {
                     // Extract the data from the Position NFR
                     let data = self.get_position_data(&position_nfr);
 
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
-                        bucket_stable,
-                        bucket_other,
-                        steps,
-                        data,
-                    );
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity_at_steps(bucket_stable, bucket_other, steps, data);
                     self.update_position(position_nfr, new_data);
                     (ret_stable, ret_other, None)
                 }
                 None => {
                     // If the user did not supply a Proof, create one and add liquidity
                     let empty_pos = Position::from(bucket_other.resource_address());
-                    let (ret_stable, ret_other, new_data) = pool.add_liquidity_at_steps(
-                        bucket_stable,
-                        bucket_other,
-                        steps,
-                        empty_pos,
-                    );
+                    let (ret_stable, ret_other, new_data) =
+                        pool.add_liquidity_at_steps(bucket_stable, bucket_other, steps, empty_pos);
 
                     let bucket_pos = self.position_minter.authorize(|| {
                         borrow_resource_manager!(self.position_address).mint_non_fungible(
@@ -468,8 +463,7 @@ mod router {
         }
 
         /// Returns Time-wieghted average price of a given token since a given time
-        pub fn get_twap_since(&self, token: ResourceAddress, timestamp: i64) -> Decimal
-        {
+        pub fn get_twap_since(&self, token: ResourceAddress, timestamp: i64) -> Decimal {
             let pool = self.get_pool(token);
             pool.get_twap_since(timestamp)
         }

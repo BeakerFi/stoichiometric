@@ -54,7 +54,7 @@ mod pool {
         other_protocol_fees: Vault,
 
         /// Price oracle
-        oracle: OracleComponent
+        oracle: OracleComponent,
     }
 
     impl Pool {
@@ -103,7 +103,7 @@ mod pool {
                 steps: HashMap::new(),
                 stable_protocol_fees: Vault::new(stable),
                 other_protocol_fees: Vault::new(other),
-                oracle: OracleComponent::new()
+                oracle: OracleComponent::new(),
             }
             .instantiate();
 
@@ -143,11 +143,12 @@ mod pool {
             mut position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step_position = position.get_step(step);
-            let (bucket_stable, bucket_other) = if bucket_a.resource_address() == self.stable_protocol_fees.resource_address(){
-                (bucket_a, bucket_b)
-            } else {
-                (bucket_b, bucket_a)
-            };
+            let (bucket_stable, bucket_other) =
+                if bucket_a.resource_address() == self.stable_protocol_fees.resource_address() {
+                    (bucket_a, bucket_b)
+                } else {
+                    (bucket_b, bucket_a)
+                };
 
             // Get or create the given step
             let pool_step = match self.steps.get_mut(&step) {
@@ -190,13 +191,11 @@ mod pool {
             steps: Vec<(u16, Decimal, Decimal)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for (step, amount_stable, amount_other) in steps
-            {
+            for (step, amount_stable, amount_other) in steps {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
                     bucket_stable.take(amount_stable),
                     bucket_other.take(amount_other),
@@ -408,10 +407,11 @@ mod pool {
             self.oracle.new_observation(current_time, self.current_step);
         }
 
-        pub fn get_twap_since(&self, timestamp: i64) -> Decimal
-        {
+        pub fn get_twap_since(&self, timestamp: i64) -> Decimal {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
-            let twas = self.oracle.get_time_weighted_average_step_since(timestamp, current_time);
+            let twas = self
+                .oracle
+                .get_time_weighted_average_step_since(timestamp, current_time);
             let twap = self.rate_step.powi(twas as i64);
             twap
         }

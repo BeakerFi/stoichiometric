@@ -40,7 +40,7 @@ pub enum RouterMethods {
 impl Method for RouterMethods {
     fn name(&self) -> &str {
         match self {
-            RouterMethods::CreatePool(_, _, _, _,) => "create_pool",
+            RouterMethods::CreatePool(_, _, _, _) => "create_pool",
             RouterMethods::RemoveLiquidityAtStep(_, _, _) => "remove_liquidity_at_step",
             RouterMethods::RemoveLiquidityAtSteps(_, _, _, _) => "remove_liquidity_at_steps",
             RouterMethods::RemoveLiquidityAtRate(_, _, _) => "remove_liquidity_at_rate",
@@ -53,12 +53,7 @@ impl Method for RouterMethods {
 
     fn args(&self) -> Option<Vec<Arg>> {
         match self {
-            RouterMethods::CreatePool(
-                token,
-                initial_rate,
-                min_rate,
-                max_rate,
-            ) => {
+            RouterMethods::CreatePool(token, initial_rate, min_rate, max_rate) => {
                 method_args!(
                     ResourceAddressArg(token.clone()),
                     DecimalArg(initial_rate.clone()),
@@ -105,9 +100,7 @@ impl Method for RouterMethods {
 
     fn needs_admin_badge(&self) -> bool {
         match self {
-            RouterMethods::CreatePool(_, _, _, _) | RouterMethods::ClaimProtocolFees => {
-                true
-            }
+            RouterMethods::CreatePool(_, _, _, _) | RouterMethods::ClaimProtocolFees => true,
             _ => false,
         }
     }

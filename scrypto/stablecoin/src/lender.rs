@@ -9,8 +9,8 @@ external_component! {
 
 #[blueprint]
 mod lender {
-    use crate::loan::Loan;
     use crate::constants::SECONDS_PER_DAY;
+    use crate::loan::Loan;
 
     pub struct Lender {
         collateral: Vault,
@@ -18,44 +18,61 @@ mod lender {
         interest_rate: Decimal,
         liquidation_threshold: Decimal,
         liquidation_penalty: Decimal,
-        oracle: ComponentAddress
+        oracle: ComponentAddress,
     }
 
     impl Lender {
-
-        pub fn new(collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress) -> LenderComponent {
-            Self{
+        pub fn new(
+            collateral_address: ResourceAddress,
+            loan_to_value: Decimal,
+            interest_rate: Decimal,
+            liquidation_threshold: Decimal,
+            liquidation_penalty: Decimal,
+            oracle: ComponentAddress,
+        ) -> LenderComponent {
+            Self {
                 collateral: Vault::new(collateral_address),
                 loan_to_value,
                 interest_rate,
                 liquidation_threshold,
                 liquidation_penalty,
-                oracle
+                oracle,
             }
-                .instantiate()
+            .instantiate()
         }
 
         pub fn take_loan(&mut self, collateral: Bucket, amount_to_loan: Decimal) -> Loan {
-
             let price = self.get_oracle_price();
 
-            let collateral_needed = amount_to_loan / ( self.loan_to_value * price );
+            let collateral_needed = amount_to_loan / (self.loan_to_value * price);
 
-            assert!(collateral.amount() >= collateral_needed,
-                    "You need to provide at least {} tokens to loan {}",
-                    collateral_needed,
-                    amount_to_loan);
+            assert!(
+                collateral.amount() >= collateral_needed,
+                "You need to provide at least {} tokens to loan {}",
+                collateral_needed,
+                amount_to_loan
+            );
 
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
-            let loan = Loan::from(collateral.resource_address(), collateral.amount(), amount_to_loan, current_time, self.loan_to_value, self.interest_rate);
+            let loan = Loan::from(
+                collateral.resource_address(),
+                collateral.amount(),
+                amount_to_loan,
+                current_time,
+                self.loan_to_value,
+                self.interest_rate,
+            );
             self.collateral.put(collateral);
             loan
         }
 
         pub fn repay_loan(&mut self, repayment: Decimal, loan: Loan) -> (Decimal, Bucket) {
-
             let interests = self.compute_loan_interests(&loan);
-            assert!(repayment >= loan.amount_lent + interests, "You need to provide {} stablecoins to repay your loan", loan.amount_lent + interests);
+            assert!(
+                repayment >= loan.amount_lent + interests,
+                "You need to provide {} stablecoins to repay your loan",
+                loan.amount_lent + interests
+            );
 
             let collateral = self.collateral.take(loan.collateral_amount);
 
@@ -73,28 +90,48 @@ mod lender {
             let price = self.get_oracle_price();
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
             let loan_days_duration = Decimal::from(current_time - loan.loan_date) / SECONDS_PER_DAY;
-            let minimum_collateral =  loan.amount_lent *(Decimal::ONE +  loan_days_duration * loan.interest_rate)/ (self.loan_to_value * price);
-            assert!(new_collateral_amount >= minimum_collateral, "The new collateral amount should be at least {}", minimum_collateral);
+            let minimum_collateral = loan.amount_lent
+                * (Decimal::ONE + loan_days_duration * loan.interest_rate)
+                / (self.loan_to_value * price);
+            assert!(
+                new_collateral_amount >= minimum_collateral,
+                "The new collateral amount should be at least {}",
+                minimum_collateral
+            );
 
             loan.collateral_amount = new_collateral_amount;
             (loan, self.collateral.take(collateral))
         }
 
-        pub fn liquidate(&mut self, stablecoins_amount: Decimal, mut loan: Loan) -> (Decimal, Bucket, Bucket, Loan) {
+        pub fn liquidate(
+            &mut self,
+            stablecoins_amount: Decimal,
+            mut loan: Loan,
+        ) -> (Decimal, Bucket, Bucket, Loan) {
             let interests = self.compute_loan_interests(&loan);
             let price = self.get_oracle_price();
 
             let collateral_value = loan.collateral_amount * price;
             let loan_value = loan.amount_lent + interests;
 
-            assert!(collateral_value / loan_value <= self.liquidation_threshold,
-                    "Cannot liquidate this loan because liquidation threshold was not hit");
+            assert!(
+                collateral_value / loan_value <= self.liquidation_threshold,
+                "Cannot liquidate this loan because liquidation threshold was not hit"
+            );
 
-            let minimum_stablecoins_input = ( loan_value * self.liquidation_threshold - loan.collateral_amount*(Decimal::ONE - self.liquidation_penalty)*price )/(self.liquidation_threshold - Decimal::ONE);
+            let minimum_stablecoins_input = (loan_value * self.liquidation_threshold
+                - loan.collateral_amount * (Decimal::ONE - self.liquidation_penalty) * price)
+                / (self.liquidation_threshold - Decimal::ONE);
 
-            assert!(stablecoins_amount >= minimum_stablecoins_input, "You need to provide {} stablecoins to liquidate this loan", minimum_stablecoins_input);
+            assert!(
+                stablecoins_amount >= minimum_stablecoins_input,
+                "You need to provide {} stablecoins to liquidate this loan",
+                minimum_stablecoins_input
+            );
 
-            let new_collateral_amount = loan.collateral_amount * (Decimal::ONE - self.liquidation_penalty) - minimum_stablecoins_input/price;
+            let new_collateral_amount = loan.collateral_amount
+                * (Decimal::ONE - self.liquidation_penalty)
+                - minimum_stablecoins_input / price;
 
             let collateral_to_share = loan.collateral_amount - new_collateral_amount;
             let liquidator_bucket = self.collateral.take(collateral_to_share * dec!("0.9"));
@@ -103,23 +140,32 @@ mod lender {
             loan.collateral_amount = new_collateral_amount;
             loan.amount_lent = loan.amount_lent - minimum_stablecoins_input;
 
-            (minimum_stablecoins_input, liquidator_bucket, reserve_bucket, loan)
+            (
+                minimum_stablecoins_input,
+                liquidator_bucket,
+                reserve_bucket,
+                loan,
+            )
         }
 
-        pub fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal)
-        {
+        pub fn change_parameters(
+            &mut self,
+            loan_to_value: Decimal,
+            interest_rate: Decimal,
+            liquidation_threshold: Decimal,
+            liquidation_penalty: Decimal,
+        ) {
             self.loan_to_value = loan_to_value;
             self.interest_rate = interest_rate;
             self.liquidation_threshold = liquidation_threshold;
             self.liquidation_penalty = liquidation_penalty;
         }
 
-        pub fn change_oracle(&mut self, oracle: ComponentAddress)
-        {
+        pub fn change_oracle(&mut self, oracle: ComponentAddress) {
             self.oracle = oracle;
         }
 
-        pub fn get_state(&self) -> Vec<Decimal>{
+        pub fn get_state(&self) -> Vec<Decimal> {
             vec![
                 self.collateral.amount(),
                 self.loan_to_value,
@@ -130,7 +176,6 @@ mod lender {
         }
 
         fn get_oracle_price(&self) -> Decimal {
-
             let mut oracle = OracleComponent::at(self.oracle);
 
             // Look at the TWAP with as much data as possible
@@ -146,10 +191,7 @@ mod lender {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
             let loan_days_duration = Decimal::from(current_time - loan.loan_date) / SECONDS_PER_DAY;
 
-            loan.amount_lent*loan_days_duration*loan.interest_rate
+            loan.amount_lent * loan_days_duration * loan.interest_rate
         }
-
     }
-
-
 }

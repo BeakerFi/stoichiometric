@@ -1,4 +1,4 @@
-use crate::pool_state::{StepState};
+use crate::pool_state::StepState;
 use crate::router_sqrt::{RouterMethods, ADMIN_BADGE_NAME, POSITION_NAME};
 use crate::utils::{
     add_liquidity, add_liquidity_at_step, add_liquidity_at_steps, assert_current_position,
@@ -25,13 +25,7 @@ fn test_instantiate() {
 fn test_create_pool() {
     let mut test_env = instantiate();
 
-    let pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     let pool_states = HashMap::new();
     pool_usd_btc.assert_state_is(
@@ -48,13 +42,7 @@ fn test_create_pool() {
 fn test_create_multiple_pools() {
     let mut test_env = instantiate();
 
-    let pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
     let pool_states = HashMap::new();
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
@@ -66,13 +54,7 @@ fn test_create_multiple_pools() {
     );
 
     test_env.create_fixed_supply_token("eth", dec!(1000000));
-    let pool_usd_eth = create_pool(
-        &mut test_env,
-        "eth",
-        dec!(1700),
-        dec!(10),
-        dec!(20000),
-    );
+    let pool_usd_eth = create_pool(&mut test_env, "eth", dec!(1700), dec!(10), dec!(20000));
     let pool_states = HashMap::new();
     pool_usd_eth.assert_state_is(
         dec!("1.000115989063276095"),
@@ -93,7 +75,7 @@ fn test_create_pool_with_stablecoin_fail() {
             "usd".to_string(),
             Decimal::ONE,
             dec!("0.0001"),
-                dec!(2)
+            dec!(2),
         ))
         .should_panic(Error::AssertFailed(
             "Two pools cannot trade the same token".to_string(),
@@ -104,13 +86,7 @@ fn test_create_pool_with_stablecoin_fail() {
 #[test]
 fn test_create_pool_already_exists_fail() {
     let mut test_env = instantiate();
-    create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     test_env
         .call_method(RouterMethods::CreatePool(
@@ -192,13 +168,7 @@ fn create_pool_initial_rate_greater_than_max_fail() {
 #[test]
 fn add_liquidity_at_step_no_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
     pool_usd_btc.update();
@@ -237,13 +207,7 @@ fn add_liquidity_at_step_no_position() {
 #[test]
 fn add_liquidity_at_step_with_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
 
@@ -304,23 +268,9 @@ fn add_liquidity_at_step_with_position() {
 #[test]
 fn add_liquidity_same_step() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
-    add_liquidity_at_step(
-        &mut test_env,
-        dec!(100),
-        "btc",
-        dec!(1),
-        50266,
-        None,
-    )
-    .run();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, None).run();
 
     add_liquidity_at_step(
         &mut test_env,
@@ -330,7 +280,7 @@ fn add_liquidity_same_step() {
         50266,
         Some("#0#".to_string()),
     )
-        .run();
+    .run();
 
     pool_usd_btc.update();
 
@@ -368,23 +318,9 @@ fn add_liquidity_same_step() {
 #[test]
 fn add_liquidity_greater_step() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
-    add_liquidity_at_step(
-        &mut test_env,
-        dec!(100),
-        "btc",
-        dec!(1),
-        50266,
-        None,
-    )
-        .run();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, None).run();
 
     add_liquidity_at_step(
         &mut test_env,
@@ -446,13 +382,7 @@ fn add_liquidity_greater_step() {
 #[test]
 fn add_liquidity_at_steps_no_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     let mut steps = vec![];
     let mut pool_states = HashMap::new();
@@ -483,15 +413,7 @@ fn add_liquidity_at_steps_no_position() {
         );
     }
 
-    add_liquidity_at_steps(
-        &mut test_env,
-        dec!(1000),
-        "btc",
-        dec!(5),
-        steps,
-        None
-    )
-    .run();
+    add_liquidity_at_steps(&mut test_env, dec!(1000), "btc", dec!(5), steps, None).run();
     pool_usd_btc.update();
 
     pool_usd_btc.assert_state_is(
@@ -514,23 +436,9 @@ fn add_liquidity_at_steps_no_position() {
 #[test]
 fn add_liquidity_at_steps_with_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
-    add_liquidity_at_step(
-        &mut test_env,
-        dec!(100),
-        "btc",
-        dec!(1),
-        50266,
-        None,
-    )
-        .run();
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, None).run();
 
     let mut steps = vec![];
     let mut pool_states = HashMap::new();
@@ -567,9 +475,9 @@ fn add_liquidity_at_steps_with_position() {
         "btc",
         dec!(5),
         steps,
-        Some("#0#".to_string())
+        Some("#0#".to_string()),
     )
-        .run();
+    .run();
     pool_usd_btc.update();
 
     let pool_state = StepState::from(
@@ -595,7 +503,6 @@ fn add_liquidity_at_steps_with_position() {
     assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9999900));
     assert_eq!(test_env.amount_owned_by_current("btc"), dec!(9999995));
 
-
     step_pos_map.insert(50266, (dec!(100), Decimal::ZERO, Decimal::ZERO));
     assert_current_position(&test_env, "btc", &step_pos_map);
 }
@@ -603,13 +510,7 @@ fn add_liquidity_at_steps_with_position() {
 #[test]
 fn add_liquidity_at_rate_no_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity(
         &mut test_env,
@@ -655,13 +556,7 @@ fn add_liquidity_at_rate_no_position() {
 #[test]
 fn add_liquidity_at_rate_with_position() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
 
@@ -710,13 +605,7 @@ fn add_liquidity_at_rate_with_position() {
 #[test]
 fn remove_liquidity_at_step() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
     pool_usd_btc.update();
@@ -763,13 +652,7 @@ fn remove_liquidity_at_step() {
 #[test]
 fn remove_liquidity_at_steps() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     let mut steps = vec![];
     let mut pool_states = HashMap::new();
@@ -790,15 +673,7 @@ fn remove_liquidity_at_steps() {
         pool_states.insert(i, new_pool_state);
     }
 
-    add_liquidity_at_steps(
-        &mut test_env,
-        dec!(1000),
-        "btc",
-        dec!(5),
-        steps,
-        None
-    )
-        .run();
+    add_liquidity_at_steps(&mut test_env, dec!(1000), "btc", dec!(5), steps, None).run();
 
     test_env
         .call_method(RouterMethods::RemoveLiquidityAtSteps(
@@ -809,7 +684,6 @@ fn remove_liquidity_at_steps() {
         ))
         .run();
     pool_usd_btc.update();
-
 
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
@@ -832,13 +706,7 @@ fn remove_liquidity_at_steps() {
 #[test]
 fn remove_liquidity_at_rate() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity(
         &mut test_env,
@@ -892,13 +760,7 @@ fn remove_liquidity_at_rate() {
 #[test]
 fn remove_all_liquidity() {
     let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     let mut steps = vec![];
     let mut pool_states = HashMap::new();
@@ -919,15 +781,7 @@ fn remove_all_liquidity() {
         pool_states.insert(i, new_pool_state);
     }
 
-    add_liquidity_at_steps(
-        &mut test_env,
-        dec!(1000),
-        "btc",
-        dec!(5),
-        steps,
-        None
-    )
-        .run();
+    add_liquidity_at_steps(&mut test_env, dec!(1000), "btc", dec!(5), steps, None).run();
 
     test_env
         .call_method(RouterMethods::RemoveAllLiquidity(
@@ -936,7 +790,6 @@ fn remove_all_liquidity() {
         ))
         .run();
     pool_usd_btc.update();
-
 
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
@@ -959,21 +812,9 @@ fn remove_all_liquidity() {
 fn remove_all_liquidity_from_multiple_pools() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
     test_env.create_fixed_supply_token("eth", dec!(10000000));
-    let mut pool_usd_eth = create_pool(
-        &mut test_env,
-        "eth",
-        dec!(1700),
-        dec!(10),
-        dec!(20000),
-    );
+    let mut pool_usd_eth = create_pool(&mut test_env, "eth", dec!(1700), dec!(10), dec!(20000));
 
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, None).run();
     add_liquidity_at_step(&mut test_env, dec!(100), "eth", dec!(1), 44280, None).run();
@@ -1041,13 +882,7 @@ fn remove_all_liquidity_from_multiple_pools() {
 fn swap_for_stable() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1093,13 +928,7 @@ fn swap_for_stable() {
 fn swap_for_other() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(10), 50267, None).run();
 
@@ -1157,13 +986,7 @@ fn swap_for_other() {
 fn claim_fees_stable() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1253,13 +1076,7 @@ fn claim_fees_stable() {
 fn claim_fees_other() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1322,13 +1139,7 @@ fn claim_fees_other() {
 fn claim_protocol_fees() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1390,13 +1201,7 @@ fn claim_protocol_fees() {
 fn add_liquidity_to_mixed_step_too_much_other() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1461,13 +1266,7 @@ fn add_liquidity_to_mixed_step_too_much_other() {
 fn add_liquidity_to_mixed_step_too_much_stable() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
@@ -1540,13 +1339,7 @@ fn add_liquidity_to_mixed_step_too_much_stable() {
 fn remove_liquidity_from_mixed_step() {
     let mut test_env = instantiate();
 
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
+    let mut pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
     add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 

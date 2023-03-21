@@ -1,7 +1,7 @@
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
-use sqrt::method::{Arg, Method};
 use sqrt::method::Arg::DecimalArg;
+use sqrt::method::{Arg, Method};
 use sqrt::method_args;
 
 pub struct DumbOracleBlueprint {}
@@ -21,26 +21,21 @@ impl Blueprint for DumbOracleBlueprint {
 }
 
 pub enum DumbOracleMethods {
-    SetPrice(Decimal)
+    SetPrice(Decimal),
 }
 
 impl Method for DumbOracleMethods {
     fn name(&self) -> &str {
-        match self
-        {
-            DumbOracleMethods::SetPrice(_) => { "set_price" }
+        match self {
+            DumbOracleMethods::SetPrice(_) => "set_price",
         }
     }
 
     fn args(&self) -> Option<Vec<Arg>> {
-        match self
-        {
-            DumbOracleMethods::SetPrice(price) =>
-                {
-                    method_args!(
-                        DecimalArg(price.clone())
-                    )
-                }
+        match self {
+            DumbOracleMethods::SetPrice(price) => {
+                method_args!(DecimalArg(price.clone()))
+            }
         }
     }
 

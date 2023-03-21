@@ -1,9 +1,7 @@
 use scrypto::prelude::*;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
-pub enum ProposedChange
-{
-
+pub enum ProposedChange {
     /// Changes the vote period of proposals
     ChangeVotePeriod(i64),
 
@@ -20,7 +18,17 @@ pub enum ProposedChange
     AllowClaim(Vec<(ResourceAddress, Decimal)>),
 
     /// Adds a new token as possible collateral. Taking this decision will also create a pool for the given token
-    AddNewCollateralToken(ResourceAddress, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, ComponentAddress),
+    AddNewCollateralToken(
+        ResourceAddress,
+        Decimal,
+        Decimal,
+        Decimal,
+        Decimal,
+        Decimal,
+        Decimal,
+        Decimal,
+        ComponentAddress,
+    ),
 
     /// Changes the parameters of a given stablecoin lender
     ChangeLenderParameters(ResourceAddress, Decimal, Decimal, Decimal, Decimal),
@@ -29,6 +37,5 @@ pub enum ProposedChange
     ChangeLenderOracle(ResourceAddress, ComponentAddress),
 
     /// Adds given tokens to the stablecoin issuer reserves
-    AddTokensToIssuerReserves(Vec<(ResourceAddress, Decimal)>)
+    AddTokensToIssuerReserves(Vec<(ResourceAddress, Decimal)>),
 }
-
