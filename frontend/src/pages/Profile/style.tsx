@@ -1,35 +1,5 @@
-/** @jsxImportSource theme-ui */
-import { useNavigate } from "react-router-dom";
-
-import { useContext, useState, useEffect } from "react";
-
-import Dashboard from "components/Dashboard";
-
-import { randomIntFromInterval } from "utils/general/generalMaths";
-
-import Star from "components/Star";
-
-import Snackbar from "components/Snackbar";
-
-import { UserContext } from "contexts/UserContext";
-import { SnackbarContext } from "contexts/SnackbarContext";
-import { ResponsiveContext } from "contexts/ResponsiveContext";
-import { ThemeContext } from 'contexts/ThemeContext';
-
-function Profile() {
-    const navigate = useNavigate();
-
-    const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
-
-
-    const { user, achievements, logoutUser, accountsList, setUser } = useContext(UserContext);
-    const { device } = useContext(ResponsiveContext);
-    const { themeStyle, toggleTheme, setColor, color } = useContext(ThemeContext);
-    const { addAlert } = useContext(SnackbarContext);
-
-    const [accountSelect, setAccountSelect] = useState(false);
-
-    const style = {
+function styleFunction(device: string, themeStyle: string, accountSelect: boolean) {
+    return {
         main: {
             display: 'flex',
             flexDirection: `${device == "mobile" || device == "tablet" ? "column-reverse" : 'row'}`as 'row',
@@ -192,7 +162,7 @@ function Profile() {
             top: 0,
             width: 'calc(100% - 40px)',
             height: 'calc(100% - 40px)',
-            zIndex: '1000',
+            zIndex: '2000',
             background: 'background2',
             padding: '20px',
 
@@ -269,55 +239,6 @@ function Profile() {
             }
         },
     }
-    //<button sx={saveLoading ? {...style.saveButton, ...style.saveButtonLoading} : style.saveButton} onClick={sendSave}>{saveLoading ? "" : "Save"}</button>
-
-    return (
-        <Dashboard page='profile'>
-            <Snackbar />
-
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
-            )})}
-            <div sx={style.main}>
-                <div sx={style.settings}>
-                    <h1>🎨 Theme</h1>
-                    <div sx={style.themeRow}>
-                        <div sx={style.themeSelector} onClick={() => {toggleTheme()}}/>
-                    </div>
-                </div>
-                <div sx={style.profile}>
-                    <div sx={style.accountSelectorContainer}>
-                        <div sx={style.accountSelectorList}>
-                            <h2><div sx={style.close} onClick={() => setAccountSelect(false)}/>Select an Account</h2>
-                            <div sx={style.accList}>
-                                {accountsList.map((x: any) => { return (
-                                    <div sx={style.accChoice} onClick={() => {
-                                        setAccountSelect(false);
-                                        setUser({address: x.address, name:x.name})
-
-                                    }}>
-                                        <p>{x.address.slice(0, 10) + "..." + x.address.slice(x.address.length - 15, x.address.length)}</p>
-                                        <p>{x.name}</p>
-                                        <div sx={style.expand}/>
-                                    </div>)
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                    <h1>😎 Your profile</h1>
-                    <div sx={style.accountSelector} onClick={() => setAccountSelect(true)}>
-                        <p>{user.address.slice(0, 10) + "..." + user.address.slice(user.address.length - 15, user.address.length)}</p>
-                        <p>{user.name}</p>
-                        <div sx={style.expand}/>
-                    </div>
-                    
-                    <button onClick={() => {
-                    logoutUser();
-                    navigate('/');}}>Log out</button>
-                </div>
-            </div>
-        </Dashboard>
-    )
 }
 
-export default Profile;
+export default styleFunction;

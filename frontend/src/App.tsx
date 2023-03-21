@@ -13,7 +13,7 @@ import Routes from './routes';
 const makeTheme = <T extends Theme>(t: T) => t;
 
 function App() {
-  const { themeStyle, color } = useContext( ThemeContext );
+  const { themeStyle } = useContext( ThemeContext );
 
   return (
     <div>
@@ -25,10 +25,10 @@ function App() {
         })}
       />
       <ThemeProvider theme = {themeStyle == "light" ? {...themes.global, ...makeTheme({
-        colors: {...themes.light.colors, ...{primary: color}}
+        colors: themes.light.colors
       })}
       : {...themes.global, ...makeTheme({
-        colors: {...themes.dark.colors, ...{primary: color}}
+        colors: themes.dark.colors
       })}}
       >
         <Routes/>

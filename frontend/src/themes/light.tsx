@@ -3,6 +3,7 @@ const makeTheme = <T extends Theme>(t: T) => t;
 
 const light = makeTheme({
     colors: {
+        primary: '#fa464b',
         background: 'rgba(250,250,250)',
         background2: 'rgba(255,255,255)',
         background3: 'rgba(220,220,220)',

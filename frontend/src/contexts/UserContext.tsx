@@ -79,6 +79,10 @@ const UserCtx: React.FC<Props> = (props) => {
         });
     }, []);
 
+    useEffect(() => {
+        console.log("positions", positions);
+    }, [positions])
+
     async function setUserValues(address:string) {
         setNbTokens(address);
         setMyPositions(address);

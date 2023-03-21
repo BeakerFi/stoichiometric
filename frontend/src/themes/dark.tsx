@@ -3,6 +3,7 @@ const makeTheme = <T extends Theme>(t: T) => t;
 
 const dark = makeTheme({
     colors: {
+        primary: '#fa464b',
         background2: 'rgba(24,24,24)',
         background: 'rgba(16,16,16)',
         background3: 'rgba(44,44,44)',

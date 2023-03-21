@@ -8,14 +8,14 @@ interface Props {
 
 const ThemeCtx: React.FC<Props> = (props) => {
 
-    const [themeStyle, setThemeStyle] = useState('dark')
-    const [color, setColor] = useState('#fa464b');
+    const [themeStyle, setThemeStyle] = useState('dark'); 
+
     const toggleTheme = () => {
         setThemeStyle(themeStyle === 'light' ? 'dark' : 'light')
     }   
 
     return (
-        <ThemeContext.Provider value={{themeStyle, toggleTheme, color, setColor, setThemeStyle}}>
+        <ThemeContext.Provider value={{themeStyle, toggleTheme, setThemeStyle}}>
             {props.children}
         </ThemeContext.Provider>
     )

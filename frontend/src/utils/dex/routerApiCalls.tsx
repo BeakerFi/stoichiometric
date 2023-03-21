@@ -1,4 +1,4 @@
-import {radix_api_url, position_address, router_address, stablecoin_address} from "../general/constants";
+import {radix_api_url, position_address, router_address, stablecoin_address, token_default, stable_coin} from "../general/constants";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
@@ -23,13 +23,18 @@ async function getOwnedPositions(account: string) {
         .then((tmp_data) => data = tmp_data["non_fungible_ids"]["items"])
         .catch(console.error);
 
+    if (!data) return [];
+
     const positions: any[] = [];
     // @ts-ignore
-    for (const id of data) {
+    for (var i = 0; i < data.length; ++i) {
 
-        const nf_id = id["non_fungible_id"];
+        const nf_id = data[i]["non_fungible_id"];
+        positions.push({...{nfIdValue: await getNFIDValue(nf_id)}, token_x: stable_coin, token_y: token_default, id:data[i]["non_fungible_id"]});
 
     }
+
+    return positions;
 }
 
 async function getNFIDValue(id: string) {
@@ -37,8 +42,9 @@ async function getNFIDValue(id: string) {
         "address": position_address,
         "non_fungible_id": id
     }
+
     let data;
-    await fetch(radix_api_url + `/entity/non-fungible/data`, {
+    await fetch(radix_api_url + `/non-fungible/data`, {
         method: 'POST',
         body: JSON.stringify(obj),
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
@@ -46,6 +52,8 @@ async function getNFIDValue(id: string) {
         .then((response) => response.json())
         .then((tmp_data) => data = tmp_data)
         .catch(console.error);
+
+    return data
 
 }
 
