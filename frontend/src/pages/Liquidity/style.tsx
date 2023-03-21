@@ -518,38 +518,6 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             },
         },
 
-        categories: {
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            marginBottom: '10px',
-            marginTop: '5px',
-
-            '& span': {
-                borderRadius: '5px',
-                marginRight: '10px',
-                padding: '5px 15px',
-                fontFamily: 'primary',
-                fontSize: 1,
-                cursor: 'pointer',
-    
-                '&:hover': {
-                    color: 'text'
-                }
-            }
-        },
-
-        activeCategory: {
-            background: 'background3',
-            color: 'text',
-            cursor: 'default !important'
-        },
-    
-        inactiveCategory: {
-            background: 'background2',
-            color: 'text2',
-        },
-
         buttons: {
             display: 'flex',
             justifyContent: 'space-between',

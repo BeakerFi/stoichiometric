@@ -5,6 +5,8 @@ import {
     NonFungibleDataRequest
 } from "@radixdlt/babylon-gateway-api-sdk";
 
+import { position, pool, step } from "types";
+
 
 async function getOwnedPositions(account: string) {
 
@@ -13,7 +15,7 @@ async function getOwnedPositions(account: string) {
         "resource_address": position_address
     };
 
-    let data;
+    let data: any;
     await fetch(radix_api_url + `/entity/non-fungible/ids`, {
         method: 'POST',
         body: JSON.stringify(obj),
@@ -25,12 +27,12 @@ async function getOwnedPositions(account: string) {
 
     if (!data) return [];
 
-    const positions: any[] = [];
+    const positions: position[] = [];
     // @ts-ignore
     for (var i = 0; i < data.length; ++i) {
 
         const nf_id = data[i]["non_fungible_id"];
-        positions.push({...{nfIdValue: await getNFIDValue(nf_id)}, token_x: stable_coin, token_y: token_default, id:data[i]["non_fungible_id"]});
+        positions.push({...{nfIdValue: await getNFIDValue(nf_id)}, token: token_default, id: data[i]["non_fungible_id"], x_fees: 0, y_fees: 0, value_locked: 0, price_x: 1, liquidity: 0});
 
     }
 
@@ -43,7 +45,7 @@ async function getNFIDValue(id: string) {
         "non_fungible_id": id
     }
 
-    let data;
+    let data: any;
     await fetch(radix_api_url + `/non-fungible/data`, {
         method: 'POST',
         body: JSON.stringify(obj),
@@ -57,7 +59,7 @@ async function getNFIDValue(id: string) {
 
 }
 
-async function getPoolInfo(token: string, pools: any[]) {
+async function getPoolInfo(token: string, pools: pool[]) {
 
     const obj: EntityDetailsRequest = {
         "address": pools[0]["pool"]
@@ -73,7 +75,7 @@ async function getPoolInfo(token: string, pools: any[]) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    let pool_steps: any[] = [];
+    let pool_steps: step[] = [];
 
     for (const pool_step of data[6]) {
         let step = pool_step[0];

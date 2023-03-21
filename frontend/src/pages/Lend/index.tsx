@@ -10,7 +10,7 @@ import { SnackbarContext } from "contexts/SnackbarContext";
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
-import ConnectWallet2 from "components/ConnectWallet2";
+import ConnectWallet2 from "components/ConnectWalletLarge";
 
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
@@ -25,7 +25,7 @@ import { getLenderInformation } from "utils/stablecoin/issuerApiCalls";
 import { takeLoan } from "utils/stablecoin/issuerContractCalls";
 import styleFunction from "./style";
 
-import {token, pool} from "./types";
+import {token, pool} from "types";
 
 function Swap() {
 
@@ -252,7 +252,7 @@ function Swap() {
         setSwapLoading(false);
     }  
 
-    const lendsList = [{token:{icon_url:"", symb:"XRD", address: "", name:""}}]
+    const lendsList = [{token:{icon_url:"", symb:"XRD", address: "", name:""}, id:""}]
 
     const style = styleFunction(device, swapLoading, token1Select, choseLend, lock);
 

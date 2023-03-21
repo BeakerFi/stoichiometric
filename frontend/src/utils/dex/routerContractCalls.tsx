@@ -1,6 +1,8 @@
 import {position_address, router_address, stablecoin_address} from "../general/constants";
 import {rdt} from "../connectToWallet";
 
+import { step } from "types";
+
 async function swap_direct(account: string, token1Address: string, token2Address: string, amount: string) {
     const manifest = `
                     CALL_METHOD
@@ -77,7 +79,7 @@ async function swap_indirect(account: string, token1Address: string, token2Addre
     return !result.isErr();
 }
 
-async function addLiquidityNoPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[]) {
+async function addLiquidityNoPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: step[]) {
 
     let steps_string = "";
 

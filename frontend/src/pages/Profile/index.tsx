@@ -15,7 +15,7 @@ import { ThemeContext } from 'contexts/ThemeContext';
 
 import styleFunction from "./style";
 
-import account from "./types";
+import {account} from "types";
 
 function Profile() {
 

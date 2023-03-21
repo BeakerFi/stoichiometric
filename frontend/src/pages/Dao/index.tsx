@@ -9,7 +9,7 @@ import { randomIntFromInterval } from "utils/general/generalMaths";
 
 import Star from "components/Star";
 import Snackbar from "components/Snackbar";
-import ConnectWallet2 from "components/ConnectWallet2";
+import ConnectWallet2 from "components/ConnectWalletLarge";
 
 import { UserContext } from "contexts/UserContext";
 import { ResponsiveContext } from "contexts/ResponsiveContext";

@@ -5,9 +5,11 @@ import {getLendersList} from "../stablecoin/issuerApiCalls";
 
 import { stable_coin } from "./constants";
 
+import { tokenOwned, token } from "types";
+
 async function getTokens() {
 
-    let tokens_list: any[] = [stable_coin];
+    let tokens_list: token[] = [stable_coin];
 
     let pools = await getPoolsList();
 
@@ -36,7 +38,8 @@ async function getTokens() {
 }
 
 async function getOwnedTokens(account: string) {
-    let ownedTokensList: any[] = [];
+
+    let ownedTokensList: any; /*TODO*/
 
     const obj: EntityDetailsRequest = {
         "address": account

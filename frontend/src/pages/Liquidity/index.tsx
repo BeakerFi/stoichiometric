@@ -10,18 +10,20 @@ import { SnackbarContext } from "contexts/SnackbarContext";
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
-import ConnectWallet2 from "components/ConnectWallet2";
+import ConnectWallet2 from "components/ConnectWalletLarge";
 
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, nFormatter, randomIntFromInterval, twoDecimals } from "utils/general/generalMaths";
+import { formatToString, formatToString2, randomIntFromInterval, twoDecimals } from "utils/general/generalMaths";
 
 import { stable_coin as stable, token_default } from "utils/general/constants";
 
 import { addLiquidityNoPosition, addLiquidityToPosition, claimFees, removeAllLiquidity } from "utils/dex/routerContractCalls";
 
 import styleFunction from "./style";
+
+import {token, step, pool, position} from "types";
 
 function Liquidity() {
 
@@ -37,9 +39,7 @@ function Liquidity() {
 
     const { user, tokensOwned, setNbTokens, positions } = useContext(UserContext);
 
-    const [category, setCategory] = useState("all");
-
-    const [tokensList, setTokensList] = useState(tokens.filter((x:any) => x.address != stable.address));
+    const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
 
     const [token1Owned, setToken1Owned] = useState<"?" | number>("?");
     const [stableOwned, setStableOwned] = useState<"?" | number>("?");
@@ -98,8 +98,8 @@ function Liquidity() {
                 tk1 = tk1.toLowerCase();
             }
 
-            if (tk1 && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk1)) {
-                var tok1 = tokens.filter((x:any) => x.symb.toLowerCase() == tk1)[0]
+            if (tk1 && tokens.map((x:token) => x.symb.toLowerCase()).includes(tk1)) {
+                var tok1 = tokens.filter((x:token) => x.symb.toLowerCase() == tk1)[0]
                 setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
                 setSearchParams({tk1: tk1!.toUpperCase()})
             } else {
@@ -303,7 +303,7 @@ function Liquidity() {
         setToken1Select(false);
     }
 
-    function selectToken(token: any) {
+    function selectToken(token: token) {
         if (token1Select) {
             setToken1(token)
             setSearchParams({tk1: token.symb.toUpperCase()})
@@ -316,10 +316,9 @@ function Liquidity() {
 
     const [searchPosition, setSearchPosition] = useState("");
 
-    function getSearch(list: any[]) {
+    function getSearch(list: token[]) {
         return list.filter(x => {
             if (x.address == stable.address) return false;
-            if (category != "all" && x.category != category) return false;
             var flag = (search.length == 0);
             for (const word of search.split(' ')) {
                 if (word.length > 0) flag = flag || x.name.toLowerCase().includes(word) || x.symb.toLowerCase().includes(word)
@@ -328,12 +327,12 @@ function Liquidity() {
         })
     }
 
-    function getSearchPosition(list: any[]) {
+    function getSearchPosition(list: position[]) {
         if (!list) return []
         return list.filter(x => {
             var flag = (searchPosition.length == 0);
             for (const word of searchPosition.split(' ')) {
-                if (word.length > 0) flag = flag || x.token_x.name.toLowerCase().includes(word) || x.token_x.symb.toLowerCase().includes(word) || x.token_y.name.toLowerCase().includes(word) || x.token_y.symb.toLowerCase().includes(word)
+                if (word.length > 0) flag = flag || x.token!.name.toLowerCase().includes(word) || x.token!.symb.toLowerCase().includes(word) || stable.name.toLowerCase().includes(word) || stable.symb.toLowerCase().includes(word)
             }
             return flag
         })
@@ -349,7 +348,7 @@ function Liquidity() {
 
     useEffect(() => {
         setTokensList(getSearch(tokens));
-    }, [tokens, search, category])
+    }, [tokens, search])
 
     useEffect(() => {
         setPositionsList(getSearchPosition(positions));
@@ -359,16 +358,17 @@ function Liquidity() {
 
     const [positionsList, setPositionsList] = useState(positions);
 
-    const [nftId, setNftId] = useState(null);
-    const [positionInfos, setPositionInfos] = useState<any>({
+    const [nftId, setNftId] = useState<string | null>(null);
+
+    const [positionInfos, setPositionInfos] = useState<position>({
+        token: token_default,
         liquidity: 0,
-        token_x: null,
-        token_y: null,
         price_x: 0,
-        price_y: 0,
-        value_locked: 0,
-        x_fees: 0,
-        y_fees: 0,
+        value_locked: '?',
+        x_fees: '?',
+        y_fees: '?',
+        nfIdValue: null,
+        id: null,
     });
 
     async function getPosInfos(id: string, invert: boolean) {
@@ -391,26 +391,26 @@ function Liquidity() {
     useEffect(() => {
         if (nftId == null) {
             setPositionInfos({
+                token: token_default,
                 liquidity: 0,
-                token_x: null,
-                token_y: null,
                 price_x: 0,
-                price_y: 0,
-                value_locked: 0,
-                x_fees: 0,
-                y_fees: 0,
+                value_locked: '?',
+                x_fees: '?',
+                y_fees: '?',
+                nfIdValue: null,
+                id: null,
             })
         }
         else {  
             setPositionInfos({
+                token: token_default,
                 liquidity: 0,
-                token_x: null,
-                token_y: null,
                 price_x: 0,
-                price_y: 0,
                 value_locked: '?',
                 x_fees: '?',
                 y_fees: '?',
+                nfIdValue: null,
+                id: nftId,
             })
             getPosInfos(nftId, invertPosition);
         }
@@ -421,8 +421,8 @@ function Liquidity() {
     function findPosition(tk1Address: string, tk2Address: string) {
         if (!positions) return
         for (const position of positions) {
-            if (position.token_x.address == tk1Address && position.token_y.address == tk2Address) { setInvertPosition(false); return position.id; }
-            if (position.token_x.address == tk2Address && position.token_y.address == tk1Address) { setInvertPosition(true); return position.id; }
+            if (position.token.address == tk1Address) { setInvertPosition(false); return position.id; }
+            if (position.token.address == tk2Address) { setInvertPosition(true); return position.id; }
         }
 
         setInvertPosition(false);
@@ -441,7 +441,7 @@ function Liquidity() {
     async function sendSwap() {
         setSwapLoading(true);
         var flag;
-        var steps: any[] = [];
+        var steps: step[] = [];
         var currentStep= parseFloat(pools[token1.address]["current_step"]);
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
@@ -552,17 +552,17 @@ function Liquidity() {
                                                 <label htmlFor="searchPosition">Search for a position</label>
                                             </div>
                                             <div sx={style.poolsList}>
-                                                {  positionsList.map((pool: any) => {
+                                                {  positionsList.map((pool: pool) => {
                                                     return (
                                                         <div sx={style.poolChoice} onClick={() => {
                                                             setChosePosition(false);
                                                             setInvertPosition(false);
-                                                            setToken1(pool.token_x);
+                                                            setToken1(pool.token);
                                                             setNftId(pool.id);
                                                         }}>
-                                                            <img src={pool.token_x.icon_url}/>
-                                                            <img src={pool.token_y.icon_url}/>
-                                                            <p>{pool.token_x.symb} - {pool.token_y.symb}</p>
+                                                            <img src={pool.token.icon_url}/>
+                                                            <img src={stable.icon_url}/>
+                                                            <p>{pool.token.symb} - {stable.symb}</p>
                                                         </div>
                                                     )
                                                 })}
@@ -579,8 +579,8 @@ function Liquidity() {
                                         <h1>🌻 My Fees</h1>
                                         <div sx={style.swapInfos}>
                                             <span sx={style.swapInfoMain}><span>Total Locked</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)) : '?'} {stable.symb}</div></span>
-                                            <span sx={style.swapInfo}><span>Value</span>${formatToString(positionInfos.value_locked)}</span>
-                                            <span sx={style.swapInfo}><span>Fees</span>{formatToString2(positionInfos.x_fees)} {token1.symb} + {formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
+                                            <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
+                                            <span sx={style.swapInfo}><span>Fees</span>{positionInfos.x_fees == "?" ? "?" : formatToString2(positionInfos.x_fees)} {token1.symb} + {positionInfos.y_fees == "?" ? "?" : formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
                                             <span sx={style.swapInfo}><span>Current ROI</span>No Data</span>
                                         </div>
                                         <button sx={feesLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
@@ -658,13 +658,9 @@ function Liquidity() {
                                         <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
                                         <label htmlFor="search">Search for a token</label>
                                     </div>
-                                    <div sx={style.categories}>
-                                        <span sx={category == "all" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("all")}>All</span>
-                                        <span sx={category == "Token" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("Token")}>Tokens</span>
-                                        <span sx={category == "Stable Coin" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("Stable Coin")}>StableCoins</span>
-                                    </div>
+
                                     <div sx={style.tokensList}>
-                                        {   tokensList.map((token: any) => {
+                                        {   tokensList.map((token: token) => {
                                             return (
                                                 <div sx={style.tokenChoice} onClick={() => selectToken(token)}>
                                                     <img src={token.icon_url}/>

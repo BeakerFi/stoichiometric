@@ -5,7 +5,7 @@ import {
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
-
+import { lender } from "types";
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -135,7 +135,7 @@ async function getOraclePrice(oracle_address: string) {
     return data[0];
 }
 
-async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: any[]){
+async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: lender[]){
 
     const params = new URLSearchParams();
     params.append('mutable_data_hex', mutable_data);
@@ -159,7 +159,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
 }
 
-async function getAllLoansInformation(loan_ids: any[], lenders: any[]) {
+async function getAllLoansInformation(loan_ids: string[], lenders: lender[]) {
     const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
     return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
 }

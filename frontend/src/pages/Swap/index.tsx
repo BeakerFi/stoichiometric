@@ -10,7 +10,7 @@ import { SnackbarContext } from "contexts/SnackbarContext";
 import Star from "components/Star";
 
 import Dashboard from "components/Dashboard";
-import ConnectWallet2 from "components/ConnectWallet2";
+import ConnectWallet2 from "components/ConnectWalletLarge";
 
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
@@ -22,6 +22,8 @@ import { stable_coin as stable, token_default } from "utils/general/constants";
 
 import { swap_direct, swap_indirect } from "../../utils/dex/routerContractCalls";
 import styleFunction from "./style";
+
+import {token, step} from "types";
 
 function Swap() {
 
@@ -38,8 +40,6 @@ function Swap() {
     const { tokens, pools } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens } = useContext(UserContext);
-
-    const [category, setCategory] = useState("all");
 
     const [tokensList, setTokensList] = useState(tokens);
 
@@ -82,9 +82,9 @@ function Swap() {
                 tk2 = tk2.toLowerCase();
             }
 
-            if (tk1 != tk2 && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk1) && tokens.map((x:any) => x.symb.toLowerCase()).includes(tk2)) {
-                var tok1 = tokens.filter((x:any) => x.symb.toLowerCase() == tk1)[0]
-                var tok2 = tokens.filter((x:any) => x.symb.toLowerCase() == tk2)[0]
+            if (tk1 != tk2 && tokens.map((x:token) => x.symb.toLowerCase()).includes(tk1) && tokens.map((x:token) => x.symb.toLowerCase()).includes(tk2)) {
+                var tok1 = tokens.filter((x:token) => x.symb.toLowerCase() == tk1)[0]
+                var tok2 = tokens.filter((x:token) => x.symb.toLowerCase() == tk2)[0]
                 setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
                 setToken2({name:tok2!.name, symb: tok2!.symb, address: tok2!.address, icon_url: tok2!.icon_url});
                 setSearchParams({tk1: tk1!.toUpperCase(), tk2: tk2!.toUpperCase()})
@@ -106,7 +106,7 @@ function Swap() {
     const [token1InPool, setToken1InPool] = useState(0);
     const [token2InPool, setToken2InPool] = useState(0);
 
-    function findIndex(n:number, list: any[]) {
+    function findIndex(n:number, list: step[]) {
         for (var i = 0; i < list.length; ++i) if (list[i][0] == n) return i
         return -1;
     }
@@ -350,7 +350,7 @@ function Swap() {
         setToken2Select(false);
     }
 
-    function selectToken(token: any) {
+    function selectToken(token: token) {
         if (token1Select) {
             if (token.address == token2.address) {
                 invert()
@@ -379,7 +379,6 @@ function Swap() {
 
     function getSearch(list: any[]) {
         return list.filter(x => {
-            if (category != "all" && x.category != category) return false;
             var flag = (search.length == 0);
             for (const word of search.split(' ')) {
                 if (word.length > 0) flag = flag || x.name.toLowerCase().includes(word) || x.symb.toLowerCase().includes(word)
@@ -394,7 +393,7 @@ function Swap() {
 
     useEffect(() => {
         setTokensList(getSearch(tokens));
-    }, [tokens, search, category])
+    }, [tokens, search])
 
     const [swapLoading, setSwapLoading] = useState(false);
 
@@ -495,13 +494,9 @@ function Swap() {
                                     <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
                                     <label htmlFor="search">Search for a token</label>
                                 </div>
-                                <div sx={style.categories}>
-                                    <span sx={category == "all" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("all")}>All</span>
-                                    <span sx={category == "Token" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("Token")}>Tokens</span>
-                                    <span sx={category == "Stable Coin" ? style.activeCategory : style.inactiveCategory} onClick={() => setCategory("Stable Coin")}>StableCoins</span>
-                                </div>
+
                                 <div sx={style.tokensList}>
-                                    {   tokensList.map((token: any) => {
+                                    {   tokensList.map((token: token) => {
                                         return (
                                             <div sx={style.tokenChoice} onClick={() => selectToken(token)}>
                                                 <img src={token.icon_url}/>
