@@ -10,6 +10,7 @@ stoichiometric-dex = { path = "../dex" }
 stoichiometric-stablecoin = { path = "../stablecoin" }
 
 [dev-dependencies]
+sqrt = { path = "../../../sqrt" }
 
 [lib]
 crate-type = ["cdylib", "lib"]

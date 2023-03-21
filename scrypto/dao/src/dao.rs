@@ -60,7 +60,7 @@ mod dao {
 
     impl Dao {
 
-        pub fn new(vote_period: i64, vote_validity_threshold: Decimal) -> ComponentAddress {
+        pub fn new(vote_period: i64, vote_validity_threshold: Decimal, initial_collateral_token: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal) -> ComponentAddress {
 
             // Creates the protocol admin badge which will control everything
             let protocol_admin_badge: Bucket = ResourceBuilder::new_fungible()
@@ -72,6 +72,7 @@ mod dao {
             // Creates the stablecoin minter
             let mut stablecoin_minter = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .metadata("name", "Stoichiometric stablecoin minter")
                 .mintable(rule!(require(protocol_admin_badge.resource_address())), AccessRule::DenyAll)
                 .burnable(rule!(require(protocol_admin_badge.resource_address())), AccessRule::DenyAll)
                 .recallable(rule!(require(protocol_admin_badge.resource_address())), AccessRule::DenyAll)
@@ -146,8 +147,9 @@ mod dao {
                 vote_period,
                 vote_validity_threshold,
                 reserves: HashMap::new()
-            }
-                .instantiate();
+            };
+            component.add_collateral_token(initial_collateral_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, oracle, initial_rate, min_rate, max_rate);
+            let mut component = component.instantiate();
 
             component.add_access_check(dao_rules);
 
@@ -243,6 +245,17 @@ mod dao {
             receipt
         }
 
+        pub fn claim_dex_protocol_fees(&mut self) {
+
+            let fees = self.protocol_admin_badge.authorize(||{
+                RouterLocalComponent::at(self.dex_router).claim_protocol_fees()
+            });
+
+            for bucket in fees {
+                self.put_in_reserves(bucket);
+            }
+        }
+
         pub fn execute_proposal(&mut self, proposal_receipt: Bucket) -> Option<Vec<Bucket>> {
             assert!(proposal_receipt.resource_address() == self.proposal_receipt_address, "Please provide a proposal receipt");
             assert!(proposal_receipt.amount() == Decimal::ONE, "Can only execute one proposal at a time");
@@ -262,8 +275,6 @@ mod dao {
                 None => None,
                 Some(changes) => self.execute_proposed_change(changes)
             }
-
-
         }
 
         fn execute_proposed_change(&mut self, proposed_change: ProposedChange) -> Option<Vec<Bucket>> {
@@ -319,14 +330,7 @@ mod dao {
 
                 ProposedChange::AddNewCollateralToken(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, initial_rate, minimum_rate, maximum_rate, oracle) =>
                     {
-                        let mut router = RouterLocalComponent::at(self.dex_router);
-                        let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
-
-                        self.protocol_admin_badge.authorize(|| {
-                            router.create_pool(new_token.clone(), initial_rate, minimum_rate, maximum_rate);
-                            issuer.new_lender(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, oracle);
-                        });
-
+                        self.add_collateral_token(new_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, oracle, initial_rate, minimum_rate, maximum_rate);
                         None
                     }
 
@@ -367,6 +371,20 @@ mod dao {
             }
         }
 
+
+        #[inline]
+        fn add_collateral_token(&mut self, collateral_token: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal) {
+
+            let mut router = RouterLocalComponent::at(self.dex_router);
+            let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
+
+            self.protocol_admin_badge.authorize(|| {
+                router.create_pool(collateral_token.clone(), initial_rate, min_rate, max_rate);
+                issuer.new_lender(collateral_token, loan_to_value, interest_rate, liquidation_threshold, liquidation_penalty, oracle);
+            });
+        }
+
+        #[inline]
         fn get_proposal(&self, proposal_id: u64) -> ProposalLocalComponent {
             match self.proposals.get(&proposal_id) {
                 None => { panic!("Proposal {} does not exist", proposal_id) }
@@ -389,6 +407,18 @@ mod dao {
             self.resource_minter.authorize(|| {
                 borrow_resource_manager!(self.voter_card_address).update_non_fungible_data(id, data);
             });
+        }
+
+        #[inline]
+        fn put_in_reserves(&mut self, bucket: Bucket) {
+            match self.reserves.get_mut(&bucket.resource_address())
+            {
+                Some(vault) => { vault.put(bucket) }
+                None => {
+                    let new_vault = Vault::with_bucket(bucket);
+                    self.reserves.insert(new_vault.resource_address(), new_vault);
+                }
+            };
         }
     }
 
