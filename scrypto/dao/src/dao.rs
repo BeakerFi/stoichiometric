@@ -20,7 +20,7 @@ external_component! {
     IssuerLocalComponent {
         fn new_lender(&mut self, collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress);
         fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal);
-        fn change_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress);
+        fn change_lender_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress);
         fn give_tokens(&mut self, tokens: Vec<Bucket>);
     }
 }
@@ -346,7 +346,7 @@ mod dao {
                         let mut issuer = IssuerLocalComponent::at(self.stablecoin_issuer);
 
                         self.protocol_admin_badge.authorize(|| {
-                            issuer.change_oracle(lender, oracle_address);
+                            issuer.change_lender_oracle(lender, oracle_address);
                         });
 
                         None

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
-use radix_engine::types::time::Instant;
-use scrypto::prelude::{Decimal, dec};
+use scrypto::prelude::{Decimal, dec, Instant};
 use sqrt::error::Error;
 use crate::issuer_sqrt::{ADMIN_BADGE_NAME, IssuerMethods, STABLECOIN_NAME};
 use crate::issuer_state::LenderState;
@@ -396,7 +395,6 @@ fn test_liquidate() {
     assert_current_has_loan(&test_env, "#1#", "btc", dec!(10), dec!(10000), 0, dec!("0.7"), dec!("0.0001"));
 }
 
-
 #[test]
 fn test_liquidate_after_time() {
     let (mut test_env, mut issuer_state) = instantiate();
@@ -467,4 +465,21 @@ fn test_liquidate_not_enough_provided_to_liquidate() {
     test_env.call_method(IssuerMethods::Liquidate(dec!(7332), "#0#".to_string()))
         .should_panic(Error::AssertFailed("You need to provide 7333.333333333333333333 stablecoins to liquidate this loan".to_string()))
         .run();
+}
+
+#[test]
+fn test_change_lender_parameter() {
+
+    let (mut test_env, mut issuer_state) = instantiate();
+
+    new_default_lender(&mut test_env, "btc");
+
+    // Change the parameters
+    test_env.call_method(IssuerMethods::ChangeLenderParameters("btc".to_string(), dec!("0.5"), dec!("0.5"), dec!(2), dec!("0.3"))).run();
+
+    issuer_state.update();
+    let mut lenders = HashMap::new();
+    let btc_lender = LenderState::from(Decimal::ZERO, dec!("0.5"), dec!("0.5"), dec!(2), dec!("0.3"));
+    lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
+    issuer_state.assert_state_is(&HashMap::new(), &lenders, 0, 0);
 }

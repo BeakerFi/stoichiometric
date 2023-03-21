@@ -1,5 +1,5 @@
 use scrypto::prelude::Decimal;
-use sqrt::blueprint::Blueprint;
+use sqrt::blueprint::{AdminBadge, Blueprint};
 use sqrt::method::{Arg, Method};
 use sqrt::method::Arg::DecimalArg;
 use sqrt::method_args;
@@ -15,8 +15,8 @@ impl Blueprint for DumbOracleBlueprint {
         "DumbOracle"
     }
 
-    fn has_admin_badge(&self) -> bool {
-        false
+    fn has_admin_badge(&self) -> AdminBadge {
+        AdminBadge::None
     }
 }
 

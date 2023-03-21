@@ -3,10 +3,11 @@ use scrypto::math::Decimal;
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::dec;
+use sqrt::method::Arg::{FungibleBucketArg, ResourceAddressArg};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use crate::dumb_oracle_sqrt::{DumbOracleBlueprint, DumbOracleMethods};
-use crate::issuer_sqrt::{IssuerBlueprint, IssuerMethods};
+use crate::issuer_sqrt::{ADMIN_BADGE_NAME, IssuerBlueprint, IssuerMethods, STABLECOIN_NAME};
 use crate::issuer_state::{IssuerState};
 
 pub fn run_command(command: &mut Command) -> String {
@@ -22,7 +23,10 @@ pub fn run_command(command: &mut Command) -> String {
 
 pub fn instantiate() -> (TestEnvironment, IssuerState) {
     let mut test_env = TestEnvironment::new();
+    test_env.create_fixed_supply_token(ADMIN_BADGE_NAME, dec!(2));
+
     test_env.create_fixed_supply_token("btc", dec!(10000000));
+    test_env.create_mintable_token(STABLECOIN_NAME, ADMIN_BADGE_NAME);
 
     let issuer_blueprint = Box::new(IssuerBlueprint {});
     let mut issuer_package = Package::new(".");
@@ -31,7 +35,11 @@ pub fn instantiate() -> (TestEnvironment, IssuerState) {
     test_env.new_component(
         "issuer_comp",
         "issuer_bp",
-        vec![]
+        vec![
+            ResourceAddressArg(ADMIN_BADGE_NAME.to_string()),
+            FungibleBucketArg(ADMIN_BADGE_NAME.to_string(), Decimal::ONE),
+            ResourceAddressArg(STABLECOIN_NAME.to_string())
+        ]
     );
 
     let oracle_blueprint = Box::new(DumbOracleBlueprint {});

@@ -71,7 +71,6 @@ mod issuer {
                 .method("add_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("remove_collateral", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("liquidate", AccessRule::AllowAll, AccessRule::DenyAll)
-                //.method("liquidate_list", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("repay_flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("get_lender_state", AccessRule::AllowAll, AccessRule::DenyAll)
@@ -238,13 +237,18 @@ mod issuer {
         }
 
         pub fn change_lender_parameters(&mut self, lender_collateral: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal) {
+            assert!(loan_to_value.is_positive() && loan_to_value<Decimal::ONE, "LTV should be such that 0<LTV<1");
+            assert!(interest_rate.is_positive() && interest_rate<Decimal::ONE, "The daily interest rate should be such that 0<DIR<1");
+            assert!(liquidation_threshold > Decimal::ONE, "The liquidation threshold should be greater than one");
+            assert!(liquidation_incentive.is_positive(), "The liquidation incentive should be positive");
             let lender = self.get_lender(&lender_collateral);
             lender.change_parameters(loan_to_value, interest_rate, liquidation_threshold, liquidation_incentive);
         }
 
-        pub fn change_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress)
+        pub fn change_lender_oracle(&mut self, lender_collateral: ResourceAddress, oracle: ComponentAddress)
         {
             let lender = self.get_lender(&lender_collateral);
+            AccessRules::new();
             lender.change_oracle(oracle);
         }
 
