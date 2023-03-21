@@ -1,40 +1,27 @@
-import {radix_api_url, stablecoin_address} from "./constants";
-import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
-import {getPoolInfo, getPoolsList, getPoolsListInfo} from "../dex/routerApiCalls";
-import {getLendersList} from "../stablecoin/issuerApiCalls";
+import {radix_api_url, router_address} from "./constants";
+import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";;
 
-import { stable_coin } from "./constants";
+import {lender, pool, token} from "types";
 
-import { tokenOwned, token } from "types";
+async function getToken(address: string): Promise<token>{
 
-async function getTokens() {
+    const obj: EntityDetailsRequest = {
+        "address": address
+    };
 
-    let tokens_list: token[] = [stable_coin];
+    let data;
+    await fetch( radix_api_url + `/entity/details`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then( (response) => response.json() )
+        .then( (tmp_data) => data = tmp_data )
+        .catch(console.error);
 
-    let pools = await getPoolsList();
-
-    for (const {token, } of pools) {
-
-        const obj: EntityDetailsRequest = {
-            "address": token
-        };
-
-        let data;
-        await fetch( radix_api_url + `/entity/details`, {
-            method: 'POST',
-            body: JSON.stringify(obj),
-            headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-        })
-            .then( (response) => response.json() )
-            .then( (tmp_data) => data = tmp_data )
-            .catch(console.error);
-
-        // @ts-ignore
-        const metadata = data["metadata"]["items"];
-        tokens_list.push( {name: metadata[2]["value"], symb: metadata[3]["value"], address: token, icon_url: metadata[1]["value"]});
-    }
-
-    return tokens_list;
+    // @ts-ignore
+    const metadata = data["metadata"]["items"];
+    return {name: metadata[2]["value"], symb: metadata[3]["value"], address: address, icon_url: metadata[1]["value"]};
 }
 
 async function getOwnedTokens(account: string) {
@@ -65,12 +52,40 @@ async function getOwnedTokens(account: string) {
     return [ownedTokensList, account];
 }
 
+async function getRawPoolsList() {
+    const obj: EntityDetailsRequest = {
+        "address": router_address
+    };
+
+    let data;
+    await fetch( radix_api_url + `/entity/details`, {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then( (response) => response.json() )
+        .then( (tmp_data) => data = tmp_data )
+        .catch(console.error);
+
+    // @ts-ignore
+    return data["details"]["state"]["data_json"][1].map(row => {
+        return {token: row[0], pool_address: row[1]}
+    });
+}
 
 async function getTokensPoolsAndLenders() {
-    const tokens = await getTokens();
-    const pools = await getPoolsListInfo();
-    const lenders = await getLendersList();
+
+    let raw_list = await getRawPoolsList();
+
+    const tokens: token[] = await Promise.all(raw_list.map((raw_pool: { token: string, pool_address: string; }) => {
+        return getToken(raw_pool.token);
+    }));
+
+    const pools: pool[] = [];
+    const lenders: lender[] = [];
+
+
     return { tokens, pools, lenders };
 }
 
-export { getTokens, getOwnedTokens, getTokensPoolsAndLenders }
+export { getToken, getOwnedTokens, getTokensPoolsAndLenders }

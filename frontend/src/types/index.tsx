@@ -5,11 +5,27 @@ type token = {
     icon_url: string
 }
 
-type step = number[]
+type step = {
+    step_id: number
+    stablecoin_amount: number,
+
+    other_token_amount: number,
+
+    rate: number,
+
+}
 
 type pool = {
     token: token,
-    id: string
+    rate_step: number,
+
+    current_step: number,
+
+    min_rate: number,
+
+    max_rate: number,
+
+    steps: step[]
 }
 
 type position = {
@@ -30,6 +46,36 @@ type account = {
 
 type tokenOwned = number[];
 
-type lender = any
+type lender = {
 
-export type {token, pool, step, position, account, tokenOwned, lender};
+    collateral_token: token,
+
+    collateral_price: number,
+
+    oracle: string,
+
+    loan_to_value: number,
+
+    interest_rate: number,
+
+    liquidation_threshold: number,
+
+    liquidation_penalty: number,
+
+}
+
+type loan = {
+    collateral_token: token,
+
+    collateral_amount: number,
+
+    amount_lent: number,
+
+    loan_date: number,
+
+    loan_to_value: number,
+
+    interest_rate: number
+}
+
+export type {token, pool, step, position, account, tokenOwned, lender, loan};

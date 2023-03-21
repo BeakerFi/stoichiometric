@@ -9,7 +9,7 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
 import {position} from "types";
-import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
+import { getOwnedLoans, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
 const UserContext = React.createContext(null as any);
@@ -73,13 +73,13 @@ const UserCtx: React.FC<Props> = (props) => {
         if (address == undefined) {
             if (user.address) {
                 const result:any = await getOwnedPositions(user.address);
-                const loans: any = await getLoansOwnedBy(user.address);
+                const loans: any = await getOwnedLoans(user.address);
                 setPositions(result);
                 setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return
         } else {
             const result:any = await getOwnedPositions(address);
-            const loans: any = await getLoansOwnedBy(address);
+            const loans: any = await getOwnedLoans(address);
             setPositions(result);
             setMyLoans(await getAllLoansInformation(loans, lenders));
         }
@@ -95,7 +95,7 @@ const UserCtx: React.FC<Props> = (props) => {
     useEffect(() => {
         async function setLoans() {
             if (user.address) {
-                const loans: any = await getLoansOwnedBy(user.address);
+                const loans: any = await getOwnedLoans(user.address);
                 setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return 
         }

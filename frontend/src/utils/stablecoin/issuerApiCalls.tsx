@@ -1,11 +1,14 @@
 import {
     EntityDetailsRequest,
-    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleIdsCollectionItem, NonFungibleIdsRequest, NonFungibleIdsResponse
+    EntityNonFungibleIdsRequest,
+    NonFungibleDataRequest,
+    NonFungibleIdsRequest,
+    NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
-import { lender } from "types";
+import {lender, loan, token} from "types";
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -28,7 +31,7 @@ async function getLendersList() {
     });
 }
 
-async function getLenderInformation(lender_address: string) {
+async function getLenderInformation(collateral_token: token, lender_address: string): Promise<lender> {
 
     const obj: EntityDetailsRequest = {
         "address": lender_address
@@ -44,25 +47,23 @@ async function getLenderInformation(lender_address: string) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
 
-    if (!data) return undefined;
-
     // @ts-ignore
-    const loan_to_value = data[1];
+    const loan_to_value = parseFloat(data[1]);
     // @ts-ignore
-    const daily_interest_rate = data[2];
+    const daily_interest_rate = parseFloat(data[2]);
     // @ts-ignore
-    const liquidation_threshold = data[3];
+    const liquidation_threshold = parseFloat(data[3]);
     // @ts-ignore
-    const liquidation_penalty = data[4];
+    const liquidation_penalty = parseFloat(data[4]);
     // @ts-ignore
     const oracle_address = data[5];
 
     const current_price = await getOraclePrice(oracle_address);
 
-    return { loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
+    return { collateral_token: collateral_token, collateral_price: current_price, oracle: oracle_address, loan_to_value: loan_to_value, interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty };
 }
 
-async function getLoansOwnedBy(account: string) {
+async function getOwnedLoans(account: string, lenders: lender[]): Promise<loan[]> {
 
     const obj: EntityNonFungibleIdsRequest = {
         "address": account,
@@ -79,18 +80,28 @@ async function getLoansOwnedBy(account: string) {
         .then((tmp_data) => data = tmp_data["non_fungible_ids"]["items"])
         .catch(console.error);
 
-    let loan_ids: any[] = [];
-    // @ts-ignore
-    for (const id of data) {
 
-        const loan_id = id["non_fungible_id"];
-        loan_ids.push(loan_id);
+    let loan_ids: string[] = [];
+
+    // @ts-ignore
+    for (let i = 0; i < data.length; ++i) {
+        // @ts-ignore
+        loan_ids.push(data[i]["non_fungible_id"]);
     }
 
-    return loan_ids
+    return await Promise.all(
+        loan_ids.map(
+            async id => {
+
+                getHex(id).then(
+                    (hexes) => getLoanInformation(hexes.mutable_hex, hexes.immutable_hex, lenders)
+                )
+            }
+        )
+    );
 }
 
-async function getHex(loan_id: string) {
+async function getLoanInformation(loan_id: string, lenders: lender[]): Promise<loan> {
 
     const obj: NonFungibleDataRequest = {
         "address": loan_address,
@@ -115,34 +126,9 @@ async function getHex(loan_id: string) {
     // @ts-ignore
     let immutable_hex = data["immutable_data_hex"];
 
-    return { mutable_hex: mutable_hex, immutable_hex: immutable_hex };
-}
-
-async function getOraclePrice(oracle_address: string) {
-
-    const obj: EntityDetailsRequest = {
-        "address": oracle_address
-    };
-
-    let data;
-    await fetch(radix_api_url + '/entity/details', {
-        method: 'POST',
-        body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-    })
-        .then((response) => response.json())
-        .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
-        .catch(console.error)
-
-    // @ts-ignore
-    return data[0];
-}
-
-async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: lender[]){
-
     const params = new URLSearchParams();
-    params.append('mutable_data_hex', mutable_data);
-    params.append('immutable_data_hex', immutable_data);
+    params.append('mutable_data_hex', mutable_hex);
+    params.append('immutable_data_hex', immutable_hex);
 
     const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
         method: 'GET',
@@ -160,6 +146,26 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     let liquidation_price = 20000;
 
     return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
+}
+
+async function getOraclePrice(oracle_address: string): Promise<number> {
+
+    const obj: EntityDetailsRequest = {
+        "address": oracle_address
+    };
+
+    let data;
+    await fetch(radix_api_url + '/entity/details', {
+        method: 'POST',
+        body: JSON.stringify(obj),
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    })
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
+        .catch(console.error)
+
+    // @ts-ignore
+    return parseFloat(data[0]);
 }
 
 async function getAllLoansInformation(loan_ids: string[], lenders: lender[]) {
@@ -200,4 +206,4 @@ async function getAllCollection(): Promise<string[]> {
     }
   }
 
-export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation, getAllCollection}
+export { getLendersList, getLenderInformation, getOwnedLoans, getAllLoansInformation, getAllCollection}

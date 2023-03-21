@@ -1,14 +1,14 @@
-import {radix_api_url, position_address, router_address, stablecoin_address, token_default, stable_coin} from "../general/constants";
+import {radix_api_url, position_address, router_address, token_default} from "../general/constants";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest
 } from "@radixdlt/babylon-gateway-api-sdk";
 
-import { position, pool, step } from "types";
+import { token, position, pool, step } from "types";
 
 
-async function getOwnedPositions(account: string) {
+async function getOwnedPositions(account: string): Promise<position[]> {
 
     const obj: EntityNonFungibleIdsRequest = {
         "address": account,
@@ -29,7 +29,7 @@ async function getOwnedPositions(account: string) {
 
     const positions: position[] = [];
     // @ts-ignore
-    for (var i = 0; i < data.length; ++i) {
+    for (let i = 0; i < data.length; ++i) {
 
         const nf_id = data[i]["non_fungible_id"];
         positions.push({...{nfIdValue: await getNFIDValue(nf_id)}, token: token_default, id: data[i]["non_fungible_id"], x_fees: 0, y_fees: 0, value_locked: 0, price_x: 1, liquidity: 0});
@@ -59,10 +59,10 @@ async function getNFIDValue(id: string) {
 
 }
 
-async function getPoolInfo(token: string, pools: pool[]) {
+async function getPoolInformation(token: token, pool_address: string): Promise<pool> {
 
     const obj: EntityDetailsRequest = {
-        "address": pools[0]["pool"]
+        "address": pool_address
     }
 
     let data: any;
@@ -75,22 +75,17 @@ async function getPoolInfo(token: string, pools: pool[]) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    let pool_steps: step[] = [];
+    const pool_steps: step[] = await Promise.all(data[6].map(async (pool_step: string[]) => {
+        await getPoolStep(parseFloat(pool_step[0]),pool_step[1])
+    }));
 
-    for (const pool_step of data[6]) {
-        let step = pool_step[0];
-        let p_step = await getPoolStep(pool_step[1])
-
-        pool_steps.push([step, p_step])
-    }
-
-    return {rate_step: data[0], current_step: data[1], min_rate: data[2], max_rate: data[3], stable_prot_fees: data[4], other_prot_fees: data[5], steps: pool_steps};
+    return {token: token, rate_step: parseFloat(data[0]), current_step: parseFloat(data[1]), min_rate: parseFloat(data[2]), max_rate: parseFloat(data[3]), steps: pool_steps};
 }
 
-async function getPoolStep(address: string) {
+async function getPoolStep(step_id: number, step_address: string): Promise<step> {
 
     const obj: EntityDetailsRequest = {
-        "address": address
+        "address": step_address
     }
 
     let data: any;
@@ -103,41 +98,23 @@ async function getPoolStep(address: string) {
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    return {amount_stable: data[0], amount_other: data[1], rate: data[2], stable_fees_per_liq: data[3], other_fees_per_liq: data[4], stable_fees: data[5], other_fees: data[5]}
+    return {step_id: step_id, stablecoin_amount: parseFloat(data[0]), other_token_amount: data[1], rate: data[2]}
 }
 
-async function getPoolsList() {
-    const obj: EntityDetailsRequest = {
-        "address": router_address
-    };
+async function getPoolsListInformation(tokens: token[]): Promise<pool[]> {
 
-    let data;
-    await fetch( radix_api_url + `/entity/details`, {
-        method: 'POST',
-        body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-    })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data )
-        .catch(console.error);
+    let poolsList = await Promise.all(tokens.map(
+        token => {
+            await getPoolInformation(token, )
+        }
+    ));
 
-    // @ts-ignore
-    return data["details"]["state"]["data_json"][1].map(row => {
-        return {token: row[0], pool: row[1]}
-    });
-}
-
-async function getPoolsListInfo() {
-    const pools = await getPoolsList();
-
-    let poolsList = [];
-
-    for (var i = 0; i<pools.length; ++i) {
-        poolsList[pools[i]["token"]] = await getPoolInfo(pools[i]["token"], pools);
+    for (let i = 0; i<pools.length; ++i) {
+        poolsList[pools[i]["token"]] = await getPoolInformation(pools[i]["token"], pools);
     }
 
     return poolsList
 }
 
 
-export {getPoolInfo, getPoolsList, getOwnedPositions, getPoolsListInfo}
+export {getPoolInformation, getOwnedPositions, getPoolsListInformation}
