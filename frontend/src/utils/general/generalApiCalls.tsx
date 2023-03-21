@@ -1,6 +1,5 @@
 import {radix_api_url, router_address} from "./constants";
-import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";;
-
+import {EntityDetailsRequest} from "@radixdlt/babylon-gateway-api-sdk";
 import {lender, pool, token} from "types";
 
 async function getToken(address: string): Promise<token>{
@@ -82,8 +81,8 @@ async function getTokensPoolsAndLenders() {
     }));
 
     const pools: pool[] = [];
-    const lenders: lender[] = [];
 
+    const lenders: lender[] = [];
 
     return { tokens, pools, lenders };
 }
