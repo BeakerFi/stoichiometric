@@ -678,16 +678,7 @@ fn add_liquidity_at_rate_with_position() {
 
     // Rates are not correct due to small computational errors
     let pool_state = StepState::from(
-        dec!(100),
-        Decimal::ZERO,
-        dec!("19999.9994618360095662"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    let pool_state_2 = StepState::from(
-        dec!(100),
+        dec!(200),
         Decimal::ZERO,
         dec!("2362.1744661270945891"),
         Decimal::ZERO,
@@ -696,8 +687,7 @@ fn add_liquidity_at_rate_with_position() {
         Decimal::ZERO,
     );
     let mut pool_states = HashMap::new();
-    pool_states.insert(50266, pool_state);
-    pool_states.insert(30000, pool_state_2);
+    pool_states.insert(30000, pool_state);
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
         50266,
@@ -713,8 +703,7 @@ fn add_liquidity_at_rate_with_position() {
 
     // Check that the user got the right position
     let mut step_pos_map = HashMap::new();
-    step_pos_map.insert(30000, (dec!(100), Decimal::ZERO, Decimal::ZERO));
-    step_pos_map.insert(50266, (dec!(100), Decimal::ZERO, Decimal::ZERO));
+    step_pos_map.insert(30000, (dec!(200), Decimal::ZERO, Decimal::ZERO));
     assert_current_position(&test_env, "btc", &step_pos_map);
 }
 
@@ -729,18 +718,13 @@ fn remove_liquidity_at_step() {
         dec!(100000),
     );
 
-    test_env.create_account("other");
-    test_env.transfer_to("other", "usd", dec!(100));
-    test_env.transfer_to("other", "btc", dec!(1));
-    test_env.set_current_account("other");
-
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 30000, None).run();
     pool_usd_btc.update();
 
     test_env
         .call_method(RouterMethods::RemoveLiquidityAtStep(
             POSITION_NAME.to_string(),
-            "#1#".to_string(),
+            "#0#".to_string(),
             30000,
         ))
         .run();
@@ -748,15 +732,6 @@ fn remove_liquidity_at_step() {
 
     // Rates are not correct due to small computational errors
     let pool_state = StepState::from(
-        dec!(20000),
-        Decimal::ZERO,
-        dec!("19999.9994618360095662"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    let pool_state_2 = StepState::from(
         Decimal::ZERO,
         Decimal::ZERO,
         dec!("2362.1744661270945891"),
@@ -766,240 +741,7 @@ fn remove_liquidity_at_step() {
         Decimal::ZERO,
     );
     let mut pool_states = HashMap::new();
-    pool_states.insert(50266, pool_state);
-    pool_states.insert(30000, pool_state_2);
-    pool_usd_btc.assert_state_is(
-        dec!("1.000105411144423293"),
-        50266,
-        dec!(100),
-        pool_states,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-
-    // Check tokens owned by current account
-    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(100));
-    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(1));
-
-    // Check that the user got the right position
-    let step_pos_map = HashMap::new();
-    assert_current_position(&test_env, "btc", &step_pos_map);
-}
-
-#[test]/*
-fn remove_liquidity_at_steps() {
-    let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
-
-    add_liquidity_at_steps(
-        &mut test_env,
-        dec!(1000),
-        "btc",
-        dec!(5),
-        51000,
-        51004,
-        Some("#0#".to_string()),
-    )
-    .run();
-    test_env
-        .call_method(RouterMethods::RemoveLiquidityAtSteps(
-            POSITION_NAME.to_string(),
-            "#0#".to_string(),
-            51000,
-            51002,
-        ))
-        .run();
-    pool_usd_btc.update();
-
-    let mut pool_states = HashMap::new();
-    let pool_state = StepState::from(
-        dec!(20000),
-        Decimal::ZERO,
-        dec!("19999.9994618360095662"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    pool_states.insert(50266, pool_state);
-    let step_change = dec!("1.000105411144423293");
-    for i in 51000_u16..51005 {
-        let new_pool_state = StepState::from(
-            Decimal::ZERO,
-            if i < 51003 {
-                Decimal::ZERO
-            } else {
-                Decimal::ONE
-            },
-            dec!(100) * step_change.powi(i.into()),
-            Decimal::ZERO,
-            Decimal::ZERO,
-            Decimal::ZERO,
-            Decimal::ZERO,
-        );
-        pool_states.insert(i, new_pool_state);
-    }
-    pool_usd_btc.assert_state_is(
-        dec!("1.000105411144423293"),
-        50266,
-        dec!(100),
-        pool_states,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-
-    // Check tokens owned by current account
-    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9980000));
-    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(9999998));
-
-    // Check that the user got the right position
-    let mut step_pos_map = HashMap::new();
-
-    for i in 51003_u16..51005 {
-        step_pos_map.insert(
-            i,
-            (
-                dec!(100) * step_change.powi(i.into()),
-                Decimal::ZERO,
-                Decimal::ZERO,
-            ),
-        );
-    }
-    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
-    assert_current_position(&test_env, "btc", &step_pos_map);
-}*/
-
-#[test]
-fn remove_liquidity_at_rate() {
-    let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
-    add_liquidity(
-        &mut test_env,
-        dec!(100),
-        "btc",
-        dec!(1),
-        dec!("2362.175"),
-        Some("#0#".to_string()),
-    )
-    .run();
-    test_env
-        .call_method(RouterMethods::RemoveLiquidityAtRate(
-            POSITION_NAME.to_string(),
-            "#0#".to_string(),
-            dec!("2362.2"),
-        ))
-        .run();
-    pool_usd_btc.update();
-
-    // Rates are not correct due to small computational errors
-    let pool_state = StepState::from(
-        dec!(20000),
-        Decimal::ZERO,
-        dec!("19999.9994618360095662"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    let pool_state_2 = StepState::from(
-        Decimal::ZERO,
-        Decimal::ZERO,
-        dec!("2362.1744661270945891"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    let mut pool_states = HashMap::new();
-    pool_states.insert(50266, pool_state);
-    pool_states.insert(30000, pool_state_2);
-    pool_usd_btc.assert_state_is(
-        dec!("1.000105411144423293"),
-        50266,
-        dec!(100),
-        pool_states,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-
-    // Check tokens owned by current account
-    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(9980000));
-    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
-
-    // Check that the user got the right position
-    let mut step_pos_map = HashMap::new();
-    step_pos_map.insert(50266, (dec!(20000), Decimal::ZERO, Decimal::ZERO));
-    assert_current_position(&test_env, "btc", &step_pos_map);
-}
-
-#[test]/*
-fn remove_all_liquidity() {
-    let mut test_env = instantiate();
-    let mut pool_usd_btc = create_pool(
-        &mut test_env,
-        "btc",
-        dec!(20000),
-        dec!(100),
-        dec!(100000),
-    );
-
-    add_liquidity_at_steps(
-        &mut test_env,
-        dec!(1000),
-        "btc",
-        dec!(5),
-        51000,
-        51004,
-        Some("#0#".to_string()),
-    )
-    .run();
-    test_env
-        .call_method(RouterMethods::RemoveAllLiquidity(
-            POSITION_NAME.to_string(),
-            test_env
-                .get_non_fungible_ids_owned_by_current(POSITION_NAME)
-                .unwrap()
-                .clone(),
-        ))
-        .run();
-    pool_usd_btc.update();
-
-    let mut pool_states = HashMap::new();
-    let pool_state = StepState::from(
-        Decimal::ZERO,
-        Decimal::ZERO,
-        dec!("19999.9994618360095662"),
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-        Decimal::ZERO,
-    );
-    pool_states.insert(50266, pool_state);
-    let step_change = dec!("1.000105411144423293");
-    for i in 51000_u16..51005 {
-        let new_pool_state = StepState::from(
-            Decimal::ZERO,
-            Decimal::ZERO,
-            dec!(100) * step_change.powi(i.into()),
-            Decimal::ZERO,
-            Decimal::ZERO,
-            Decimal::ZERO,
-            Decimal::ZERO,
-        );
-        pool_states.insert(i, new_pool_state);
-    }
+    pool_states.insert(30000, pool_state);
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
         50266,
@@ -1013,9 +755,205 @@ fn remove_all_liquidity() {
     assert_eq!(test_env.amount_owned_by_current("usd"), dec!(10000000));
     assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
 
-    // Check that the user does not have any position
+    // Check that the user got the right position
+    let step_pos_map = HashMap::new();
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn remove_liquidity_at_steps() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(
+        &mut test_env,
+        "btc",
+        dec!(20000),
+        dec!(100),
+        dec!(100000),
+    );
+
+    let mut steps = vec![];
+    let mut pool_states = HashMap::new();
+    let step_change = dec!("1.000105411144423293");
+
+    for i in 51000_u16..51005 {
+        steps.push((i, dec!(200), Decimal::ONE));
+
+        let new_pool_state = StepState::from(
+            Decimal::ZERO,
+            Decimal::ZERO,
+            dec!(100) * step_change.powi(i.into()),
+            Decimal::ZERO,
+            Decimal::ZERO,
+            Decimal::ZERO,
+            Decimal::ZERO,
+        );
+        pool_states.insert(i, new_pool_state);
+    }
+
+    add_liquidity_at_steps(
+        &mut test_env,
+        dec!(1000),
+        "btc",
+        dec!(5),
+        steps,
+        None
+    )
+        .run();
+
+    test_env
+        .call_method(RouterMethods::RemoveLiquidityAtSteps(
+            POSITION_NAME.to_string(),
+            "#0#".to_string(),
+            51000,
+            51005,
+        ))
+        .run();
+    pool_usd_btc.update();
+
+
+    pool_usd_btc.assert_state_is(
+        dec!("1.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO,
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(10000000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user got the right position
+    let step_pos_map = HashMap::new();
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn remove_liquidity_at_rate() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(
+        &mut test_env,
+        "btc",
+        dec!(20000),
+        dec!(100),
+        dec!(100000),
+    );
+
+    add_liquidity(
+        &mut test_env,
+        dec!(100),
+        "btc",
+        dec!(1),
+        dec!("2362.175"),
+        None,
+    )
+    .run();
+
+    test_env
+        .call_method(RouterMethods::RemoveLiquidityAtRate(
+            POSITION_NAME.to_string(),
+            "#0#".to_string(),
+            dec!("2362.2"),
+        ))
+        .run();
+    pool_usd_btc.update();
+
+    // Rates are not correct due to small computational errors
+    let pool_state = StepState::from(
+        Decimal::ZERO,
+        Decimal::ZERO,
+        dec!("2362.1744661270945891"),
+        Decimal::ZERO,
+        Decimal::ZERO,
+        Decimal::ZERO,
+        Decimal::ZERO,
+    );
+    let mut pool_states = HashMap::new();
+    pool_states.insert(30000, pool_state);
+    pool_usd_btc.assert_state_is(
+        dec!("1.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO,
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(10000000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user got the right position
+    let step_pos_map = HashMap::new();
+    assert_current_position(&test_env, "btc", &step_pos_map);
+}
+
+#[test]
+fn remove_all_liquidity() {
+    let mut test_env = instantiate();
+    let mut pool_usd_btc = create_pool(
+        &mut test_env,
+        "btc",
+        dec!(20000),
+        dec!(100),
+        dec!(100000),
+    );
+
+    let mut steps = vec![];
+    let mut pool_states = HashMap::new();
+    let step_change = dec!("1.000105411144423293");
+
+    for i in 51000_u16..51005 {
+        steps.push((i, dec!(200), Decimal::ONE));
+
+        let new_pool_state = StepState::from(
+            Decimal::ZERO,
+            Decimal::ZERO,
+            dec!(100) * step_change.powi(i.into()),
+            Decimal::ZERO,
+            Decimal::ZERO,
+            Decimal::ZERO,
+            Decimal::ZERO,
+        );
+        pool_states.insert(i, new_pool_state);
+    }
+
+    add_liquidity_at_steps(
+        &mut test_env,
+        dec!(1000),
+        "btc",
+        dec!(5),
+        steps,
+        None
+    )
+        .run();
+
+    test_env
+        .call_method(RouterMethods::RemoveAllLiquidity(
+            POSITION_NAME.to_string(),
+            vec!["#0#".to_string()],
+        ))
+        .run();
+    pool_usd_btc.update();
+
+
+    pool_usd_btc.assert_state_is(
+        dec!("1.000105411144423293"),
+        50266,
+        dec!(100),
+        pool_states,
+        Decimal::ZERO,
+        Decimal::ZERO,
+    );
+
+    // Check tokens owned by current account
+    assert_eq!(test_env.amount_owned_by_current("usd"), dec!(10000000));
+    assert_eq!(test_env.amount_owned_by_current("btc"), dec!(10000000));
+
+    // Check that the user's position was deleted
     assert_no_positions(&test_env, "btc");
-}*/
+}
 
 #[test]
 fn remove_all_liquidity_from_multiple_pools() {
@@ -1037,13 +975,13 @@ fn remove_all_liquidity_from_multiple_pools() {
         dec!(20000),
     );
 
+    add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(1), 50266, None).run();
+    add_liquidity_at_step(&mut test_env, dec!(100), "eth", dec!(1), 44280, None).run();
+
     test_env
         .call_method(RouterMethods::RemoveAllLiquidity(
             POSITION_NAME.to_string(),
-            test_env
-                .get_non_fungible_ids_owned_by_current(POSITION_NAME)
-                .unwrap()
-                .clone(),
+            vec!["#0#".to_string(), "#1#".to_string()],
         ))
         .run();
 
@@ -1096,6 +1034,7 @@ fn remove_all_liquidity_from_multiple_pools() {
 
     // Check that the user does not have any position
     assert_no_positions(&test_env, "btc");
+    assert_no_positions(&test_env, "eth");
 }
 
 #[test]
@@ -1109,6 +1048,8 @@ fn swap_for_stable() {
         dec!(100),
         dec!(100000),
     );
+
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
 
     test_env
         .call_method(RouterMethods::Swap(
@@ -1159,6 +1100,7 @@ fn swap_for_other() {
         dec!(100),
         dec!(100000),
     );
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
     add_liquidity_at_step(&mut test_env, dec!(100), "btc", dec!(10), 50267, None).run();
 
     test_env
@@ -1222,6 +1164,9 @@ fn claim_fees_stable() {
         dec!(100),
         dec!(100000),
     );
+
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     add_liquidity_at_step(
         &mut test_env,
         dec!(100),
@@ -1316,6 +1261,8 @@ fn claim_fees_other() {
         dec!(100000),
     );
 
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     test_env
         .call_method(RouterMethods::Swap(
             "btc".to_string(),
@@ -1383,6 +1330,8 @@ fn claim_protocol_fees() {
         dec!(100000),
     );
 
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     test_env
         .call_method(RouterMethods::Swap(
             "btc".to_string(),
@@ -1448,6 +1397,9 @@ fn add_liquidity_to_mixed_step_too_much_other() {
         dec!(100),
         dec!(100000),
     );
+
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     test_env
         .call_method(RouterMethods::Swap(
             "btc".to_string(),
@@ -1516,6 +1468,9 @@ fn add_liquidity_to_mixed_step_too_much_stable() {
         dec!(100),
         dec!(100000),
     );
+
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     test_env
         .call_method(RouterMethods::Swap(
             "btc".to_string(),
@@ -1592,6 +1547,9 @@ fn remove_liquidity_from_mixed_step() {
         dec!(100),
         dec!(100000),
     );
+
+    add_liquidity_at_step(&mut test_env, dec!(20000), "btc", dec!(1), 50266, None).run();
+
     test_env
         .call_method(RouterMethods::Swap(
             "btc".to_string(),

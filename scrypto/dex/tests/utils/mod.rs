@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{dec, Decimal};
 use sqrt::manifest_call::ManifestCall;
-use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, TupleArg, U16, VecArg};
+use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::collections::HashMap;
