@@ -552,17 +552,17 @@ function Liquidity() {
                                                 <label htmlFor="searchPosition">Search for a position</label>
                                             </div>
                                             <div sx={style.poolsList}>
-                                                {  positionsList.map((pool: pool) => {
+                                                {  positionsList.map((position: position) => {
                                                     return (
                                                         <div sx={style.poolChoice} onClick={() => {
                                                             setChosePosition(false);
                                                             setInvertPosition(false);
-                                                            setToken1(pool.token);
-                                                            setNftId(pool.id);
+                                                            setToken1(position.token!);
+                                                            setNftId(position.id);
                                                         }}>
-                                                            <img src={pool.token.icon_url}/>
+                                                            <img src={position.token!.icon_url}/>
                                                             <img src={stable.icon_url}/>
-                                                            <p>{pool.token.symb} - {stable.symb}</p>
+                                                            <p>{position.token!.symb} - {stable.symb}</p>
                                                         </div>
                                                     )
                                                 })}

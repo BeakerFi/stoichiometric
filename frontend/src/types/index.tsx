@@ -30,6 +30,16 @@ type account = {
 
 type tokenOwned = number[];
 
+type loan = {
+    token: token,
+    collateral_amount: number,
+    amount_lent: number,
+    loan_time: number,
+    loan_to_value: number,
+    interest_rate: number,
+    id: string
+}
+
 type lender = any
 
-export type {token, pool, step, position, account, tokenOwned, lender};
+export type {token, pool, step, position, account, tokenOwned, lender, loan};

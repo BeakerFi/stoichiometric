@@ -1,11 +1,14 @@
 import {
     EntityDetailsRequest,
-    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleIdsCollectionItem, NonFungibleIdsRequest, NonFungibleIdsResponse
+    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleDataResponse, NonFungibleIdsRequest, NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
 import { lender } from "types";
+
+type Hexes = { mutable_hex: string, immutable_hex: string, id: string };
+
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -90,33 +93,38 @@ async function getLoansOwnedBy(account: string) {
     return loan_ids
 }
 
-async function getHex(loan_id: string) {
-
-    const obj: NonFungibleDataRequest = {
-        "address": loan_address,
-        "non_fungible_id": loan_id
+export async function getHex(loan_id: string): Promise<Hexes> {
+  
+    const obj:NonFungibleDataRequest = {
+      "address": loan_address,
+      "non_fungible_id": loan_id
     };
 
-    let data;
-    await fetch(radix_api_url + `/non-fungible/data`, {
-        method: 'POST',
-        body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    const response = await fetch(radix_api_url + '/non-fungible/data', {
+      method: 'POST',
+      body: JSON.stringify(obj),
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
     })
-        .then((response) => response)
-        .then((tmp_data) => data = tmp_data)
-        .catch(console.error);
+    
+
+    if (!response.ok) {
+      throw new Error("Gateway error : " + response.statusText);
+    }
+
+    const data = await response.json();
+    const responseData = data as NonFungibleDataResponse;
 
 
-    console.log("data", data);
+    if (responseData.mutable_data_hex == undefined || responseData.immutable_data_hex == undefined) {
+      throw new Error("Data hex undefined");
+    }
 
-    // @ts-ignore
-    let mutable_hex = data["mutable_data_hex"];
-    // @ts-ignore
-    let immutable_hex = data["immutable_data_hex"];
+    const mutable_hex= responseData.mutable_data_hex
+    const immutable_hex= responseData.immutable_data_hex
 
-    return { mutable_hex: mutable_hex, immutable_hex: immutable_hex };
-}
+    return { mutable_hex, immutable_hex, id: loan_id };
+
+}   
 
 async function getOraclePrice(oracle_address: string) {
 
@@ -138,7 +146,7 @@ async function getOraclePrice(oracle_address: string) {
     return data[0];
 }
 
-async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: lender[]){
+async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: lender[], id: string){
 
     const params = new URLSearchParams();
     params.append('mutable_data_hex', mutable_data);
@@ -159,12 +167,12 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     let liquidation_price = 20000;
 
-    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
+    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate, id: id, loan_time: data.loan_time, interest_rate: data.interest_rate, loan_to_value: data.loan_to_value };
 }
 
 async function getAllLoansInformation(loan_ids: string[], lenders: lender[]) {
     const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
-    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
+    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)))
 }
 
 async function getAllCollection(): Promise<string[]> {

@@ -37,46 +37,48 @@ async function takeLoan(account: string, collateral_token: string, collateral_am
 
 async function repayLoan(account: string, stablecoin_amount: string, loan_id: string) {
     const manifest = `
-                    CALL_METHOD
-                        ComponentAddress("${account}")
-                        "withdraw_by_amount"
-                        Decimal("${stablecoin_amount}")
-                        ResourceAddress("${stablecoin_address}");
-                    
-                    TAKE_FROM_WORKTOP_BY_AMOUNT
-                        Decimal("${stablecoin_amount}")
-                        ResourceAddress("${stablecoin_amount}")
-                        Bucket("0");
-                    
-                    CALL_METHOD
-                        ComponentAddress("${account}")
-                        "withdraw_by_ids"
-                        Array<NonFungibleLocalId>(NonFungibleLocalId("${loan_id}"))
-                        ResourceAddress("${loan_address}");
-                    
-                    TAKE_FROM_WORKTOP_BY_IDS
-                        Array<NonFungibleLocalId>(NonFungibleLocalId("${loan_id}"))
-                        ResourceAddress("${loan_address}")
-                        Bucket("1");
-                    
-                    CALL_METHOD
-                        ComponentAddress("${issuer_address}")
-                        "repay_loans"
-                        Bucket("0")
-                        Bucket("1");
-                    
-                    CALL_METHOD
-                        ComponentAddress("${account}")
-                        "deposit_batch"
-                        Expression("ENTIRE_WORKTOP");
+        CALL_METHOD
+            ComponentAddress("${account}")
+            "withdraw_by_amount"
+            Decimal("${stablecoin_amount}")
+            ResourceAddress("${stablecoin_address}");
+
+        TAKE_FROM_WORKTOP_BY_AMOUNT
+            Decimal("${stablecoin_amount}")
+            ResourceAddress("${stablecoin_address}")
+            Bucket("0");
+
+        CALL_METHOD
+            ComponentAddress("${account}")
+            "withdraw_by_ids"
+            Array<NonFungibleLocalId>(NonFungibleLocalId("${loan_id}"))
+            ResourceAddress("${loan_address}");
+
+        TAKE_FROM_WORKTOP_BY_IDS
+            Array<NonFungibleLocalId>(NonFungibleLocalId("${loan_id}"))
+            ResourceAddress("${loan_address}")
+            Bucket("1");
+
+        CALL_METHOD
+            ComponentAddress("${issuer_address}")
+            "repay_loans"
+            Bucket("0")
+            Bucket("1");
+
+        CALL_METHOD
+            ComponentAddress("${account}")
+            "deposit_batch"
+            Expression("ENTIRE_WORKTOP");
     `;
+
+    console.log(manifest)
 
     const result = await rdt.sendTransaction({
         transactionManifest: manifest,
         version: 1,
     })
 
-    return result.isOk;
+    return !result.isErr();
 }
 
 async function addCollateral(account: string, collateral_token: string, collateral_amount: string, loan_id: string) {
@@ -122,7 +124,7 @@ async function addCollateral(account: string, collateral_token: string, collater
         version: 1,
     })
 
-    return result.isOk;
+    return result.isOk();
 }
 
 async function removeCollateral(account: string, amount_to_remove: string, loan_id: string) {
@@ -157,7 +159,7 @@ async function removeCollateral(account: string, amount_to_remove: string, loan_
         version: 1,
     })
 
-    return result.isOk;
+    return result.isOk();
 }
 
 async function liquidate(account: string, stablecoins_to_withdraw: string, loan_id: string) {

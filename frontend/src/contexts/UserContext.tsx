@@ -12,6 +12,8 @@ import {position} from "types";
 import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
+import { token_default } from "utils/general/constants";
+
 const UserContext = React.createContext(null as any);
 
 
@@ -27,7 +29,7 @@ interface User {
 const UserCtx: React.FC<Props> = (props) => {
     const { addAlert } = useContext(SnackbarContext);
 
-    const { lenders } = useContext(TokensContext);
+    const { lenders, tokens } = useContext(TokensContext);
 
     const [user, setUser] = useState<User>({address: null, name: null})
 
@@ -92,11 +94,30 @@ const UserCtx: React.FC<Props> = (props) => {
         });
     }, []);
 
+    function findToken(address: string) {
+        for (var i = 0; i < tokens.length; ++i) {
+            if (tokens[i]["address"] == address) return tokens[i]
+        }
+        return token_default;
+    }
+
     useEffect(() => {
         async function setLoans() {
             if (user.address) {
                 const loans: any = await getLoansOwnedBy(user.address);
-                setMyLoans(await getAllLoansInformation(loans, lenders));
+                const loansList = await getAllLoansInformation(loans, lenders);
+                const myLoansList = []
+                for (var i = 0; i < loansList.length; ++i) {
+                    const token = findToken(loansList[i]["collateral_token"]);
+                    myLoansList.push({token: token, 
+                        collateral_amount: loansList[i]["collateral_amount"],
+                        amount_lent: loansList[i]["amount_lent"],
+                        loan_time: loansList[i]["loan_time"],
+                        loan_to_value: loansList[i]["loan_to_value"],
+                        interest_rate: loansList[i]["interest_rate"], 
+                        id: loansList[i]["id"]})
+                }
+                setMyLoans(myLoansList);
             } else return 
         }
         setLoans()
@@ -104,8 +125,8 @@ const UserCtx: React.FC<Props> = (props) => {
     }, [lenders])
 
     useEffect(() => {
-        console.log("positions", positions);
-    }, [positions])
+        console.log("loans", myLoans);
+    }, [myLoans])
 
     async function setUserValues(address:string) {
         setNbTokens(address);
