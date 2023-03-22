@@ -1,13 +1,16 @@
 import {
     EntityDetailsRequest,
-    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleDataResponse, NonFungibleIdsRequest, NonFungibleIdsResponse
+    EntityNonFungibleIdsRequest,
+    NonFungibleDataRequest,
+    NonFungibleDataResponse,
+    NonFungibleIdsRequest,
+    NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
-import { decoded, Hexes, lender, loan } from "types";
-import { getToken } from "utils/general/generalApiCalls";
-
+import {decoded, Hexes, lender, loan} from "types";
+import {getToken} from "utils/general/generalApiCalls";
 
 
 async function getLendersList() {
@@ -31,7 +34,9 @@ async function getLendersList() {
     });
 }
 
-async function getLenderInformation(lender_address: string) {
+async function getLenderInformation(lender_address: string)     {
+
+    console.log("address:", lender_address);
 
     const obj: EntityDetailsRequest = {
         "address": lender_address
@@ -44,23 +49,15 @@ async function getLenderInformation(lender_address: string) {
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
         .then((response) => response.json())
-        .then((response) => console.log(response))
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
-        .catch(console.error)
-
-    console.log("data", data);
+        .catch(console.error);
 
     if (!data) return undefined;
 
-    // @ts-ignore
     const loan_to_value = data[1];
-    // @ts-ignore
     const daily_interest_rate = data[2];
-    // @ts-ignore
     const liquidation_threshold = data[3];
-    // @ts-ignore
     const liquidation_penalty = data[4];
-    // @ts-ignore
     const oracle_address = data[5];
 
     const current_price = await getOraclePrice(oracle_address);
@@ -118,7 +115,7 @@ async function getHex(loan_id: string): Promise<Hexes> {
     const responseData = data as NonFungibleDataResponse;
 
 
-    if (responseData.mutable_data_hex == undefined || responseData.immutable_data_hex == undefined) {
+    if (responseData.mutable_data_hex === undefined || responseData.immutable_data_hex === undefined) {
         throw new Error("Data hex undefined");
     }
 
@@ -167,8 +164,8 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     const data = await decode_hex(mutable_data,immutable_data)
 
-    const lender = lenders[data.collateral_token];
-    const collateral_price = lender.price * data.collateral_amount;
+    const lender: lender = lenders[data.collateral_token];
+    const collateral_price = lender.collateral_price * data.collateral_amount;
 
     const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
     const token_promise = getToken(data.collateral_token)
@@ -177,7 +174,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     let liquidation_price = 20000;
 
-    let loan: loan = {
+    return {
         collateral_token: token,
         collateral_amount: data.collateral_amount,
         amount_lent: data.amount_lent,
@@ -186,9 +183,8 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
         loan_to_value: data.loan_to_value,
         interest_rate: data.interest_rate,
         amount_to_liquidate: amount_to_liquidate,
-        id: id };
-
-    return loan;
+        id: id
+    };
 }
 
 
@@ -198,7 +194,6 @@ async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, l
 }
 
 async function getAllCollection(): Promise<string[]> {
-
     try {
         let cursor: string | null | undefined = '';
         const ids:string[] = [];

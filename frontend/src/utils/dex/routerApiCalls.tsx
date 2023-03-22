@@ -1,11 +1,11 @@
-import {radix_api_url, position_address, router_address, token_default} from "../general/constants";
+import {position_address, radix_api_url, token_default} from "../general/constants";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest
 } from "@radixdlt/babylon-gateway-api-sdk";
 
-import { token, position, pool, step } from "types";
+import {pool, position, step, token} from "types";
 
 
 async function getOwnedPositions(account: string): Promise<position[]> {
@@ -40,6 +40,7 @@ async function getOwnedPositions(account: string): Promise<position[]> {
 }
 
 async function getNFIDValue(id: string) {
+
     const obj: NonFungibleDataRequest = {
         "address": position_address,
         "non_fungible_id": id
@@ -75,11 +76,12 @@ async function getPoolInformation(token: token, pool_address: string): Promise<p
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    const pool_steps: step[] = await Promise.all(data[6].map(async (pool_step: string[]) => {
-        await getPoolStep(parseFloat(pool_step[0]),pool_step[1])
-    }));
+    const pool_steps: step[] = [];
 
-    console.log("pools_steps", pool_steps)
+    for (const pool_step of data[6]) {
+        let step_value: step = await getPoolStep(parseFloat(pool_step[0]), pool_step[1]);
+        pool_steps.push(step_value);
+    }
 
     return {token: token, rate_step: parseFloat(data[0]), current_step: parseFloat(data[1]), min_rate: parseFloat(data[2]), max_rate: parseFloat(data[3]), steps: pool_steps};
 }
@@ -97,11 +99,15 @@ async function getPoolStep(step_id: number, step_address: string): Promise<step>
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
         .then((response) => response.json())
-        .then(data => console.log(data))
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    return {step_id: step_id, stablecoin_amount: parseFloat(data[0]), other_token_amount: data[1], rate: data[2]}
+    return {
+        step_id: step_id,
+        stablecoin_amount: parseFloat(data[0]),
+        other_token_amount: parseFloat(data[1]),
+        rate: parseFloat(data[2])
+    };
 }
 
 

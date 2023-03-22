@@ -48,7 +48,7 @@ async function getOwnedTokens(account: string) {
     // @ts-ignore
     const fungible = data["fungible_resources"]["items"];
 
-    for (var i = 0; i < fungible.length; ++i) {
+    for (let i = 0; i < fungible.length; ++i) {
         ownedTokensList[fungible[i]["address"]] = parseFloat(fungible[i]["amount"]["value"])
     }
 
@@ -83,8 +83,8 @@ async function getLendersInfos(){
 
     console.log("raw_list", raw_lender_list);
 
-    return Promise.all(raw_lender_list.map(async (raw_lender:any) => {
-        return getLenderInformation(raw_lender.token);
+    return Promise.all(raw_lender_list.map(async (raw_lender: {lender: string, token:string }) => {
+        await getLenderInformation(raw_lender.lender)
       }));
 
 }
