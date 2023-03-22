@@ -73,9 +73,40 @@ type loan = {
 
     loan_date: number,
 
+    liquidation_price: number,
+
     loan_to_value: number,
 
-    interest_rate: number
+    interest_rate: number,
+
+    amount_to_liquidate : number
 }
 
-export type {token, pool, step, position, account, tokenOwned, lender, loan};
+
+interface ComponentState {
+    data_json: any; // replace "any" with the actual type of the data
+    // define any other properties of the ComponentState object here
+  }
+  
+  interface EntityDetailsResponseComponentDetails {
+    discriminator: "component";
+    package_address: string;
+    blueprint_name: string;
+    state: ComponentState; // specify the type of the "state" object
+    access_rules_chain: object;
+  }
+
+  type decoded = {
+    collateral_token: string,
+    collateral_amount: number,
+    amount_lent: number,
+    loan_time: number,
+    loan_to_value: number,
+    interest_rate: number
+  }
+
+
+  type Hexes = { mutable_hex: string, immutable_hex: string };
+
+
+export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes};

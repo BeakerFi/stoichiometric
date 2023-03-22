@@ -102,5 +102,4 @@ async function getPoolStep(step_id: number, step_address: string): Promise<step>
 }
 
 
-
 export {getPoolInformation, getOwnedPositions}
