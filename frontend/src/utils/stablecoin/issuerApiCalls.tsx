@@ -1,14 +1,14 @@
 import {
     EntityDetailsRequest,
-    EntityNonFungibleIdsRequest,
-    NonFungibleDataRequest,
-    NonFungibleIdsRequest,
-    NonFungibleIdsResponse
+    EntityNonFungibleIdsRequest, NonFungibleDataRequest, NonFungibleDataResponse, NonFungibleIdsRequest, NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
 import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
-import {lender, loan, token} from "types";
+import { decoded, Hexes, lender, loan } from "types";
+import { getToken } from "utils/general/generalApiCalls";
+
+
 
 async function getLendersList() {
     const obj: EntityDetailsRequest = {
@@ -31,7 +31,7 @@ async function getLendersList() {
     });
 }
 
-async function getLenderInformation(collateral_token: token, lender_address: string): Promise<lender> {
+async function getLenderInformation(lender_address: string) {
 
     const obj: EntityDetailsRequest = {
         "address": lender_address
@@ -47,23 +47,25 @@ async function getLenderInformation(collateral_token: token, lender_address: str
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
 
+    if (!data) return undefined;
+
     // @ts-ignore
-    const loan_to_value = parseFloat(data[1]);
+    const loan_to_value = data[1];
     // @ts-ignore
-    const daily_interest_rate = parseFloat(data[2]);
+    const daily_interest_rate = data[2];
     // @ts-ignore
-    const liquidation_threshold = parseFloat(data[3]);
+    const liquidation_threshold = data[3];
     // @ts-ignore
-    const liquidation_penalty = parseFloat(data[4]);
+    const liquidation_penalty = data[4];
     // @ts-ignore
     const oracle_address = data[5];
 
     const current_price = await getOraclePrice(oracle_address);
 
-    return { collateral_token: collateral_token, collateral_price: current_price, oracle: oracle_address, loan_to_value: loan_to_value, interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty };
+    return { loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
 }
 
-async function getOwnedLoans(account: string, lenders: lender[]): Promise<loan[]> {
+async function getLoansOwnedBy(account: string) {
 
     const obj: EntityNonFungibleIdsRequest = {
         "address": account,
@@ -80,75 +82,51 @@ async function getOwnedLoans(account: string, lenders: lender[]): Promise<loan[]
         .then((tmp_data) => data = tmp_data["non_fungible_ids"]["items"])
         .catch(console.error);
 
-
-    let loan_ids: string[] = [];
-
+    let loan_ids: any[] = [];
     // @ts-ignore
-    for (let i = 0; i < data.length; ++i) {
-        // @ts-ignore
-        loan_ids.push(data[i]["non_fungible_id"]);
+    for (const id of data) {
+
+        const loan_id = id["non_fungible_id"];
+        loan_ids.push(loan_id);
     }
 
-    return await Promise.all(
-        loan_ids.map(
-            async id => {
-
-                getHex(id).then(
-                    (hexes) => getLoanInformation(hexes.mutable_hex, hexes.immutable_hex, lenders)
-                )
-            }
-        )
-    );
+    return loan_ids
 }
 
-async function getLoanInformation(loan_id: string, lenders: lender[]): Promise<loan> {
+async function getHex(loan_id: string): Promise<Hexes> {
 
-    const obj: NonFungibleDataRequest = {
+    const obj:NonFungibleDataRequest = {
         "address": loan_address,
         "non_fungible_id": loan_id
     };
 
-    let data;
-    await fetch(radix_api_url + `/non-fungible/data`, {
+    const response = await fetch(radix_api_url + '/non-fungible/data', {
         method: 'POST',
         body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
     })
-        .then((response) => response)
-        .then((tmp_data) => data = tmp_data)
-        .catch(console.error);
 
 
-    console.log("data", data);
+    if (!response.ok) {
+        throw new Error("Gateway error : " + response.statusText);
+    }
 
-    // @ts-ignore
-    let mutable_hex = data["mutable_data_hex"];
-    // @ts-ignore
-    let immutable_hex = data["immutable_data_hex"];
+    const data = await response.json();
+    const responseData = data as NonFungibleDataResponse;
 
-    const params = new URLSearchParams();
-    params.append('mutable_data_hex', mutable_hex);
-    params.append('immutable_data_hex', immutable_hex);
 
-    const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
-        method: 'GET',
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
-    });
+    if (responseData.mutable_data_hex == undefined || responseData.immutable_data_hex == undefined) {
+        throw new Error("Data hex undefined");
+    }
 
-    const res = await fetch(request)
-    const data = await res.json()
+    const mutable_hex= responseData.mutable_data_hex
+    const immutable_hex= responseData.immutable_data_hex
 
-    const lender = lenders[data.collateral_token];
-    let collateral_price = lender.price * data.collateral_amount;
+    return { mutable_hex, immutable_hex };
 
-    let amount_to_liquidate = await amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
-
-    let liquidation_price = 20000;
-
-    return { collateral_token: data.collateral_token, collateral_amount: data.collateral_amount, amount_lent: data.amount_lent, liquidation_price: liquidation_price, amount_to_liquidate: amount_to_liquidate };
 }
 
-async function getOraclePrice(oracle_address: string): Promise<number> {
+async function getOraclePrice(oracle_address: string) {
 
     const obj: EntityDetailsRequest = {
         "address": oracle_address
@@ -165,10 +143,50 @@ async function getOraclePrice(oracle_address: string): Promise<number> {
         .catch(console.error)
 
     // @ts-ignore
-    return parseFloat(data[0]);
+    return data[0];
 }
 
-async function getAllLoansInformation(loan_ids: string[], lenders: lender[]) {
+async function decode_hex(mutable_hex:string,immutable_hex:string ): Promise<decoded> {
+    const params = new URLSearchParams();
+    params.append('mutable_data_hex', mutable_hex);
+    params.append('immutable_data_hex', immutable_hex);
+
+    const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
+        method: 'GET',
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    });
+
+    const res = await fetch(request)
+    return res.json()
+}
+
+async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: Map<string, lender>): Promise<loan> {
+
+    const data = await decode_hex(mutable_data,immutable_data)
+
+    const lender = lenders[data.collateral_token];
+    const collateral_price = lender.price * data.collateral_amount;
+
+    const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
+    const token_promise = getToken(data.collateral_token)
+
+    const [amount_to_liquidate,token] = await Promise.all([amount_to_liquidate_promise, token_promise])
+
+    let liquidation_price = 20000;
+
+    return {
+        collateral_token: token,
+        collateral_amount: data.collateral_amount,
+        amount_lent: data.amount_lent,
+        loan_date: data.loan_time,
+        liquidation_price: liquidation_price,
+        loan_to_value: data.loan_to_value,
+        interest_rate: data.interest_rate,
+        amount_to_liquidate: amount_to_liquidate };
+}
+
+
+async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
     const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
     return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
 }
@@ -176,34 +194,34 @@ async function getAllLoansInformation(loan_ids: string[], lenders: lender[]) {
 async function getAllCollection(): Promise<string[]> {
 
     try {
-      let cursor: string | null | undefined = '';
-      const ids:string[] = [];
-  
-      while (cursor !== undefined) {
-        const obj: NonFungibleIdsRequest = {
-            "address": loan_address,
-            "cursor" : cursor
-        };
-        await fetch(radix_api_url + '/non-fungible/ids', {
-          method: 'POST',
-          body: JSON.stringify(obj),
-          headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            const response = data as NonFungibleIdsResponse;
-            response.non_fungible_ids.items.forEach( item => {
-              ids.push(item.non_fungible_id)
-            });
-            cursor = response.non_fungible_ids.next_cursor;
-          })
-          .catch(console.error);
-      }
-  
-      return ids;
-    } catch {
-      throw new Error("error");
-    }
-  }
+        let cursor: string | null | undefined = '';
+        const ids:string[] = [];
 
-export { getLendersList, getLenderInformation, getOwnedLoans, getAllLoansInformation, getAllCollection}
+        while (cursor !== undefined) {
+            const obj: NonFungibleIdsRequest = {
+                "address": loan_address,
+                "cursor" : cursor
+            };
+            await fetch(radix_api_url + '/non-fungible/ids', {
+                method: 'POST',
+                body: JSON.stringify(obj),
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    const response = data as NonFungibleIdsResponse;
+                    response.non_fungible_ids.items.forEach( item => {
+                        ids.push(item.non_fungible_id)
+                    });
+                    cursor = response.non_fungible_ids.next_cursor;
+                })
+                .catch(console.error);
+        }
+
+        return ids;
+    } catch {
+        throw new Error("error");
+    }
+}
+
+export { getLendersList, getLenderInformation, getLoansOwnedBy, getAllLoansInformation, getAllCollection}
