@@ -1,6 +1,6 @@
 import {radix_api_url, router_address} from "./constants";
 import {EntityDetailsRequest, EntityDetailsResponse} from "@radixdlt/babylon-gateway-api-sdk";
-import {EntityDetailsResponseComponentDetails, pool, token} from "types";
+import {EntityDetailsResponseComponentDetails, lender, pool, token} from "types";
 import { getPoolInformation } from "utils/dex/routerApiCalls";
 import { getLenderInformation, getLendersList } from "utils/stablecoin/issuerApiCalls";
 

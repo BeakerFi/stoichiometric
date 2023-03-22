@@ -14,10 +14,9 @@ import Snackbar from "components/Snackbar";
 import { UserContext } from "contexts/UserContext";
 import { SnackbarContext } from "contexts/SnackbarContext";
 import { ResponsiveContext } from "contexts/ResponsiveContext";
-import { ThemeContext } from 'contexts/ThemeContext';
 import styleFunction from "./style";
-
-
+import { TokensContext } from "contexts/TokensContext";
+import { loan } from "types";
 
 
 const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
@@ -27,10 +26,15 @@ function Liquidate() {
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
 
 
-    const { user, achievements, logoutUser, accountsList, setUser } = useContext(UserContext);
+    const { user } = useContext(UserContext);
     const { device } = useContext(ResponsiveContext);
-    const { themeStyle, toggleTheme, setColor, color } = useContext(ThemeContext);
-    const { addAlert } = useContext(SnackbarContext);
+
+    const {loans} = useContext(TokensContext);
+
+
+    useEffect(() => {
+        console.log(loans);
+    }, [loans])
 
     const [accountSelect, setAccountSelect] = useState(false);
 
@@ -100,7 +104,7 @@ function Liquidate() {
                     <div sx={style.lendColumn}>   
                         {[1,2,3,4,5].map((x, index) => {return (
                             <div key={"loanRow" + index} sx={style.lendRow}>
-                                {lendsList.map((x, index) => {
+                                {lendsList.map((x: any, index: number) => {
                                     return (
                                         <div key={"loan" + index} sx={style.lend}>
                                                 <p>Collateral <span>{x.quantity} {x.token.symb} <img src={x.token.icon_url}/></span></p>

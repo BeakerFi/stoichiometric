@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { lender } from "types";
 
 import { getTokensPoolsAndLenders } from "utils/general/generalApiCalls";
 import { getAllCollection, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
@@ -23,28 +24,33 @@ const TokensCtx: React.FC<Props> = (props) => {
             setTokensLoading(true);
             const x = await getTokensPoolsAndLenders();
             setTokens(x.tokens);
+
             var poolsList: any[] = [];
             for (var i = 0; i < x.pools.length; ++i) poolsList[x.pools[i].token.address] = x.pools[i];
             setPools(poolsList);
-            var l = [];
+
+            var l: lender[] = [];
             for (var i = 0; i < x.lenders.length; ++i) { 
                 l[x.lenders[i].token] = x.lenders[i].lender;
+                console.log(x.lenders[i].lender)
             }
-
             setLenders(l);
             setTokensLoading(false);
 
 
             const y = await getAllCollection();
-            const z = await getAllLoansInformation(y, x.lenders);
-            setLoans(z);
+            const z = getAllLoansInformation(y, x.lenders);
+
+            console.log("oui");
+            console.log("z", z);
+            setLoans(await z);
         };
         setToks();
     }, [])
 
 
     return (
-        <TokensContext.Provider value={{tokens, tokensLoading, pools, lenders}}>
+        <TokensContext.Provider value={{tokens, tokensLoading, pools, lenders, loans}}>
             {props.children}
         </TokensContext.Provider>
     )

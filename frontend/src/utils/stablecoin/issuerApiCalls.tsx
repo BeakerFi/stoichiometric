@@ -62,7 +62,7 @@ async function getLenderInformation(lender_address: string)     {
 
     const current_price = await getOraclePrice(oracle_address);
 
-    return { lender_address: lender_address, loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
+    return { lender_address: lender_address, loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, collateral_price: current_price }
 }
 
 async function getLoansOwnedBy(account: string) {
@@ -106,7 +106,6 @@ async function getHex(loan_id: string): Promise<Hexes> {
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8' }),
     })
 
-
     if (!response.ok) {
         throw new Error("Gateway error : " + response.statusText);
     }
@@ -114,13 +113,12 @@ async function getHex(loan_id: string): Promise<Hexes> {
     const data = await response.json();
     const responseData = data as NonFungibleDataResponse;
 
-
     if (responseData.mutable_data_hex === undefined || responseData.immutable_data_hex === undefined) {
         throw new Error("Data hex undefined");
     }
 
-    const mutable_hex= responseData.mutable_data_hex
-    const immutable_hex= responseData.immutable_data_hex
+    const mutable_hex = responseData.mutable_data_hex
+    const immutable_hex = responseData.immutable_data_hex
 
     return { mutable_hex, immutable_hex, id: loan_id };
 
@@ -156,13 +154,13 @@ async function decode_hex(mutable_hex:string,immutable_hex:string ): Promise<dec
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     });
 
-    const res = await fetch(request)
-    return res.json()
+    const res = await fetch(request);
+    return res.json();
 }
 
 async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: Map<string, lender>, id: string): Promise<loan> {
 
-    const data = await decode_hex(mutable_data,immutable_data)
+    const data = await decode_hex(mutable_data,immutable_data);
 
     if (!data) return {
         collateral_token: token_default,
@@ -188,11 +186,11 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
         amount_to_liquidate: 0,
         id: "-1"
     };
-    
+
     const collateral_price = lender.collateral_price * data.collateral_amount;
 
     const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
-    const token_promise = getToken(data.collateral_token)
+    const token_promise = getToken(data.collateral_token);
 
     const [amount_to_liquidate,token] = await Promise.all([amount_to_liquidate_promise, token_promise])
 
@@ -214,7 +212,9 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
 async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
     const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
-    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)))
+    const x = Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)))
+    console.log("oui", x);
+    return x
 }
 
 async function getAllCollection(): Promise<string[]> {
