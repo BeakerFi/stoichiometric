@@ -39,8 +39,6 @@ function Liquidity() {
 
     const { user, tokensOwned, setNbTokens, positions } = useContext(UserContext);
 
-    useEffect(() => {console.log("tokens", tokens)}, [tokens])
-
     const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
 
     const [price, setPrice] = useState<number>(0);
@@ -71,10 +69,6 @@ function Liquidity() {
             setSearchParams({tk1: token_default.symb})
         }
     }, [])
-
-    useEffect(() => {
-        console.log("pools", pools)
-    }, [pools])
 
     useEffect(() => {
         if (pools[token1.address]) {
@@ -119,7 +113,7 @@ function Liquidity() {
 
     function findRatio(x: number) {
         var currentStep = pools[token1.address]["current_step"];
-        console.log("currentPool", pools[token1.address]["steps"]);
+
         let stableRatio: number; 
         for (var i = 0; i < pools[token1.address]["steps"].length; ++i) {
             const step = pools[token1.address]["steps"][i];
@@ -386,11 +380,6 @@ function Liquidity() {
         setNftId(findPosition(token1.address, stable.address));
     }, [token1, positions])
 
-    useEffect(()=> {
-        console.log(nftId);
-    }, [nftId])
-
-
     async function sendSwap() {
         setSwapLoading(true);
         var flag;
@@ -402,8 +391,6 @@ function Liquidity() {
         for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0])
         if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
         for (var i = currentStep + 1; i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
-
-        console.log("steps", steps[0], sent);
 
         if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
         else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)
@@ -452,7 +439,6 @@ function Liquidity() {
     }
 
     function setPriceMin(x: number) {
-        console.log(x);
         if (isNaN(x)) {
             if (price1 <= price2) {setPrice1(minPrice);}
             else setPrice2(minPrice);
@@ -482,8 +468,8 @@ function Liquidity() {
         <Dashboard page="liquidity">
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
             <div sx={style.main}>
@@ -505,9 +491,9 @@ function Liquidity() {
                                                 <label htmlFor="searchPosition">Search for a position</label>
                                             </div>
                                             <div sx={style.poolsList}>
-                                                {  positionsList.map((position: position) => {
+                                                {  positionsList.map((position: position, index: number) => {
                                                     return (
-                                                        <div sx={style.poolChoice} onClick={() => {
+                                                        <div key={"position" + index} sx={style.poolChoice} onClick={() => {
                                                             setChosePosition(false);
                                                             setInvertPosition(false);
                                                             setToken1(position.token!);
@@ -613,9 +599,9 @@ function Liquidity() {
                                     </div>
 
                                     <div sx={style.tokensList}>
-                                        {   tokensList.map((token: token) => {
+                                        {   tokensList.map((token: token, index: number) => {
                                             return (
-                                                <div sx={style.tokenChoice} onClick={() => selectToken(token)}>
+                                                <div key={"token" + index} sx={style.tokenChoice} onClick={() => selectToken(token)}>
                                                     <img src={token.icon_url}/>
                                                     <p>{token.name}<span>{token.symb}</span></p>
                                                 </div>

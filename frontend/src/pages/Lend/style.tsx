@@ -484,10 +484,10 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 borderRadius: '1000px',
                 objectFit: 'contain' as 'contain',
                 marginRight: '10px',
-                '&:nth-child(1)': {
+                '&:nth-of-type(1)': {
                     transform: 'Translate(0, -3px)'
                 },
-                '&:nth-child(2)': {
+                '&:nth-of-type(2)': {
                     transform: 'Translate(-15px, 3px)',
                     marginRight: '0px',
                 }
@@ -562,10 +562,10 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 borderRadius: '1000px',
                 objectFit: 'contain' as 'contain',
                 marginRight: '10px',
-                '&:nth-child(1)': {
+                '&:nth-of-type(1)': {
                     transform: 'Translate(0, -3px)'
                 },
-                '&:nth-child(2)': {
+                '&:nth-of-type(2)': {
                     transform: 'Translate(-15px, 3px)',
                     marginRight: '0px',
                 }

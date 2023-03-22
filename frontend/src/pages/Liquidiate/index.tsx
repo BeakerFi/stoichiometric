@@ -82,8 +82,8 @@ function Liquidate() {
 
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
 
@@ -98,11 +98,11 @@ function Liquidate() {
 
                 <div sx={style.lendContainer}>
                     <div sx={style.lendColumn}>   
-                        {[1,2,3,4,5].map(x => {return (
-                            <div sx={style.lendRow}>
-                                {lendsList.map(x => {
+                        {[1,2,3,4,5].map((x, index) => {return (
+                            <div key={"loanRow" + index} sx={style.lendRow}>
+                                {lendsList.map((x, index) => {
                                     return (
-                                        <div sx={style.lend}>
+                                        <div key={"loan" + index} sx={style.lend}>
                                                 <p>Collateral <span>{x.quantity} {x.token.symb} <img src={x.token.icon_url}/></span></p>
                                                 <p>Borrowed <span>{x.borrowed} {stable.symb} <img src={stable.icon_url}/></span></p>
                                                 { x.healthFactor > 1 || !user.address ? 

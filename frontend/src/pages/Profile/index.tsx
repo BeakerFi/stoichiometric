@@ -35,8 +35,8 @@ function Profile() {
         <Dashboard page='profile'>
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
             <div sx={style.main}>
@@ -58,8 +58,8 @@ function Profile() {
                         <div sx={style.accountSelectorList}>
                             <h2><div sx={style.close} onClick={() => setAccountSelect(false)}/>Select an Account</h2>
                             <div sx={style.accList}>
-                                {accountsList.map((account: account) => { return (
-                                    <div sx={style.accChoice} onClick={() => {
+                                {accountsList.map((account: account, index: number) => { return (
+                                    <div key={"account" + index} sx={style.accChoice} onClick={() => {
                                         setAccountSelect(false);
                                         setUser({address: account.address, name:account.name})
 

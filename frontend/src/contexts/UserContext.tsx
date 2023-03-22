@@ -68,9 +68,7 @@ const UserCtx: React.FC<Props> = (props) => {
             } else return
         }
         else {
-            console.log('non');
             const result:any = await getOwnedTokens(address);
-            console.log("my tokens", result);
             if (result && result.length) setTokensOwned(result[0]);
         }
     } 
@@ -110,8 +108,6 @@ const UserCtx: React.FC<Props> = (props) => {
             if (user.address) {
                 const loans: any = await getLoansOwnedBy(user.address);
                 const loansList = await getAllLoansInformation(loans, lenders);
-
-                console.log("user", loans, loansList)
 
                 const myLoansList: loan[] = []
                 for (var i = 0; i < loansList.length; ++i) {

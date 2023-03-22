@@ -83,8 +83,8 @@ function Snackbar() {
 
     return (
         <div sx={style.container}>
-            {alerts.map((x: any) => {return (
-                <div sx={x.type == "check" ? {...style.snackbar, ...style.check} : x.type == "error" ? {...style.snackbar, ...style.error} : {...style.snackbar, ...style.warning}}>
+            {alerts.map((x: any, index: number) => {return (
+                <div key={"snackbar"+index} sx={x.type == "check" ? {...style.snackbar, ...style.check} : x.type == "error" ? {...style.snackbar, ...style.error} : {...style.snackbar, ...style.warning}}>
                     <div/>
                     <span>{x.message}</span>
                 </div>)

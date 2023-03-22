@@ -41,8 +41,8 @@ function Dao() {
         <Dashboard page='dao'>
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
 
@@ -70,10 +70,10 @@ function Dao() {
 
                     }
 
-                    { !addProposal ? voteList.map(x => {
+                    { !addProposal ? voteList.map((x, index) => {
                         return (
 
-                            <div sx={style.voteContainer}>
+                            <div key={"dao"+index} sx={style.voteContainer}>
                                 <div sx={style.vote}>
                                     <div sx={style.column}>
                                         <h3>{x.title}</h3>

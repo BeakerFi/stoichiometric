@@ -108,10 +108,6 @@ function Swap() {
         return -1;
     }
 
-    useEffect(() => {
-        console.log("pools", pools);
-    }, [pools])
-
     function calculateGet(n: number) {
         if (token1.address == stable.address) {
             const pool = pools[token2.address];
@@ -292,9 +288,7 @@ function Swap() {
                 const pool = pools[token2.address];
                 var actualPool = pool["current_step"];
                 var index = findIndex(actualPool, pool["steps"]);
-
-                console.log(index);
-    
+                
                 if (pool["steps"][index].rate > 0) setPrice(1/pool["steps"][index].rate);
                 else setPrice(0);
             } else if (token2.address == stable.address) {
@@ -416,8 +410,8 @@ function Swap() {
         <Dashboard page="swap">
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
             <div sx={style.main}>
@@ -491,9 +485,9 @@ function Swap() {
                                 </div>
 
                                 <div sx={style.tokensList}>
-                                    {   tokensList.map((token: token) => {
+                                    {   tokensList.map((token: token, index: number) => {
                                         return (
-                                            <div sx={style.tokenChoice} onClick={() => selectToken(token)}>
+                                            <div key={"token" + index} sx={style.tokenChoice} onClick={() => selectToken(token)}>
                                                 <img src={token.icon_url}/>
                                                 <p>{token.name}<span>{token.symb}</span></p>
                                             </div>

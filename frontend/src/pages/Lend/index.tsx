@@ -329,16 +329,12 @@ function Loan() {
         setRemoveCollateralLoading(false);
     }
 
-    useEffect(() => {
-        console.log("myLoans", myLoans)
-    }, [myLoans]);
-
     return (
         <Dashboard page="lend">
             <Snackbar />
 
-            {stars.map(x => { return (
-                <Star left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
+            {stars.map((x, index) => { return (
+                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
             )})}
 
             <div sx={style.main}>
@@ -360,9 +356,9 @@ function Loan() {
                                     <div sx={style.chosePositionZone}>
                                         <h2><div sx={style.close} onClick={() => setChoseLend(false)}/>Your Loans</h2>
                                         <div sx={style.poolsList}>
-                                            {  myLoans.map((loan: loan) => {
+                                            {  myLoans.map((loan: loan, index: number) => {
                                                 return (
-                                                    <div sx={style.poolChoice} onClick={() => {
+                                                    <div key={"loan" + index} sx={style.poolChoice} onClick={() => {
                                                         setChoseLend(false);
                                                         setToken1(loan.collateral_token);
                                                         setCurrentLoan(loan)
@@ -478,9 +474,9 @@ function Loan() {
                                     </div>
 
                                     <div sx={style.tokensList}>
-                                        {   tokensList.map((token: token) => {
+                                        {   tokensList.map((token: token, index: string) => {
                                             return (
-                                                <div sx={style.tokenChoice} onClick={() => selectToken(token)}>
+                                                <div key={"token" + index} sx={style.tokenChoice} onClick={() => selectToken(token)}>
                                                     <img src={token.icon_url}/>
                                                     <p>{token.name}<span>{token.symb}</span></p>
                                                 </div>

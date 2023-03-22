@@ -28,10 +28,8 @@ const TokensCtx: React.FC<Props> = (props) => {
             setPools(poolsList);
             var l = [];
             for (var i = 0; i < x.lenders.length; ++i) { 
-                console.log(x.lenders[i])
                 l[x.lenders[i].token] = x.lenders[i].lender;
             }
-            console.log(l);
 
             setLenders(l);
             setTokensLoading(false);

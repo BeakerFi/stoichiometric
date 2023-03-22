@@ -254,27 +254,27 @@ const Dashboard: React.FC<Props> = (props) => {
                 '-o-transition': '.25s ease-in-out',
                 transition: '.25s ease-in-out',
 
-                '&:nth-child(1)': {
+                '&:nth-of-type(1)': {
                     top: `${burgerOpen ? "50%" : "0"}`,
                     width: `${burgerOpen ? "0%" : "100%"}`,
                     left: `${burgerOpen ? "50%" : ""}`,
                     transform: 'TranslateY(-50%)'
                 },
-                '&:nth-child(2)': {
+                '&:nth-of-type(2)': {
                     top: '50%',
                     '-webkit-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(45deg)' : 'TranslateY(-50%)'}`,
                     '-moz-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(45deg)' : 'TranslateY(-50%)'}`,
                     '-o-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(45deg)' : 'TranslateY(-50%)'}`,
                     transform: `${burgerOpen ? 'TranslateY(-50%) rotate(45deg)' : 'TranslateY(-50%)'}`,
                 },
-                '&:nth-child(3)': {
+                '&:nth-of-type(3)': {
                     top: '50%',
                     '-webkit-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(-45deg)' : 'TranslateY(-50%)'}`,
                     '-moz-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(-45deg)' : 'TranslateY(-50%)'}`,
                     '-o-transform': `${burgerOpen ? 'TranslateY(-50%) rotate(-45deg)' : 'TranslateY(-50%)'}`,
                     transform: `${burgerOpen ? 'TranslateY(-50%) rotate(-45deg)' : 'TranslateY(-50%)'}`,
                 },
-                '&:nth-child(4)': {
+                '&:nth-of-type(4)': {
                     top: `${burgerOpen ? "50%" : "100%"}`,
                     width: `${burgerOpen ? "0%" : "100%"}`,
                     left: `${burgerOpen ? "50%" : ""}`,
@@ -323,14 +323,14 @@ const Dashboard: React.FC<Props> = (props) => {
                             </div>
                             <div sx={style.mobileMenu}>
                                 {
-                                    pages.map(x => {
+                                    pages.map((x, index) => {
                                         if (x == props.page) return (
-                                            <div sx={{...style.mobileLinkContainer, ...style.active}}>
+                                            <div key={"dashboard_mobile" + index} sx={{...style.mobileLinkContainer, ...style.active}}>
                                                 <div sx={{...style.mobileLink, ...style.linkActive, ...icon(x)}}/>
                                             </div>
                                         )
                                         else { return (
-                                            <div sx={style.mobileNavlinkContainer}>
+                                            <div key={"dashboard_mobile" + index} sx={style.mobileNavlinkContainer}>
                                                 <NavLink to={`/${x}`} sx={style.navlink}>
                                                     <div sx={style.mobileLinkContainer}>
                                                         <div sx={{...style.mobileLink, ...icon(x)}}/>
@@ -353,14 +353,14 @@ const Dashboard: React.FC<Props> = (props) => {
                         }
                     </NavLink>
                     {
-                        pages.map(x => {
+                        pages.map((x, index) => {
                             if (x == props.page) return (
-                                <div sx={{...style.linkContainer, ...style.active}}>
+                                <div key={"dashboard" + index} sx={{...style.linkContainer, ...style.active}}>
                                     <div sx={{...style.link, ...style.linkActive, ...icon(x)}}/>
                                 </div>
                             )
                             else { return (
-                                <div sx={style.navlinkContainer}>
+                                <div key={"dashboard" + index} sx={style.navlinkContainer}>
                                     <NavLink to={`/${x}`} sx={style.navlink}>
                                         <div sx={style.linkContainer}>
                                             <div sx={{...style.link, ...icon(x)}}/>

@@ -51,7 +51,6 @@ async function getOwnedTokens(account: string) {
     const fungible = data.fungible_resources.items;
 
     for (var i = 0; i < fungible.length; ++i) {
-        console.log(i);
         ownedTokensList[fungible[i]["address"]] = parseFloat(fungible[i]["amount"]["value"])
     }
 

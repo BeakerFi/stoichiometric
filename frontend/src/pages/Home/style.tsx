@@ -52,7 +52,7 @@ function styleFunction(device: string) {
             '&:hover': {
                 background: 'primary'
             },
-            '&:nth-child(3)': {
+            '&:nth-of-type(3)': {
                 marginRight: '40px'
             }
         },
