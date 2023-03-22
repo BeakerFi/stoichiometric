@@ -211,10 +211,10 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
 
 async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
-    const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
-    const x = Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)))
-    console.log("oui", x);
-    return x
+    return Promise.allSettled(loan_ids.map(async id => {
+         const hex = await getHex(id)
+         return getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)
+        }))
 }
 
 async function getAllCollection(): Promise<string[]> {

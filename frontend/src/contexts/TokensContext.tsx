@@ -39,11 +39,11 @@ const TokensCtx: React.FC<Props> = (props) => {
 
 
             const y = await getAllCollection();
-            const z = getAllLoansInformation(y, x.lenders);
+            const z = await getAllLoansInformation(y, x.lenders);
 
             console.log("oui");
             console.log("z", z);
-            setLoans(await z);
+            setLoans(z);
         };
         setToks();
     }, [])

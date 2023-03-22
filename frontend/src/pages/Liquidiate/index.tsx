@@ -33,7 +33,7 @@ function Liquidate() {
 
 
     useEffect(() => {
-        console.log(loans);
+        console.log("loanssss", loans);
     }, [loans])
 
     const [accountSelect, setAccountSelect] = useState(false);
