@@ -98,7 +98,7 @@ pub fn add_liquidity_at_step<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
         "token_a_address".to_string(),
@@ -143,7 +143,7 @@ pub fn add_liquidity_at_steps<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
         "stablecoin_address".to_string(),
@@ -200,7 +200,7 @@ pub fn add_liquidity<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
         "token_a_address".to_string(),

@@ -1,4 +1,3 @@
-use crate::stablecoin::dumb_oracle_sqrt::{DumbOracleBlueprint, DumbOracleMethods};
 use crate::stablecoin::issuer_state::IssuerState;
 use crate::stablecoin::sqrt_implem::{IssuerBlueprint, IssuerMethods};
 use crate::utils::{run_command, ADMIN_BADGE_NAME, STABLECOIN_NAME};
@@ -9,6 +8,7 @@ use sqrt::method::Arg::{FungibleBucketArg, ResourceAddressArg};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::process::Command;
+use crate::dumb_oracle::utils::{instantiate_oracle, new_oracle};
 
 pub fn instantiate() -> (TestEnvironment, IssuerState) {
     let mut test_env = TestEnvironment::new();
@@ -31,10 +31,7 @@ pub fn instantiate() -> (TestEnvironment, IssuerState) {
         ],
     );
 
-    let oracle_blueprint = Box::new(DumbOracleBlueprint {});
-    let mut oracle_package = Package::new("src/stablecoin/dumb_oracle/package");
-    oracle_package.add_blueprint("oracle_bp", oracle_blueprint);
-    test_env.publish_package("oracle", oracle_package);
+    instantiate_oracle(&mut test_env);
 
     let issuer_address = test_env.get_component("issuer_comp").unwrap();
     let mut issuer_state = IssuerState::from(issuer_address.to_string());
@@ -56,21 +53,6 @@ pub fn new_default_lender(test_env: &mut TestEnvironment, token: &str) {
             component_name,
         ))
         .run();
-}
-
-pub fn set_oracle_price(test_env: &mut TestEnvironment, token: &str, new_price: Decimal) {
-    let current_component = test_env.get_current_component_name().to_string();
-    let current_package = test_env.get_current_package_name().to_string();
-    let oracle_component_name = format!("{}_component", token);
-
-    test_env.set_current_package("oracle");
-    test_env.set_current_component(&oracle_component_name);
-    test_env
-        .call_method(DumbOracleMethods::SetPrice(new_price))
-        .run();
-
-    test_env.set_current_package(&current_package);
-    test_env.set_current_component(&current_component);
 }
 
 pub fn assert_current_has_loan(
@@ -126,18 +108,4 @@ pub fn assert_current_has_no_loan_id(test_env: &TestEnvironment, loan_id: &str) 
         let loan_id_found = &loan_capture[1];
         assert_ne!(loan_id_found.to_string(), loan_id.to_string());
     }
-}
-
-fn new_oracle(test_env: &mut TestEnvironment, token: &str) -> String {
-    let current_component = test_env.get_current_component_name().to_string();
-    let current_package = test_env.get_current_package_name().to_string();
-    let oracle_component_name = format!("{}_component", token);
-
-    test_env.set_current_package("oracle");
-    test_env.new_component(&oracle_component_name, "oracle_bp", vec![]);
-
-    test_env.set_current_package(&current_package);
-    test_env.set_current_component(&current_component);
-
-    oracle_component_name
 }

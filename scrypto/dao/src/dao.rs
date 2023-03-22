@@ -71,6 +71,12 @@ mod dao {
             min_rate: Decimal,
             max_rate: Decimal,
         ) -> ComponentAddress {
+
+            assert!(vote_validity_threshold.is_positive() && vote_validity_threshold < Decimal::ONE,
+                    "The validity threshold should be included in the range 0< <1"
+                    );
+
+
             // Creates the protocol admin badge which will control everything
             let protocol_admin_badge: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
