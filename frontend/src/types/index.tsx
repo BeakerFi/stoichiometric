@@ -12,7 +12,6 @@ type step = {
     other_token_amount: number,
 
     rate: number,
-
 }
 
 type pool = {
@@ -47,6 +46,7 @@ type account = {
 type tokenOwned = number[];
 
 type lender = {
+    lender_address: string,
 
     collateral_token: token,
 

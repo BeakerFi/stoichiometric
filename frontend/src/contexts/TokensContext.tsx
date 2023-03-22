@@ -24,24 +24,25 @@ const TokensCtx: React.FC<Props> = (props) => {
             const x = await getTokensPoolsAndLenders();
             setTokens(x.tokens);
             var poolsList: any[] = [];
-            console.log("pool1", x.pools[0])
             for (var i = 0; i < x.pools.length; ++i) poolsList[x.pools[i].token.address] = x.pools[i];
             setPools(poolsList);
-            /*var l = [];
+            var l = [];
             for (var i = 0; i < x.lenders.length; ++i) { 
-                console.log(x.lenders)
+                console.log(x.lenders[i])
                 l[x.lenders[i].token] = x.lenders[i].lender;
             }
+            console.log(l);
+
             setLenders(l);
-            console.log('ok')*/
             setTokensLoading(false);
-            //const z = await getAllLoansInformation(y, x.lenders);
-            //setLoans(z);
+
+
+            const y = await getAllCollection();
+            const z = await getAllLoansInformation(y, x.lenders);
+            setLoans(z);
         };
         setToks();
     }, [])
-
-    useEffect(() => {console.log("tokens", tokens)}, [tokens])
 
 
     return (

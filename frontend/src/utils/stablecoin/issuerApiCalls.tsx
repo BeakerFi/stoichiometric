@@ -36,7 +36,7 @@ async function getLendersList() {
 
 async function getLenderInformation(lender_address: string)     {
 
-    console.log("address:", lender_address);
+    if (!lender_address) return undefined;
 
     const obj: EntityDetailsRequest = {
         "address": lender_address
@@ -62,7 +62,7 @@ async function getLenderInformation(lender_address: string)     {
 
     const current_price = await getOraclePrice(oracle_address);
 
-    return { loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
+    return { lender_address: lender_address, loan_to_value: loan_to_value, daily_interest_rate: daily_interest_rate, liquidation_threshold: liquidation_threshold, liquidation_penalty: liquidation_penalty, price: current_price }
 }
 
 async function getLoansOwnedBy(account: string) {

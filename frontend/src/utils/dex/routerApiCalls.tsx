@@ -76,12 +76,9 @@ async function getPoolInformation(token: token, pool_address: string): Promise<p
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    const pool_steps: step[] = [];
-
-    for (const pool_step of data[6]) {
-        let step_value: step = await getPoolStep(parseFloat(pool_step[0]), pool_step[1]);
-        pool_steps.push(step_value);
-    }
+    const pool_steps: step[] = await Promise.all(data[6].map( (pool_step: string[]) => {
+        return getPoolStep(parseFloat(pool_step[0]), pool_step[1]);
+    } ));
 
     return {token: token, rate_step: parseFloat(data[0]), current_step: parseFloat(data[1]), min_rate: parseFloat(data[2]), max_rate: parseFloat(data[3]), steps: pool_steps};
 }

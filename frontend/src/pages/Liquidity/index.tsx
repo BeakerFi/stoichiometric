@@ -43,9 +43,6 @@ function Liquidity() {
 
     const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
 
-    const [token1Owned, setToken1Owned] = useState<"?" | number>("?");
-    const [stableOwned, setStableOwned] = useState<"?" | number>("?");
-
     const [price, setPrice] = useState<number>(0);
 
     const [sent, setSent] = useState<number>(0);
@@ -126,16 +123,16 @@ function Liquidity() {
         let stableRatio: number; 
         for (var i = 0; i < pools[token1.address]["steps"].length; ++i) {
             const step = pools[token1.address]["steps"][i];
-            console.log("step", step)
-            if (step[0] == currentStep) {
-                stableRatio = parseFloat(step[1]["amount_stable"])/(parseFloat(step[1]["amount_stable"]) + parseFloat(step[1]["rate"])*parseFloat(step[1]["amount_other"]));
-                return [stableRatio, parseFloat(step[1]["rate"])]
+
+            if (step.step_id == currentStep) {
+                stableRatio = parseFloat(step.stablecoin_amount)/(parseFloat(step.stablecoin_amount) + parseFloat(step.rate)*parseFloat(step.other_token_amount));
+                return [stableRatio, parseFloat(step.rate)]
             }
         }
         return [1, 1];
     }
 
-    function calculateGet(x: number) { /* A CHANGER */
+    function calculateGet(x: number) { 
         var result = findRatio(x);
         var stableRatio = result[0];
         var price = result[1];
@@ -150,7 +147,7 @@ function Liquidity() {
     }
 
 
-    function calculateSent(x: number) { /* A CHANGER */
+    function calculateSent(x: number) { 
         var result = findRatio(x);
         var stableRatio = result[0];
         var price = result[1];
@@ -162,38 +159,6 @@ function Liquidity() {
         if (stableRatio == 0) return 0;
         if (stableRatio == 1) return 0;
         return ((maxStep - currentStep + 1)*(x/(currentStep - minStep + 1)/ price)*(1 - stableRatio)/(stableRatio))
-    }
-
-    function calculateMax1(x: number | string) {
-        if (typeof(x) == "string") return "?"
-        if (token1Owned == "?") return "?"
-        if (stableOwned == "?") return "?"
-        if (isNaN(x)) return "?"
-        if (price == 0) return "?"
-        else {
-            var s = calculateSent(x)
-            if (isNaN(s)) return "?"
-            else {
-                if (token1Owned < s) return formatToString(token1Owned);
-                else return formatToString(s);
-            }
-        }
-    }
-
-    function calculateMax2(x: number | string) {
-        if (typeof(x) == "string") return "?"
-        if (token1Owned == "?") return "?"
-        if (stableOwned == "?") return "?"
-        if (isNaN(x)) return "?"
-        if (price == 0) return "?"
-        else {
-            var s = calculateGet(x)
-            if (isNaN(s)) return "?"
-            else {
-                if (stableOwned < s) return formatToString(stableOwned);
-                else return formatToString(s);
-            }
-        }
     }
 
     const range1Change = (event: any) => {
@@ -279,15 +244,6 @@ function Liquidity() {
         }
         getPoolInfos();
     }, [token1, tokensOwned])
-
-    useEffect(() => {
-        const n = tokensOwned[token1.address];
-        if (n == "undefined") setToken1Owned(0);
-        else setToken1Owned(parseFloat(n));
-        const m = tokensOwned[stable.address];
-        if (m == "undefined") setStableOwned(0);
-        else setStableOwned(parseFloat(n));
-    }, [tokensOwned, token1])
 
     useEffect(() => {
         resetValues();

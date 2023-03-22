@@ -27,7 +27,7 @@ import styleFunction from "./style";
 
 import {token, loan} from "types";
 
-function Swap() {
+function Loan() {
 
     let [searchParams, setSearchParams] = useSearchParams();
 
@@ -175,7 +175,7 @@ function Swap() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            const infos = await getLenderInformation(lenders[token1.address]);
+            const infos = await getLenderInformation(lenders[token1.address].lender_address);
             if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
             if (infos) setDir(infos["daily_interest_rate"]);
         }
@@ -328,6 +328,10 @@ function Swap() {
         }
         setRemoveCollateralLoading(false);
     }
+
+    useEffect(() => {
+        console.log("myLoans", myLoans)
+    }, [myLoans]);
 
     return (
         <Dashboard page="lend">
@@ -494,4 +498,4 @@ function Swap() {
     )
 }
 
-export default Swap;
+export default Loan;

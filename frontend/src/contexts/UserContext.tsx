@@ -8,7 +8,7 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
-import {position} from "types";
+import {loan, position} from "types";
 import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
@@ -61,12 +61,16 @@ const UserCtx: React.FC<Props> = (props) => {
     async function setNbTokens(address?: string) {
         if (address == undefined) {
             if (user.address) {
+
                 const result:any = await getOwnedTokens(user.address);
+
                 if (result.length) setTokensOwned(result[0]);
             } else return
         }
         else {
+            console.log('non');
             const result:any = await getOwnedTokens(address);
+            console.log("my tokens", result);
             if (result && result.length) setTokensOwned(result[0]);
         }
     } 
@@ -106,16 +110,23 @@ const UserCtx: React.FC<Props> = (props) => {
             if (user.address) {
                 const loans: any = await getLoansOwnedBy(user.address);
                 const loansList = await getAllLoansInformation(loans, lenders);
-                const myLoansList = []
+
+                console.log("user", loans, loansList)
+
+                const myLoansList: loan[] = []
                 for (var i = 0; i < loansList.length; ++i) {
                     const token = findToken(loansList[i]["collateral_token"].address);
-                    myLoansList.push({token: token,
+                    myLoansList.push({
+                        collateral_token: token,
                         collateral_amount: loansList[i]["collateral_amount"],
                         amount_lent: loansList[i]["amount_lent"],
-                        loan_time: loansList[i]["loan_time"],
+                        loan_date: loansList[i]["loan_date"],
                         loan_to_value: loansList[i]["loan_to_value"],
                         interest_rate: loansList[i]["interest_rate"],
-                        id: loansList[i]["id"]})
+                        id: loansList[i]["id"],
+                        liquidation_price: loansList[i]["liquidiation_price"],
+                        amount_to_liquidate: loansList[i]["amount_to_liquidate"],
+                    })
                 }
                 setMyLoans(myLoansList);
             } else return
@@ -123,10 +134,6 @@ const UserCtx: React.FC<Props> = (props) => {
         setLoans()
         
     }, [lenders])
-
-    useEffect(() => {
-        console.log("loans", myLoans);
-    }, [myLoans])
 
     async function setUserValues(address:string) {
         setNbTokens(address);

@@ -29,7 +29,7 @@ async function getToken(address: string): Promise<token>{
 
 async function getOwnedTokens(account: string) {
 
-    let ownedTokensList: any; /*TODO*/
+    let ownedTokensList: any[] = [];
 
     const obj: EntityDetailsRequest = {
         "address": account
@@ -45,10 +45,13 @@ async function getOwnedTokens(account: string) {
         .then( (tmp_data) => data = tmp_data )
         .catch(console.error);
 
-    // @ts-ignore
-    const fungible = data["fungible_resources"]["items"];
+    if (!data) return undefined;
 
-    for (let i = 0; i < fungible.length; ++i) {
+    // @ts-ignore
+    const fungible = data.fungible_resources.items;
+
+    for (var i = 0; i < fungible.length; ++i) {
+        console.log(i);
         ownedTokensList[fungible[i]["address"]] = parseFloat(fungible[i]["amount"]["value"])
     }
 
@@ -81,12 +84,9 @@ async function getRawPoolsList() {
 async function getLendersInfos(){
     let raw_lender_list = await getLendersList();
 
-    console.log("raw_list", raw_lender_list);
-
     return Promise.all(raw_lender_list.map(async (raw_lender: {lender: string, token:string }) => {
-        await getLenderInformation(raw_lender.lender)
-      }));
-
+       return {token: raw_lender.token, lender: await getLenderInformation(raw_lender.lender)}
+    }));
 }
 
 async function getTokensAndPools(){
@@ -107,8 +107,6 @@ async function getTokensAndPools(){
 async function getTokensPoolsAndLenders() {
 
     const [lenders, {tokens,pools}] = await Promise.all([getLendersInfos(), getTokensAndPools()]);
-
-    console.log("lenders", lenders)
 
     return { tokens, pools, lenders };
 }

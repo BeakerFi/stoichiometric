@@ -51,13 +51,10 @@ function Swap() {
     const [get, setGet] = useState<number>(0);
     const [intermediateGet, setIntermediateGet] = useState<number>(0);
 
-    const [priceImpact, setPriceImpact] = useState("0");
-
     function resetValues() {
         setSent(0);
         setGet(0);
         setIntermediateGet(0);
-        setPriceImpact("0");
     }
 
     const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
@@ -107,12 +104,12 @@ function Swap() {
     const [token2InPool, setToken2InPool] = useState(0);
 
     function findIndex(n:number, list: step[]) {
-        for (var i = 0; i < list.length; ++i) if (list[i][0] == n) return i
+        for (var i = 0; i < list.length; ++i) if (list[i].step_id == n) return i
         return -1;
     }
 
     useEffect(() => {
-        console.log(pools);
+        console.log("pools", pools);
     }, [pools])
 
     function calculateGet(n: number) {
@@ -125,8 +122,8 @@ function Swap() {
 
             while (temp > 0 && index < pool["steps"].length) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]*pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2/pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index].other_token_amount*pool["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool["steps"][index].other_token_amount, temp2/pool["steps"][index].rate);
                 index = index + 1;
             }
             return recieved;
@@ -136,10 +133,11 @@ function Swap() {
             var recieved = 0;
             var actualPool = pool["current_step"];
             var index = findIndex(actualPool, pool["steps"]);
+
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]/pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2*pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index].stablecoin_amount/pool["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool["steps"][index].stablecoin_amount, temp2*pool["steps"][index].rate);
                 index = index - 1;
             }
             return recieved;
@@ -149,10 +147,11 @@ function Swap() {
             var recieved = 0;
             var actualPool = pool1["current_step"];
             var index = findIndex(actualPool, pool1["steps"]);
+
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]/pool1["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2*pool1["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool1["steps"][index].stablecoin_amount/pool1["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool1["steps"][index].stablecoin_amount, temp2*pool1["steps"][index].rate);
                 index = index - 1;
             }
 
@@ -160,10 +159,11 @@ function Swap() {
             var recieved2 = 0;
             actualPool = pool2["current_step"];
             index = findIndex(actualPool, pool2["steps"]);
+
             while (recieved > 0 && index < pool2["steps"].length) {
                 var recieved3 = recieved;
-                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]*pool2["steps"][index][1]["rate"], recieved);
-                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3/pool2["steps"][index][1]["rate"]);
+                recieved = recieved - Math.min(pool2["steps"][index].other_token_amount*pool2["steps"][index].rate, recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index].other_token_amount, recieved3/pool2["steps"][index].rate);
                 index = index + 1;
             }
             return recieved2;
@@ -182,8 +182,8 @@ function Swap() {
 
             while (temp > 0 && index < pool["steps"].length) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_other"]*pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_other"], temp2/pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index].other_token_amount*pool["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool["steps"][index].other_token_amount, temp2/pool["steps"][index].rate);
                 index = index + 1;
             }
             if (temp > 0) setAlert(true); else setAlert(false);
@@ -194,10 +194,11 @@ function Swap() {
             var recieved = 0;
             var actualPool = pool["current_step"];
             var index = findIndex(actualPool, pool["steps"]);
+
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool["steps"][index][1]["amount_stable"]/pool["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool["steps"][index][1]["amount_stable"], temp2*pool["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool["steps"][index].stablecoin_amount/pool["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool["steps"][index].stablecoin_amount, temp2*pool["steps"][index].rate);
                 index = index - 1;
             }
             if (temp > 0) setAlert(true); else setAlert(false);
@@ -208,10 +209,11 @@ function Swap() {
             var recieved = 0;
             var actualPool = pool1["current_step"];
             var index = findIndex(actualPool, pool1["steps"]);
+
             while (temp > 0 && index >= 0) {
                 var temp2 = temp;
-                temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]/pool1["steps"][index][1]["rate"], temp);
-                recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2*pool1["steps"][index][1]["rate"]);
+                temp = temp - Math.min(pool1["steps"][index].stablecoin_amount/pool1["steps"][index].rate, temp);
+                recieved = recieved + Math.min(pool1["steps"][index].stablecoin_amount, temp2*pool1["steps"][index].rate);
                 index = index - 1;
             }
 
@@ -222,8 +224,8 @@ function Swap() {
             index = findIndex(actualPool, pool2["steps"]);
             while (recieved > 0 && index < pool2["steps"].length) {
                 var recieved3 = recieved;
-                recieved = recieved - Math.min(pool2["steps"][index][1]["amount_other"]*pool2["steps"][index][1]["rate"], recieved);
-                recieved2 = recieved2 + Math.min(pool2["steps"][index][1]["amount_other"], recieved3/pool2["steps"][index][1]["rate"]);
+                recieved = recieved - Math.min(pool2["steps"][index].other_token_amount*pool2["steps"][index].rate, recieved);
+                recieved2 = recieved2 + Math.min(pool2["steps"][index].other_token_amount, recieved3/pool2["steps"][index].rate);
                 index = index + 1;
             }
             if (temp > 0 || recieved > 0) setAlert(true); else setAlert(false);
@@ -243,8 +245,8 @@ function Swap() {
         var index = findIndex(actualPool, pool1["steps"]);
         while (temp > 0 && index >= 0) {
             var temp2 = temp;
-            temp = temp - Math.min(pool1["steps"][index][1]["amount_stable"]*pool1["steps"][index][1]["rate"], temp);
-            recieved = recieved + Math.min(pool1["steps"][index][1]["amount_stable"], temp2/pool1["steps"][index][1]["rate"]);
+            temp = temp - Math.min(pool1["steps"][index].stablecoin_amount*pool1["steps"][index].rate, temp);
+            recieved = recieved + Math.min(pool1["steps"][index].stablecoin_amount, temp2/pool1["steps"][index].rate);
             index = index - 1;
         }
         return recieved;
@@ -285,28 +287,22 @@ function Swap() {
     }
 
     useEffect(() => {
-        const n = 100*Math.abs(
-            (token2InPool/(token2InPool - get))*(sent + token1InPool)/token1InPool-1
-        )
-        if (isNaN(n)) setPriceImpact("?")
-        else setPriceImpact(formatToString2(n))
-    }, [sent, get])
-
-    useEffect(() => {
         async function getPoolInfos() {
             if (token1.address == stable.address) {
                 const pool = pools[token2.address];
                 var actualPool = pool["current_step"];
                 var index = findIndex(actualPool, pool["steps"]);
+
+                console.log(index);
     
-                if (pool["steps"][index][1]["rate"] > 0) setPrice(1/pool["steps"][index][1]["rate"]);
+                if (pool["steps"][index].rate > 0) setPrice(1/pool["steps"][index].rate);
                 else setPrice(0);
             } else if (token2.address == stable.address) {
                 const pool = pools[token1.address];
                 var actualPool = pool["current_step"];
                 var index = findIndex(actualPool, pool["steps"]);
     
-                setPrice(pool["steps"][index][1]["rate"]);
+                setPrice(pool["steps"][index].rate);
             } else {
                 const pool1 = pools[token1.address];
                 var actualPool = pool1["current_step"];
@@ -316,7 +312,7 @@ function Swap() {
                 var actualPool = pool2["current_step"];
                 var index = findIndex(actualPool, pool2["steps"]);
     
-                if (pool1["steps"][index][1]["rate"] > 0) setPrice(pool2["steps"][index][1]["rate"]/pool1["steps"][index][1]["rate"]);
+                if (pool1["steps"][index].rate > 0) setPrice(pool2["steps"][index].rate/pool1["steps"][index].rate);
                 else setPrice(0);
             }
         }
@@ -465,7 +461,7 @@ function Swap() {
                             }
                             <div sx={style.inputBar}>
                                 <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get}/>
-                                <label htmlFor="get">{user.address ? `You can buy ${calculateMax(token1Owned)} ${token2.symb}`: "You get"}</label>
+                                <label htmlFor="get">You get</label>
                                 <div sx={style.token} onClick={() => setToken2Select(true)}>
                                     <img src={token2.icon_url}/>
                                     <p>{token2.symb}</p>
@@ -476,7 +472,6 @@ function Swap() {
                             <div sx={style.swapInfos}>
                                 <span sx={style.swapInfoMain}><span>Purchase</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb}<div/>{typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {token2.symb}</div></span>
                                 <span sx={style.swapInfo}><span>Price</span>1 {token1.symb} = {price == 0 ? "?" : sent == 0 ? formatToString(price) : formatToString(get/sent)} {token2.symb}</span>
-                                <span sx={style.swapInfo}><span>Price Impact</span>{priceImpact}%</span>
                                 <span sx={style.swapInfo}><span>Pool Fees</span>0.3%</span>
                             </div>
 
