@@ -11,5 +11,6 @@ overflow-checks = true # Panic in the case of an overflow.
 members = [
     "dao",
     "dex",
-    "stablecoin"
+    "stablecoin",
+    "tests"
 ]

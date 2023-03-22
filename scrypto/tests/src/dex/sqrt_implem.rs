@@ -1,3 +1,4 @@
+use crate::utils::ADMIN_BADGE_NAME;
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
 use sqrt::method::Arg::{
@@ -6,9 +7,6 @@ use sqrt::method::Arg::{
 };
 use sqrt::method::{Arg, Method};
 use sqrt::method_args;
-
-pub(crate) const POSITION_NAME: &str = "Stoichiometric Position";
-pub(crate) const ADMIN_BADGE_NAME: &str = "Router admin badge";
 
 pub struct RouterBlueprint {}
 
@@ -103,5 +101,9 @@ impl Method for RouterMethods {
             RouterMethods::CreatePool(_, _, _, _) | RouterMethods::ClaimProtocolFees => true,
             _ => false,
         }
+    }
+
+    fn custom_manifest_name(&self) -> Option<&str> {
+        None
     }
 }

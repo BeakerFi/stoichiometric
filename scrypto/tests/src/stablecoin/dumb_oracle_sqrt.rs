@@ -42,4 +42,8 @@ impl Method for DumbOracleMethods {
     fn needs_admin_badge(&self) -> bool {
         false
     }
+
+    fn custom_manifest_name(&self) -> Option<&str> {
+        None
+    }
 }

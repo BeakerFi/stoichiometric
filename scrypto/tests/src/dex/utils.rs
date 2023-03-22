@@ -1,8 +1,10 @@
-use crate::pool_state::PoolState;
-use crate::router_sqrt::{RouterBlueprint, RouterMethods, ADMIN_BADGE_NAME, POSITION_NAME};
+use crate::dex::pool_state::PoolState;
+use crate::dex::sqrt_implem::{RouterBlueprint, RouterMethods};
+use crate::utils::{run_command, ADMIN_BADGE_NAME, POSITION_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
-use scrypto::prelude::{dec, Decimal};
+use scrypto::math::Decimal;
+use scrypto::prelude::dec;
 use sqrt::manifest_call::ManifestCall;
 use sqrt::method::Arg::{
     AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16,
@@ -12,21 +14,10 @@ use sqrt::test_environment::TestEnvironment;
 use std::collections::HashMap;
 use std::process::Command;
 
-pub fn run_command(command: &mut Command) -> String {
-    let output = command.output().expect("Failed to run command line");
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-    if !output.status.success() {
-        println!("stdout:\n{}", stdout);
-        panic!("{}", stderr);
-    }
-    stdout
-}
-
 pub fn instantiate() -> TestEnvironment {
     let mut test_env = TestEnvironment::new();
     let router_blueprint = Box::new(RouterBlueprint {});
-    let mut router_package = Package::new(".");
+    let mut router_package = Package::new("../dex");
     router_package.add_blueprint("router_bp", router_blueprint);
     test_env.publish_package("router", router_package);
     test_env.create_fixed_supply_token("usd", dec!(10000000));

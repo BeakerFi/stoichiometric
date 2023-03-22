@@ -1,25 +1,14 @@
-use crate::dumb_oracle_sqrt::{DumbOracleBlueprint, DumbOracleMethods};
-use crate::issuer_sqrt::{IssuerBlueprint, IssuerMethods, ADMIN_BADGE_NAME, STABLECOIN_NAME};
-use crate::issuer_state::IssuerState;
+use crate::stablecoin::dumb_oracle_sqrt::{DumbOracleBlueprint, DumbOracleMethods};
+use crate::stablecoin::issuer_state::IssuerState;
+use crate::stablecoin::sqrt_implem::{IssuerBlueprint, IssuerMethods};
+use crate::utils::{run_command, ADMIN_BADGE_NAME, STABLECOIN_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
-use scrypto::math::Decimal;
-use scrypto::prelude::dec;
+use scrypto::prelude::{dec, Decimal};
 use sqrt::method::Arg::{FungibleBucketArg, ResourceAddressArg};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::process::Command;
-
-pub fn run_command(command: &mut Command) -> String {
-    let output = command.output().expect("Failed to run command line");
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-    if !output.status.success() {
-        println!("stdout:\n{}", stdout);
-        panic!("{}", stderr);
-    }
-    stdout
-}
 
 pub fn instantiate() -> (TestEnvironment, IssuerState) {
     let mut test_env = TestEnvironment::new();
@@ -29,7 +18,7 @@ pub fn instantiate() -> (TestEnvironment, IssuerState) {
     test_env.create_mintable_token(STABLECOIN_NAME, ADMIN_BADGE_NAME);
 
     let issuer_blueprint = Box::new(IssuerBlueprint {});
-    let mut issuer_package = Package::new(".");
+    let mut issuer_package = Package::new("../stablecoin");
     issuer_package.add_blueprint("issuer_bp", issuer_blueprint);
     test_env.publish_package("issuer", issuer_package);
     test_env.new_component(
@@ -43,7 +32,7 @@ pub fn instantiate() -> (TestEnvironment, IssuerState) {
     );
 
     let oracle_blueprint = Box::new(DumbOracleBlueprint {});
-    let mut oracle_package = Package::new("tests/dumb_oracle/package/");
+    let mut oracle_package = Package::new("src/stablecoin/dumb_oracle/package");
     oracle_package.add_blueprint("oracle_bp", oracle_blueprint);
     test_env.publish_package("oracle", oracle_package);
 

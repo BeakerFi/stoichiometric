@@ -1,3 +1,4 @@
+use crate::utils::{PROPOSAL_RECEIPT, VOTER_CARD_NAME};
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
 use sqrt::method::Arg::{
@@ -6,12 +7,6 @@ use sqrt::method::Arg::{
 };
 use sqrt::method::{Arg, Method};
 use sqrt::{enum_arg, method_args, tuple_arg};
-
-pub const STABLECOIN_NAME: &str = "Stoichiometric USD";
-pub const VOTER_CARD_NAME: &str = "Stoichiometric voter card";
-pub const PROPOSAL_RECEIPT: &str = "Stoichiometric proposal receipt";
-pub const STABLECOIN_MINTER: &str = "Stoichiometric stablecoin minter";
-pub const POSITION_NAME: &str = "Stoichiometric position";
 
 pub struct DaoBlueprint {}
 

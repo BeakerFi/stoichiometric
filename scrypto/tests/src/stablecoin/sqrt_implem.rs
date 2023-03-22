@@ -1,3 +1,4 @@
+use crate::utils::{ADMIN_BADGE_NAME, LOAN_NAME, STABLECOIN_NAME};
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
 use sqrt::method::Arg::{
@@ -6,11 +7,6 @@ use sqrt::method::Arg::{
 };
 use sqrt::method::{Arg, Method};
 use sqrt::method_args;
-
-pub(crate) const LOAN_NAME: &str = "Stoichiometric Loan";
-pub(crate) const FLASH_MINT_NAME: &str = "Stoichiometric Flash Mint";
-pub(crate) const STABLECOIN_NAME: &str = "Stoichiometric USD";
-pub(crate) const ADMIN_BADGE_NAME: &str = "Issuer admin badge";
 
 pub struct IssuerBlueprint {}
 
@@ -131,5 +127,9 @@ impl Method for IssuerMethods {
             | IssuerMethods::ChangeLenderOracle(_) => true,
             _ => false,
         }
+    }
+
+    fn custom_manifest_name(&self) -> Option<&str> {
+        None
     }
 }

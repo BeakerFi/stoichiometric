@@ -1,16 +1,13 @@
-use crate::pool_state::StepState;
-use crate::router_sqrt::{RouterMethods, ADMIN_BADGE_NAME, POSITION_NAME};
-use crate::utils::{
-    add_liquidity, add_liquidity_at_step, add_liquidity_at_steps, assert_current_position,
-    assert_no_positions, create_pool, instantiate,
-};
 use scrypto::prelude::{dec, Decimal};
 use sqrt::error::Error;
 use std::collections::HashMap;
-
-mod pool_state;
-mod router_sqrt;
-mod utils;
+use stoichiometric_tests::dex::pool_state::StepState;
+use stoichiometric_tests::dex::sqrt_implem::RouterMethods;
+use stoichiometric_tests::dex::utils::{
+    add_liquidity, add_liquidity_at_step, add_liquidity_at_steps, assert_current_position,
+    assert_no_positions, create_pool, instantiate,
+};
+use stoichiometric_tests::utils::{ADMIN_BADGE_NAME, POSITION_NAME};
 
 #[test]
 fn test_instantiate() {

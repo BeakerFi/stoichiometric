@@ -1,18 +1,13 @@
-use crate::issuer_sqrt::{IssuerMethods, ADMIN_BADGE_NAME, STABLECOIN_NAME};
-use crate::issuer_state::LenderState;
-use crate::utils::{
-    assert_current_has_loan, assert_current_has_no_loan_id, instantiate, new_default_lender,
-    set_oracle_price,
-};
 use scrypto::prelude::{dec, Decimal, Instant};
 use sqrt::error::Error;
 use std::collections::HashMap;
-
-mod dumb_oracle;
-mod dumb_oracle_sqrt;
-mod issuer_sqrt;
-mod issuer_state;
-mod utils;
+use stoichiometric_tests::stablecoin::issuer_state::LenderState;
+use stoichiometric_tests::stablecoin::sqrt_implem::IssuerMethods;
+use stoichiometric_tests::stablecoin::utils::{
+    assert_current_has_loan, assert_current_has_no_loan_id, instantiate, new_default_lender,
+    set_oracle_price,
+};
+use stoichiometric_tests::utils::{ADMIN_BADGE_NAME, STABLECOIN_NAME};
 
 #[test]
 fn test_instantiate() {

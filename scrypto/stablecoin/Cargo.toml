@@ -7,11 +7,5 @@ edition = "2021"
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 
-[dev-dependencies]
-#sqrt = { git = "https://github.com/PointSquare/sqrt" }
-sqrt = { path = "../../../sqrt" }
-regex = "1"
-lazy_static = "1.4.0"
-
 [lib]
 crate-type = ["cdylib", "lib"]
