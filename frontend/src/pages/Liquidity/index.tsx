@@ -232,7 +232,7 @@ function Liquidity() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            if(token1.address && stable.address) {
+            if(token1.address && stable.address && pools[token1.address]) {
                 setPrice((parseFloat(pools[token1.address]["min_rate"])*(parseFloat(pools[token1.address]["rate_step"])**parseFloat(pools[token1.address]["current_step"]))));
             }
         }

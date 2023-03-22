@@ -6,7 +6,7 @@ import {
     NonFungibleIdsRequest,
     NonFungibleIdsResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
-import {backend_api_url, issuer_address, loan_address, radix_api_url} from "../general/constants";
+import {backend_api_url, issuer_address, loan_address, radix_api_url, token_default} from "../general/constants";
 import {amountToLiquidate} from "./stablecoinMaths";
 
 import {decoded, Hexes, lender, loan} from "types";
@@ -103,7 +103,7 @@ async function getHex(loan_id: string): Promise<Hexes> {
     const response = await fetch(radix_api_url + '/non-fungible/data', {
         method: 'POST',
         body: JSON.stringify(obj),
-        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8' }),
     })
 
 
@@ -164,7 +164,31 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     const data = await decode_hex(mutable_data,immutable_data)
 
+    if (!data) return {
+        collateral_token: token_default,
+        collateral_amount: 0,
+        amount_lent: 0,
+        loan_date: 0,
+        liquidation_price: 0,
+        loan_to_value: 0,
+        interest_rate: 0,
+        amount_to_liquidate: 0,
+        id: "-1"
+    };
+
     const lender: lender = lenders[data.collateral_token];
+    if (!lender) return {
+        collateral_token: token_default,
+        collateral_amount: 0,
+        amount_lent: 0,
+        loan_date: 0,
+        liquidation_price: 0,
+        loan_to_value: 0,
+        interest_rate: 0,
+        amount_to_liquidate: 0,
+        id: "-1"
+    };
+    
     const collateral_price = lender.collateral_price * data.collateral_amount;
 
     const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);

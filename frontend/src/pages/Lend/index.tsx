@@ -175,6 +175,7 @@ function Loan() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
+            if (!lenders[token1.address]) return;
             const infos = await getLenderInformation(lenders[token1.address].lender_address);
             if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
             if (infos) setDir(infos["daily_interest_rate"]);

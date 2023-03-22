@@ -286,6 +286,8 @@ function Swap() {
         async function getPoolInfos() {
             if (token1.address == stable.address) {
                 const pool = pools[token2.address];
+                if (!pool) return;
+
                 var actualPool = pool["current_step"];
                 var index = findIndex(actualPool, pool["steps"]);
                 
@@ -293,16 +295,22 @@ function Swap() {
                 else setPrice(0);
             } else if (token2.address == stable.address) {
                 const pool = pools[token1.address];
+                if (!pool) return;
+
                 var actualPool = pool["current_step"];
                 var index = findIndex(actualPool, pool["steps"]);
     
                 setPrice(pool["steps"][index].rate);
             } else {
                 const pool1 = pools[token1.address];
+                if (!pool1) return;
+
                 var actualPool = pool1["current_step"];
                 var index = findIndex(actualPool, pool1["steps"]);
 
                 const pool2 = pools[token1.address];
+                if (!pool2) return;
+
                 var actualPool = pool2["current_step"];
                 var index = findIndex(actualPool, pool2["steps"]);
     
