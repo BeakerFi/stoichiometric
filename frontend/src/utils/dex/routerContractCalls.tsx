@@ -79,7 +79,7 @@ async function swap_indirect(account: string, token1Address: string, token2Addre
     return !result.isErr();
 }
 
-async function addLiquidityNoPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: step[]) {
+async function addLiquidityNoPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: number[][]) {
 
     let steps_string = "";
 
@@ -137,7 +137,7 @@ async function addLiquidityNoPosition(account: string, other_token: string, stab
     return !result.isErr();
 }
 
-async function addLiquidityToPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: any[], position_id: string) {
+async function addLiquidityToPosition(account: string, other_token: string, stablecoin_amount: number, other_token_amount: number, steps: number[][], position_id: string) {
 
     let steps_string = "";
 

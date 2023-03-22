@@ -81,6 +81,8 @@ async function getRawPoolsList() {
 async function getLendersInfos(){
     let raw_lender_list = await getLendersList();
 
+    console.log("raw_list", raw_lender_list);
+
     return Promise.all(raw_lender_list.map(async (raw_lender:any) => {
         return getLenderInformation(raw_lender.token);
       }));
@@ -98,12 +100,15 @@ async function getTokensAndPools(){
         return getPoolInformation(tokens[index], raw_pool.pool_address);
       }));
 
+
     return {tokens,pools}
 
 }
 async function getTokensPoolsAndLenders() {
 
-    const [lenders, {tokens,pools}]= await Promise.all([getLendersInfos(), getTokensAndPools()]);
+    const [lenders, {tokens,pools}] = await Promise.all([getLendersInfos(), getTokensAndPools()]);
+
+    console.log("lenders", lenders)
 
     return { tokens, pools, lenders };
 }

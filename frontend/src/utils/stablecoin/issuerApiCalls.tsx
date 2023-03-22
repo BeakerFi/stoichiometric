@@ -44,8 +44,11 @@ async function getLenderInformation(lender_address: string) {
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
         .then((response) => response.json())
+        .then((response) => console.log(response))
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error)
+
+    console.log("data", data);
 
     if (!data) return undefined;
 
@@ -122,7 +125,7 @@ async function getHex(loan_id: string): Promise<Hexes> {
     const mutable_hex= responseData.mutable_data_hex
     const immutable_hex= responseData.immutable_data_hex
 
-    return { mutable_hex, immutable_hex };
+    return { mutable_hex, immutable_hex, id: loan_id };
 
 }
 
@@ -160,7 +163,7 @@ async function decode_hex(mutable_hex:string,immutable_hex:string ): Promise<dec
     return res.json()
 }
 
-async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: Map<string, lender>): Promise<loan> {
+async function getLoanInformation(mutable_data: string, immutable_data: string, lenders: Map<string, lender>, id: string): Promise<loan> {
 
     const data = await decode_hex(mutable_data,immutable_data)
 
@@ -182,7 +185,8 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
         liquidation_price: liquidation_price,
         loan_to_value: data.loan_to_value,
         interest_rate: data.interest_rate,
-        amount_to_liquidate: amount_to_liquidate };
+        amount_to_liquidate: amount_to_liquidate,
+        id: id };
 
     return loan;
 }
@@ -190,7 +194,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
 async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
     const hexes = await Promise.all(loan_ids.map(async id => getHex(id)))
-    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders)))
+    return Promise.all(hexes.map( async hex => getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)))
 }
 
 async function getAllCollection(): Promise<string[]> {

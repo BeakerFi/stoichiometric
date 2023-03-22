@@ -79,7 +79,9 @@ type loan = {
 
     interest_rate: number,
 
-    amount_to_liquidate : number
+    amount_to_liquidate : number,
+    
+    id: string
 }
 
 
@@ -106,7 +108,7 @@ interface ComponentState {
   }
 
 
-  type Hexes = { mutable_hex: string, immutable_hex: string };
+  type Hexes = { mutable_hex: string, immutable_hex: string, id: string };
 
 
 export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes};

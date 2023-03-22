@@ -769,8 +769,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
 
             '& div': {
                 position: 'absolute' as 'absolute',
-                left: `Calc(2.5px + ${100*(Math.min(price1, price2)-minPrice)/(maxPrice-minPrice)}%)`,
-                width: `${100*Math.abs(price2-price1)/(maxPrice-minPrice)}%`,
+                left: `Calc(2.5px + ${100*Math.sqrt((Math.min(price1, price2) - minPrice)/(maxPrice - minPrice))}%)`,
+                width: `${100*Math.abs(Math.sqrt((price1 -minPrice)/(maxPrice - minPrice)) - Math.sqrt((price2 -minPrice)/(maxPrice - minPrice)))}%`,
                 height: '100%',
                 boxShadow: 'none',
                 background: 'primary',

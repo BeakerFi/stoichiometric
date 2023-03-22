@@ -9,7 +9,7 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
 import {position} from "types";
-import { getOwnedLoans, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
+import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
 import { token_default } from "utils/general/constants";
@@ -75,13 +75,13 @@ const UserCtx: React.FC<Props> = (props) => {
         if (address == undefined) {
             if (user.address) {
                 const result:any = await getOwnedPositions(user.address);
-                const loans: any = await getOwnedLoans(user.address);
+                const loans: any = await getLoansOwnedBy(user.address);
                 setPositions(result);
                 setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return
         } else {
             const result:any = await getOwnedPositions(address);
-            const loans: any = await getOwnedLoans(address);
+            const loans: any = await getLoansOwnedBy(address);
             setPositions(result);
             setMyLoans(await getAllLoansInformation(loans, lenders));
         }
@@ -104,11 +104,11 @@ const UserCtx: React.FC<Props> = (props) => {
     useEffect(() => {
         async function setLoans() {
             if (user.address) {
-                const loans: any = await getOwnedLoans(user.address);
+                const loans: any = await getLoansOwnedBy(user.address);
                 const loansList = await getAllLoansInformation(loans, lenders);
                 const myLoansList = []
                 for (var i = 0; i < loansList.length; ++i) {
-                    const token = findToken(loansList[i]["collateral_token"]);
+                    const token = findToken(loansList[i]["collateral_token"].address);
                     myLoansList.push({token: token,
                         collateral_amount: loansList[i]["collateral_amount"],
                         amount_lent: loansList[i]["amount_lent"],

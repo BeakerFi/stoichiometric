@@ -23,7 +23,7 @@ import { addLiquidityNoPosition, addLiquidityToPosition, claimFees, removeAllLiq
 
 import styleFunction from "./style";
 
-import {token, step, pool, position} from "types";
+import {token, position} from "types";
 
 function Liquidity() {
 
@@ -33,11 +33,13 @@ function Liquidity() {
 
     const { addAlert } = useContext(SnackbarContext);
     
-    const { device, windowSize } = useContext(ResponsiveContext);
+    const { device } = useContext(ResponsiveContext);
 
     const { tokens, pools } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens, positions } = useContext(UserContext);
+
+    useEffect(() => {console.log("tokens", tokens)}, [tokens])
 
     const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
 
@@ -54,8 +56,6 @@ function Liquidity() {
     const [price1, setPrice1] = useState<number>(1);
     const [price2, setPrice2] = useState<number>(100);
 
-    const [priceImpact, setPriceImpact] = useState("0");
-
     const [myPosition, setMyPosition] = useState(false);
 
     const [chosePosition, setChosePosition] = useState(false);
@@ -63,7 +63,6 @@ function Liquidity() {
     function resetValues() {
         setSent(0);
         setGet(0);
-        setPriceImpact("0");
     }
 
     const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
@@ -75,6 +74,10 @@ function Liquidity() {
             setSearchParams({tk1: token_default.symb})
         }
     }, [])
+
+    useEffect(() => {
+        console.log("pools", pools)
+    }, [pools])
 
     useEffect(() => {
         if (pools[token1.address]) {
@@ -119,9 +122,11 @@ function Liquidity() {
 
     function findRatio(x: number) {
         var currentStep = pools[token1.address]["current_step"];
+        console.log("currentPool", pools[token1.address]["steps"]);
         let stableRatio: number; 
         for (var i = 0; i < pools[token1.address]["steps"].length; ++i) {
             const step = pools[token1.address]["steps"][i];
+            console.log("step", step)
             if (step[0] == currentStep) {
                 stableRatio = parseFloat(step[1]["amount_stable"])/(parseFloat(step[1]["amount_stable"]) + parseFloat(step[1]["rate"])*parseFloat(step[1]["amount_other"]));
                 return [stableRatio, parseFloat(step[1]["rate"])]
@@ -266,14 +271,6 @@ function Liquidity() {
     }
 
     useEffect(() => {
-        const n = 100*Math.abs(
-            (stableInPool/(stableInPool - get))*(sent + token1InPool)/token1InPool-1
-        )
-        if (isNaN(n)) setPriceImpact("?")
-        else setPriceImpact(formatToString2(n))
-    }, [sent, get])
-
-    useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
             if(token1.address && stable.address) {
@@ -372,7 +369,7 @@ function Liquidity() {
     });
 
     async function getPosInfos(id: string, invert: boolean) {
-        const result:any = false/*await getPositionInfos(id);
+        const result:any = false/*await getPositionInfos(id); TODO
         if (result) {
             if (!invert) setPositionInfos(result);
             else setPositionInfos({
@@ -441,7 +438,7 @@ function Liquidity() {
     async function sendSwap() {
         setSwapLoading(true);
         var flag;
-        var steps: step[] = [];
+        var steps: number[][] = [];
         var currentStep= parseFloat(pools[token1.address]["current_step"]);
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
@@ -624,8 +621,8 @@ function Liquidity() {
                                         <div sx={style.rangeBar}>
                                             <div/>
                                         </div>
-                                        <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price1} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice1(twoDecimals(parseFloat(e.target.value)))}}/>
-                                        <input type="range" sx={style.range2} min={minPrice} max={maxPrice} value={price2} step={(maxPrice-minPrice)/100} onChange={(e) => {setPrice2(twoDecimals(parseFloat(e.target.value)))}}/>
+                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price1 - minPrice)/(maxPrice - minPrice))} step={1/100} onChange={(e: any) => { setPrice1(twoDecimals(minPrice + parseFloat(e.target.value)**2*(maxPrice - minPrice))) }}/>
+                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price2 - minPrice)/(maxPrice - minPrice))} step={1/100} onChange={(e) => {setPrice2(twoDecimals(minPrice + parseFloat(e.target.value)**2*(maxPrice - minPrice))) }}/>
                                         <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
                                     </div>
                                     <div sx={style.rangeInputs}>

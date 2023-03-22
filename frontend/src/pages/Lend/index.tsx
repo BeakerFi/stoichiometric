@@ -271,12 +271,14 @@ function Swap() {
     const style = styleFunction(device, swapLoading, token1Select, choseLend, lock);
 
     const [currentLoan, setCurrentLoan] = useState<loan>({
-        token: token_default,
+        collateral_token: token_default,
         collateral_amount: 0,
         amount_lent: 0,
-        loan_time: 0,
+        loan_date: 0,
+        liquidation_price: 0,
         loan_to_value: 0,
         interest_rate: 0,
+        amount_to_liquidate: 0,
         id: '"'
     })
 
@@ -358,11 +360,11 @@ function Swap() {
                                                 return (
                                                     <div sx={style.poolChoice} onClick={() => {
                                                         setChoseLend(false);
-                                                        setToken1(loan.token);
+                                                        setToken1(loan.collateral_token);
                                                         setCurrentLoan(loan)
                                                     }}>
-                                                        <img src={loan.token.icon_url}/>
-                                                        <p>{loan.token.symb}</p>
+                                                        <img src={loan.collateral_token.icon_url}/>
+                                                        <p>{loan.collateral_token.symb}</p>
                                                     </div>
                                                 )
                                             })}
@@ -377,11 +379,11 @@ function Swap() {
                                 <div sx={style.swapZone}>
                                     <h1>🐰 Repay the Loan</h1>
                                     <div sx={style.swapInfos}>
-                                        <span sx={style.swapInfoMain}><span>Total Locked</span>{currentLoan.collateral_amount} {currentLoan.token.symb}</span>
+                                        <span sx={style.swapInfoMain}><span>Total Locked</span>{currentLoan.collateral_amount} {currentLoan.collateral_token.symb}</span>
                                         <span sx={style.swapInfo}><span>Total Borrowed</span>{currentLoan.amount_lent} {stable.symb}</span>
-                                        <span sx={style.swapInfo}><span>Interest</span>{Math.ceil((currentUnix - currentLoan.loan_time)/86400)*currentLoan.amount_lent * currentLoan.interest_rate} {stable.symb}</span>                                           
+                                        <span sx={style.swapInfo}><span>Interest</span>{Math.ceil((currentUnix - currentLoan.loan_date)/86400)*currentLoan.amount_lent * currentLoan.interest_rate} {stable.symb}</span>                                           
                                     </div>
-                                    <button sx={repayLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => repayLoading || !currentLoan.id ? null : sendRepayLoan(user.address, Math.ceil((currentUnix - currentLoan.loan_time)/86400)*currentLoan.amount_lent*currentLoan.interest_rate + currentLoan.amount_lent, currentLoan.id)} >{repayLoading ? "" : "Repay"}</button>
+                                    <button sx={repayLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => repayLoading || !currentLoan.id ? null : sendRepayLoan(user.address, Math.ceil((currentUnix - currentLoan.loan_date)/86400)*currentLoan.amount_lent*currentLoan.interest_rate + currentLoan.amount_lent, currentLoan.id)} >{repayLoading ? "" : "Repay"}</button>
 
                                 </div>
                                 <div sx={style.swapZone}>
@@ -390,13 +392,13 @@ function Swap() {
                                     <input type="text" id="add" required={true} placeholder=" " autoComplete="off" onChange={addingChange} value={adding} disabled={lock}/>
                                         <label htmlFor="add">You add</label>
                                         <div sx={style.token2}>
-                                            <img src={currentLoan.token.icon_url}/>
-                                            <p>{currentLoan.token.symb}</p>
+                                            <img src={currentLoan.collateral_token.icon_url}/>
+                                            <p>{currentLoan.collateral_token.symb}</p>
                                         </div>
                                     </div>
-                                    <span sx={style.tokenAddress}><span>Token Address</span>{currentLoan.token.address.slice(0,5) + "..." + currentLoan.token.address.slice(token1.address.length - 10, currentLoan.token.address.length)}</span>
+                                    <span sx={style.tokenAddress}><span>Token Address</span>{currentLoan.collateral_token.address.slice(0,5) + "..." + currentLoan.collateral_token.address.slice(token1.address.length - 10, currentLoan.collateral_token.address.length)}</span>
 
-                                    <button sx={addCollateralLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => addCollateralLoading || !currentLoan.id ? null : sendAddCollateral(user.address, currentLoan.token.address, adding, currentLoan.id)} >{addCollateralLoading ? "" : "Add"}</button>
+                                    <button sx={addCollateralLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => addCollateralLoading || !currentLoan.id ? null : sendAddCollateral(user.address, currentLoan.collateral_token.address, adding, currentLoan.id)} >{addCollateralLoading ? "" : "Add"}</button>
                                 </div>
                                 <div sx={style.swapZone}>
                                     <h1>🦊 Remove Collateral</h1>

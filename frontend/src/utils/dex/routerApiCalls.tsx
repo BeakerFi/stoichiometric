@@ -79,6 +79,8 @@ async function getPoolInformation(token: token, pool_address: string): Promise<p
         await getPoolStep(parseFloat(pool_step[0]),pool_step[1])
     }));
 
+    console.log("pools_steps", pool_steps)
+
     return {token: token, rate_step: parseFloat(data[0]), current_step: parseFloat(data[1]), min_rate: parseFloat(data[2]), max_rate: parseFloat(data[3]), steps: pool_steps};
 }
 
@@ -95,6 +97,7 @@ async function getPoolStep(step_id: number, step_address: string): Promise<step>
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     })
         .then((response) => response.json())
+        .then(data => console.log(data))
         .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
