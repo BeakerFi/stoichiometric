@@ -1,6 +1,6 @@
 
 
-function amountToLiquidate(collateral_amount: number, collateral_price: number, amount_lent: number, liquidation_threshold: number, liquidation_penalty: number, daily_interest_rate: number, loan_date: number) {
+function amountToLiquidate(collateral_amount: number, collateral_price: number, amount_lent: number, liquidation_threshold: number, liquidation_penalty: number, daily_interest_rate: number, loan_date: number): number {
 
     const collateral_value = collateral_amount * collateral_price;
     const current_time = new Date();

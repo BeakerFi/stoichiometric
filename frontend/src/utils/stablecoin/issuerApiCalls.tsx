@@ -174,7 +174,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
 
     let liquidation_price = 20000;
 
-    return {
+    let loan: loan = {
         collateral_token: token,
         collateral_amount: data.collateral_amount,
         amount_lent: data.amount_lent,
@@ -183,6 +183,8 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
         loan_to_value: data.loan_to_value,
         interest_rate: data.interest_rate,
         amount_to_liquidate: amount_to_liquidate };
+
+    return loan;
 }
 
 
