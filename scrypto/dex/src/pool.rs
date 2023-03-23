@@ -54,6 +54,9 @@ mod pool {
     use crate::position::StepPosition;
 
     pub struct Pool {
+
+        last_checked_price: Decimal,
+
         /// Percentage rate increase between each step
         rate_step: Decimal,
 
@@ -122,6 +125,7 @@ mod pool {
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
             let component = Self {
+                last_checked_price: initial_rate,
                 rate_step,
                 current_step,
                 min_rate,
@@ -437,12 +441,13 @@ mod pool {
             self.oracle.new_observation(current_time, self.current_step);
         }
 
-        pub fn get_twap_since(&self, timestamp: i64) -> Decimal {
+        pub fn get_twap_since(&mut self, timestamp: i64) -> Decimal {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
             let twas = self
                 .oracle
                 .get_time_weighted_average_step_since(timestamp, current_time);
             let twap = self.rate_step.powi(twas as i64);
+            self.last_checked_price = twap;
             twap
         }
 
