@@ -6,8 +6,10 @@ use radix_engine_interface::data::ScryptoDecoder;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{ResourceAddress, NonFungibleLocalId};
 use radix_engine_interface::node::NetworkDefinition;
+use sbor::ValueKind;
+use sbor::ValueKind::Map;
 use scrypto::prelude::*;
-use crate::positions::StepPosition;
+use crate::positions::{StepPosition};
 
 fn main() {
 
@@ -68,27 +70,46 @@ pub fn decode_loan(immutable_hex: &String, mutable_hex: &String) {
 
 pub fn decode_position(immutable_hex: &String, mutable_hex: &String) {
 
-    let mutable_vec_bytes = decode_hex(mutable_hex).expect("The input string could not be parsed correctly");
-    let mutable_bytes = mutable_vec_bytes.as_slice();
-    let steps: (u16, StepPosition) = ScryptoDecoder::new(mutable_bytes).decode_payload(92).unwrap();
+    let to_decode = String::from(&mutable_hex[14..]);
+    let step_positions_len = 204;
+    let nb_positions = to_decode.len() / step_positions_len;
 
-    let mut step_position_string = String::new();
-    /*for (id, step) in steps {
-        step_position_string = format!("{}({}, ({}, {}, {})), ", step_position_string, id, step.liquidity, step.last_stable_fees_per_liq, step.last_other_fees_per_liq);
+    let mut step_positions_string = String::new();
+
+    for i in 0..nb_positions
+    {
+        let start = i*step_positions_len;
+        let end = (i+1)*step_positions_len;
+        let step_position = String::from(&to_decode[start..end]);
+        let step = String::from(&step_position[..6]);
+        let dec_1_to_decode = format!("5c{}",  &step_position[6..72]);
+        let dec_2_to_decode = String::from(&step_position[72..138]);
+        let dec_3_to_decode = String::from(&step_position[138..204]);
+
+        let step = Decimal::ZERO;
+        let liquidity: Decimal = ScryptoDecoder::new(dec_1_to_decode.as_bytes()).decode_payload(92).unwrap();
+        let last_stable_fees_per_liq: Decimal = ScryptoDecoder::new(dec_2_to_decode.as_bytes()).decode_deeper_body_with_value_kind( Decimal::value_kind()).unwrap();
+        let last_other_fees_per_liq: Decimal = ScryptoDecoder::new(dec_3_to_decode.as_bytes()).decode_deeper_body_with_value_kind( Decimal::value_kind()).unwrap();
+
+        step_positions_string = format!("{}({}, ({}, {}, {}), ", step_positions_string, step, liquidity, last_stable_fees_per_liq, last_other_fees_per_liq);
     }
 
-    step_position_string.pop();
-    step_position_string.pop();
-    step_position_string = format!("({})", step_position_string);
-*/
+    step_positions_string.pop();
+    step_positions_string.pop();
+
+    step_positions_string = format!("({})", step_positions_string);
+
+
+
     let immutable_vec_bytes = decode_hex(immutable_hex).expect("The input string could not be parsed correctly");
     let immutable_bytes = immutable_vec_bytes.as_slice();
+
     let other_token_address: ResourceAddress = ScryptoDecoder::new(immutable_bytes).decode_payload(92).unwrap();
 
     let bech = Bech32Encoder::new(&NetworkDefinition::nebunet());
     let other_token = bech.encode_resource_address_to_string(&other_token_address);
 
-    println!("{} {}", other_token, step_position_string);
+    println!("{} {}", other_token, "ok");
 }
 
 pub fn decode_voter_card(mutable_hex: &String) {
