@@ -9,6 +9,7 @@ import {getToken} from "../general/generalApiCalls";
 
 async function getDao(): Promise<dao> {
 
+    /*
     const obj: EntityDetailsRequest = {
         "address": dao_address
     };
@@ -44,6 +45,9 @@ async function getDao(): Promise<dao> {
     const reserves = await getReserves(locked_stablecoins);
 
     return {total_voting_power: total_voting_power, vote_period: vote_period, vote_validity_threshold: vote_validity_threshold, proposals: proposals, reserves: reserves};
+    */
+
+     return {total_voting_power: 0, vote_period: 86400, vote_validity_threshold: 0.5, proposals: [], reserves: new Map<string, number>()}
 }
 
 
@@ -123,6 +127,8 @@ async function getReserves(locked_stablecoins: number): Promise<Map<string, numb
 }
 
 async function getVoterCard(account: string): Promise<voterCard> {
+
+    /*
     const id_obj: EntityNonFungibleIdsRequest = {
         "address": account,
         "resource_address": voter_card_address
@@ -157,7 +163,9 @@ async function getVoterCard(account: string): Promise<voterCard> {
 
     const mutable_hex = responseData.mutable_data_hex;
 
-    return voterCardDataFromHex(mutable_hex);
+    return voterCardDataFromHex(mutable_hex);*/
+
+    return {voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: [] };
 }
 
 async function voterCardDataFromHex(mutable_hex: string): Promise<voterCard> {
