@@ -35,7 +35,7 @@ function Home() {
                     {device == "mobile" ? null : <div sx={{...style.social, ...style.telegram}} onClick={() => window.location.replace("https://t.me/BeakerFi")}/>}
                     {device == "mobile" ? null : <div sx={{...style.social, ...style.discord}} onClick={() => window.location.replace("https://discord.com/invite/8CwZkCA7Au")}/>}
                     {device == "mobile" ? null : <div sx={{...style.social, ...style.twitter}} onClick={() => window.location.replace("https://twitter.com/beaker_fi")}/>}
-                    {device == "mobile" ? null : <p sx={style.link} onClick={() => window.location.replace("https://docs.beaker.fi")}>Docs</p>}
+                    {device == "mobile" ? null : <p sx={style.link} onClick={() => window.location.replace("https://github.com/PointSquare/stoichiometric")}>Docs</p>}
                     <NavLink sx={style.navlink} to="/swap">
                         <Button>Enter App</Button>
                     </NavLink>

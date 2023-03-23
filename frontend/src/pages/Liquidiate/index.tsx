@@ -5,7 +5,7 @@ import { useContext, useState, useEffect } from "react";
 
 import Dashboard from "components/Dashboard";
 
-import { randomIntFromInterval } from "utils/general/generalMaths";
+import { formatToString, randomIntFromInterval } from "utils/general/generalMaths";
 
 import Star from "components/Star";
 
@@ -18,8 +18,8 @@ import styleFunction from "./style";
 import { TokensContext } from "contexts/TokensContext";
 import { loan } from "types";
 
+import { stable_coin as stable, token_default } from "utils/general/constants";
 
-const stable = {name: "Stoichiometric USD", symb: "SUSD", address: "resource_tdx_b_arthurjetebaisegrosfdp111111fdpputeputeshitcoin", icon_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1024px-Bitcoin.svg.png"};
 function Liquidate() {
     const navigate = useNavigate();
 
@@ -29,45 +29,14 @@ function Liquidate() {
     const { user } = useContext(UserContext);
     const { device } = useContext(ResponsiveContext);
 
-    const {loans} = useContext(TokensContext);
+    const {loans, pools} = useContext(TokensContext);
 
 
     useEffect(() => {
         console.log("loanssss", loans);
     }, [loans])
 
-    const [accountSelect, setAccountSelect] = useState(false);
-
-    const lends = [{
-        user: "address_test",
-        token: {name: "Radix", symb: "XRD", address: "address_test", icon_url: "https://switchere.com/i/currencies/XRD.svg"},
-        quantity: 34.45,
-        borrowed: 139.89,
-        healthFactor: .5
-    },
-    {
-        user: "account_tdx_b_1pr3kgqdw7gaz7v6zk65xjet79w9c72qyzpcuhgmv8rksqs2ugt",
-        token: {name: "Radix", symb: "XRD", address: "address_test", icon_url: "https://switchere.com/i/currencies/XRD.svg"},
-        quantity: 34.45,
-        borrowed: 239.89,
-        healthFactor: 4
-    },
-    {
-        user: "address_test",
-        token: {name: "Radix", symb: "XRD", address: "address_test", icon_url: "test"},
-        quantity: 34.45,
-        borrowed: 394.89,
-        healthFactor: .7
-    },
-    {
-        user: "address_test",
-        token: {name: "Radix", symb: "XRD", address: "address_test", icon_url: "test"},
-        quantity: 34.45,
-        borrowed: 339.89,
-        healthFactor: 1.4
-    }];
-
-    const [lendsList, setLendsList] = useState<any[]>([]);
+    const [loansList, setLoansList] = useState<any[]>([]);
     const [onlyMine, setOnlyMine] = useState<boolean>(false);
 
     function toggleOnlyMine() {
@@ -75,11 +44,10 @@ function Liquidate() {
     }
 
     useEffect(() => {
-        setLendsList(user.address && onlyMine ? lends.filter(x => x.user != user.address) : lends);
-    }, [onlyMine])
+        setLoansList(user.address && onlyMine ? loans.filter((x: loan) => x) : loans);
+    }, [onlyMine, loans])
 
     const style = styleFunction(device);
-
 
     return (
         <Dashboard page='liquidate'>
@@ -102,26 +70,27 @@ function Liquidate() {
 
                 <div sx={style.lendContainer}>
                     <div sx={style.lendColumn}>   
-                        {[1,2,3,4,5].map((x, index) => {return (
+                        {Array.apply(null, Array(Math.ceil(loansList.length/5))).map((x, index) => {return (
                             <div key={"loanRow" + index} sx={style.lendRow}>
-                                {lendsList.map((x: any, index: number) => {
+                                {loansList.slice(5*index, 5*(index+1) - 1).map((x: loan, index: number) => {
+                                    const cur_price = pools[x.collateral_token.address] ? pools[x.collateral_token.address].min_rate * (1 + pools[x.collateral_token.address].rate_step**pools[x.collateral_token.address].current_step) : 1;
                                     return (
                                         <div key={"loan" + index} sx={style.lend}>
-                                                <p>Collateral <span>{x.quantity} {x.token.symb} <img src={x.token.icon_url}/></span></p>
-                                                <p>Borrowed <span>{x.borrowed} {stable.symb} <img src={stable.icon_url}/></span></p>
-                                                { x.healthFactor > 1 || !user.address ? 
+                                                <p>Collateral <span>{formatToString(x.collateral_amount)} {x.collateral_token.symb} <img src={x.collateral_token.icon_url}/></span></p>
+                                                <p>Borrowed <span>{formatToString(x.amount_lent)} {stable.symb} <img src={stable.icon_url}/></span></p>
+                                                { cur_price - x.liquidation_price > 0 || !user.address ? 
                                                 <div sx={style.barContainer}>
 
                                                     <div sx={style.bar}>
-                                                        <div sx={{right: `Min(100%, ${1/x.healthFactor*100}%)`, background: `${Math.random() < .3 ? "green" : Math.random() > .5 ? "orange" : "red"}`}}/>
+                                                        <div sx={{right: `Min(100%, ${(cur_price - x.liquidation_price)/(cur_price/2)*100}%)`, background: `${(cur_price - x.liquidation_price)/(cur_price/2) < .3 ? "green" : (cur_price - x.liquidation_price)/(cur_price/2) < .7 ? "orange" : "red"}`}}/>
                                                     </div>
 
                                                     <div sx={style.infos}>
                                                         <p>
-                                                            Current Price <span>$43.4</span>
+                                                            Liquidation Price <span>${formatToString(x.liquidation_price)}</span>
                                                         </p>
                                                         <p>
-                                                            Liquidation Price <span>$23.7</span>
+                                                            Current Price <span>${formatToString(cur_price)}</span>
                                                         </p>
                                                     </div>
                                                     

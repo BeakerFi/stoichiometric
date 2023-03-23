@@ -29,7 +29,7 @@ const TokensCtx: React.FC<Props> = (props) => {
             for (var i = 0; i < x.pools.length; ++i) poolsList[x.pools[i].token.address] = x.pools[i];
             setPools(poolsList);
 
-            var l: lender[] = [];
+            var l: any = [];
             for (var i = 0; i < x.lenders.length; ++i) { 
                 l[x.lenders[i].token] = x.lenders[i].lender;
                 console.log(x.lenders[i].lender)
@@ -39,10 +39,8 @@ const TokensCtx: React.FC<Props> = (props) => {
 
 
             const y = await getAllCollection();
-            const z = await getAllLoansInformation(y, x.lenders);
+            const z = await getAllLoansInformation(y, l);
 
-            console.log("oui");
-            console.log("z", z);
             setLoans(z);
         };
         setToks();

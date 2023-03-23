@@ -175,6 +175,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     };
 
     const lender: lender = lenders[data.collateral_token];
+
     if (!lender) return {
         collateral_token: token_default,
         collateral_amount: 0,
@@ -209,12 +210,24 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     };
 }
 
+interface PromiseFulfilledResult {
+    status: "fulfilled";
+    value: any;
+}
+
+interface PromiseRejectedResult {
+    status: "rejected";
+    reason: any;
+}
+
+type PromiseSettledResult = PromiseFulfilledResult | PromiseRejectedResult;
 
 async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
-    return Promise.allSettled(loan_ids.map(async id => {
+    const loans = await Promise.allSettled(loan_ids.map(async id => {
          const hex = await getHex(id)
          return getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)
-        }))
+    }));
+    return loans.filter(x => x.status == "fulfilled").map(x => (x as PromiseFulfilledResult).value);
 }
 
 async function getAllCollection(): Promise<string[]> {
