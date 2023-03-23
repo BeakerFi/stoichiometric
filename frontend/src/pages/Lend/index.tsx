@@ -175,13 +175,17 @@ function Loan() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
+            console.log(lenders[token1.address]);
             if (!lenders[token1.address]) return;
+
             const infos = await getLenderInformation(lenders[token1.address].lender_address);
-            if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
+            console.log("infos", infos);
+
+            if (infos) setPrice(infos["collateral_price"] * infos["loan_to_value"]);
             if (infos) setDir(infos["daily_interest_rate"]);
         }
         getPoolInfos();
-    }, [token1, tokensOwned])
+    }, [token1, tokensOwned, lenders])
     useEffect(() => {
         const n = tokensOwned[token1.address];
         if (n == "undefined") setToken1Owned(0);
