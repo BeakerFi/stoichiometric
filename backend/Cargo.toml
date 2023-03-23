@@ -9,3 +9,4 @@ edition = "2021"
 radix-engine-interface = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag="v0.8.0" }
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
+hex = "0.4.3"
