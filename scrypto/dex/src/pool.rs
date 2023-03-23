@@ -79,24 +79,25 @@ mod pool {
         other_protocol_fees: Vault,
 
         /// Price oracle
-        oracle: OracleComponent
+        oracle: OracleComponent,
     }
 
     impl Pool {
         /// Instantiates a new [`PoolComponent`] and returns it.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing the initial liquidity in stablecoins
-        /// * `bucket_other` - Bucket containing the initial liquidity in the other token
+        /// * `stable` - ResourceAddress of the stablecoin
+        /// * `bucket_other` - ResourceAddress of the other token
+        /// * `initial_rate` - Initial exhcange rate of the pool
         /// * `min_rate` - Minimum exchange rate of the pool
         /// * `max_rate` - Maximum exchange rate of the pool
         pub fn new(
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            stable: ResourceAddress,
+            other: ResourceAddress,
             initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
-        ) -> (ComponentAddress, Bucket, Bucket, Position) {
+        ) -> ComponentAddress {
             assert!(
                 min_rate > Decimal::ZERO,
                 "The minimum rate should be positive"
@@ -128,24 +129,13 @@ mod pool {
                 stable_prot_fees: Decimal::ZERO,
                 other_prot_fees: Decimal::ZERO,
                 steps: HashMap::new(),
-                stable_protocol_fees: Vault::new(bucket_stable.resource_address()),
-                other_protocol_fees: Vault::new(bucket_other.resource_address()),
-                oracle: OracleComponent::new()
+                stable_protocol_fees: Vault::new(stable),
+                other_protocol_fees: Vault::new(other),
+                oracle: OracleComponent::new(),
             }
             .instantiate();
 
-            // Adds the initial liquidity
-            let position = Position::from(bucket_other.resource_address());
-            let (stable_ret, other_ret, pos_ret) = component.add_liquidity_at_step(
-                bucket_stable,
-                bucket_other,
-                current_step,
-                position,
-            );
-
-            let component = component.globalize();
-
-            (component, stable_ret, other_ret, pos_ret)
+            component
         }
 
         /// Adds liquidity to the pool at the closest rate to the given rate.
@@ -181,11 +171,12 @@ mod pool {
             mut position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step_position = position.get_step(step);
-            let (bucket_stable, bucket_other) = if bucket_a.resource_address() == self.stable_protocol_fees.resource_address(){
-                (bucket_a, bucket_b)
-            } else {
-                (bucket_b, bucket_a)
-            };
+            let (bucket_stable, bucket_other) =
+                if bucket_a.resource_address() == self.stable_protocol_fees.resource_address() {
+                    (bucket_a, bucket_b)
+                } else {
+                    (bucket_b, bucket_a)
+                };
 
             // Get or create the given step
             let mut pool_step = match self.steps.get_mut(&step) {
@@ -228,13 +219,11 @@ mod pool {
             steps: Vec<(u16, Decimal, Decimal)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for (step, amount_stable, amount_other) in steps
-            {
+            for (step, amount_stable, amount_other) in steps {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
                     bucket_stable.take(amount_stable),
                     bucket_other.take(amount_other),
@@ -448,10 +437,11 @@ mod pool {
             self.oracle.new_observation(current_time, self.current_step);
         }
 
-        pub fn get_twap_since(&self, timestamp: i64) -> Decimal
-        {
+        pub fn get_twap_since(&self, timestamp: i64) -> Decimal {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
-            let twas = self.oracle.get_time_weighted_average_step_since(timestamp, current_time);
+            let twas = self
+                .oracle
+                .get_time_weighted_average_step_since(timestamp, current_time);
             let twap = self.rate_step.powi(twas as i64);
             twap
         }

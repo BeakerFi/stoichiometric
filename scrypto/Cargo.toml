@@ -9,6 +9,8 @@ overflow-checks = true # Panic in the case of an overflow.
 [workspace]
 
 members = [
+    "dao",
     "dex",
-    "stablecoin"
+    "stablecoin",
+    "tests"
 ]
