@@ -14,7 +14,9 @@ external_component! {
 
         fn liquidate(&mut self, stablecoins_amount: Decimal, loan: Loan) -> (Decimal, Bucket, Bucket, Loan);
 
-        fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal, oracle: ComponentAddress);
+        fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal);
+
+        fn change_oracle(&mut self, oracle: ComponentAddress);
 
         fn get_state(&self) -> Vec<Decimal>;
     }
@@ -177,7 +179,7 @@ mod issuer {
             collateral: Bucket,
             amount_to_loan: Decimal,
         ) -> (Bucket, Bucket) {
-            let lender = self.get_lender(&collateral.resource_address());
+            let mut lender = self.get_lender(&collateral.resource_address());
             let loan = lender.take_loan(collateral, amount_to_loan);
             let loan_bucket = self.resource_minter.authorize(|| {
                 borrow_resource_manager!(self.loan_address)
@@ -236,7 +238,7 @@ mod issuer {
                 loan.collateral_token == collateral.resource_address(),
                 "Please provide the right tokens to add as collateral"
             );
-            let lender = self.get_lender(&loan.collateral_token);
+            let mut lender = self.get_lender(&loan.collateral_token);
 
             let new_loan_data = lender.add_collateral(collateral, loan);
             self.update_loan_data(loan_nfr, new_loan_data);
@@ -354,7 +356,7 @@ mod issuer {
                 liquidation_incentive.is_positive(),
                 "The liquidation incentive should be positive"
             );
-            let lender = self.get_lender(&lender_collateral);
+            let mut lender = self.get_lender(&lender_collateral);
             lender.change_parameters(
                 loan_to_value,
                 interest_rate,
@@ -368,8 +370,7 @@ mod issuer {
             lender_collateral: ResourceAddress,
             oracle: ComponentAddress,
         ) {
-            let lender = self.get_lender(&lender_collateral);
-            AccessRules::new();
+            let mut lender = self.get_lender(&lender_collateral);
             lender.change_oracle(oracle);
         }
 

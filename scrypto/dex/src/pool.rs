@@ -135,7 +135,7 @@ mod pool {
             }
             .instantiate();
 
-            component
+            component.globalize()
         }
 
         /// Adds liquidity to the pool at the closest rate to the given rate.
