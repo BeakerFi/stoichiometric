@@ -119,7 +119,7 @@ interface ComponentState {
 
       proposals: proposal[],
 
-      reserves: Map<token, number>,
+      reserves: Map<string, number>,
 
 
 }
@@ -158,5 +158,16 @@ enum proposedChange {
 
 }
 
+    type voterCard = {
+      voting_power: number,
 
-export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposal};
+        stablecoins_locked: number,
+
+        positions_ids_locked: string[],
+
+        proposals_voted: number[]
+
+    }
+
+
+export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposedChange, proposal, voterCard};
