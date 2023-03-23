@@ -171,6 +171,25 @@ mod lender {
             }
         }
 
+        pub fn clear_bad_debt(&mut self, mut loan :Loan) -> (Decimal, Bucket, Loan){
+            let collateral_price = self.get_oracle_price();
+
+            // Check that there is indeed bad debt
+            let collateral_price = self.get_oracle_price();
+            let collateral_value = loan.collateral_amount * collateral_price;
+
+            assert!(collateral_value < loan.amount_lent,
+                    "There is no bad debt to clear!");
+
+            // If there is bad debt, fully liquidate the loan
+            let collateral = self.collateral(loan.collateral_amount);
+            let amount_to_clear = loan.amount_lent;
+            loan.collateral_amount = Decimal::ZERO;
+            loan.amount_lent = Decimal::ZERO;
+
+            (amount_to_clear, collateral, loan)
+        }
+
         pub fn change_parameters(
             &mut self,
             loan_to_value: Decimal,
