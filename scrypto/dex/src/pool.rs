@@ -96,11 +96,15 @@ mod pool {
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
+            let mut steps = HashMap::new();
+            let initial_step = PoolStepComponent::new(stable.clone(), other.clone(), initial_rate.clone());
+            steps.insert(current_step.clone(), initial_step);
+
             let component = Self {
                 rate_step,
                 current_step,
                 min_rate,
-                steps: HashMap::new(),
+                steps,
                 stable_protocol_fees: Vault::new(stable),
                 other_protocol_fees: Vault::new(other),
                 oracle: OracleComponent::new(),
