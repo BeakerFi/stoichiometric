@@ -1,6 +1,6 @@
 use crate::dex::pool_state::PoolState;
 use crate::dex::sqrt_implem::{RouterBlueprint, RouterMethods};
-use crate::utils::{run_command, ADMIN_BADGE_NAME, POSITION_NAME};
+use crate::utils::{run_command, ADMIN_BADGE_NAME, POSITION_NAME, STABLECOIN_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::math::Decimal;
@@ -102,7 +102,7 @@ pub fn add_liquidity_at_step<'a>(
     ));
     env_args.push((
         "token_a_address".to_string(),
-        ResourceAddressArg("usd".to_string()),
+        ResourceAddressArg(STABLECOIN_NAME.to_string()),
     ));
     env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
     env_args.push((

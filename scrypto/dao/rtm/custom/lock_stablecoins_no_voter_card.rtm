@@ -15,21 +15,9 @@ TAKE_FROM_WORKTOP_BY_AMOUNT
 	Bucket("0");
 
 CALL_METHOD
-	ComponentAddress("${caller_address}")
-	"withdraw_by_ids"
-    Array<NonFungibleLocalId>(${nf_ids})
-	ResourceAddress("${position_address}");
-
-TAKE_FROM_WORKTOP_BY_IDS
-    Array<NonFungibleLocalId>(${nf_ids})
-	ResourceAddress("${position_address}")
-	Bucket("1");
-
-CALL_METHOD
 	ComponentAddress("${component_address}")
-	"lock"
+	"lock_stablecoins"
 	Bucket("0")
-	Bucket("1")
 	None;
 
 CALL_METHOD

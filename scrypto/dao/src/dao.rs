@@ -2,8 +2,6 @@ use scrypto::{blueprint, external_component};
 
 external_component! {
     ProposalLocalComponent {
-        fn vote_for(&mut self, voter_card_proof: Proof);
-        fn vote_against(&mut self, voter_card_proof: Proof);
         fn is_voting_stage(&self) -> bool;
         fn execute(&mut self) -> Option<ProposedChange>;
     }
@@ -218,51 +216,32 @@ mod dao {
             component.globalize()
         }
 
-        pub fn lock(
+        pub fn lock_stablecoins(
             &mut self,
             stablecoins: Bucket,
-            positions: Bucket,
             opt_voter_card_proof: Option<Proof>,
         ) -> Option<Bucket> {
             assert!(
                 stablecoins.resource_address() == self.stablecoin_address,
                 "You can only lock stablecoins as fungible resource"
             );
+
+            let (mut voter_card, voter_card_id, opt_bucket) = self.get_voter_card_or_create(opt_voter_card_proof);
+
+            self.total_voting_power += voter_card.add_stablecoins(stablecoins.amount());
+            self.locked_stablecoins.put(stablecoins);
+            self.update_voter_card_data(&voter_card_id, voter_card);
+
+            opt_bucket
+        }
+
+        pub fn lock_positions(&mut self, positions: Bucket, opt_voter_card_proof: Option<Proof>) -> Option<Bucket>{
             assert!(
                 positions.resource_address() == self.position_address,
                 "You can only lock positions as non fungible resource"
             );
 
-            let (mut voter_card, voter_card_id, opt_bucket) = match opt_voter_card_proof {
-                Some(voter_card_proof) => {
-                    let validated_proof = voter_card_proof
-                        .validate_proof(ProofValidationMode::ValidateContainsAmount(
-                            self.voter_card_address,
-                            Decimal::ONE,
-                        ))
-                        .expect("Please provide a valid voter card proof");
-                    let voter_card_id = validated_proof
-                        .non_fungible::<VoterCard>()
-                        .local_id()
-                        .clone();
-                    let voter_card_data = self.get_voter_card_data(&voter_card_id);
-
-                    (voter_card_data, voter_card_id, None)
-                }
-
-                None => {
-                    let voter_card_id = NonFungibleLocalId::Integer(self.voter_card_id.into());
-                    let new_voter_card = self.resource_minter.authorize(|| {
-                        borrow_resource_manager!(self.voter_card_address)
-                            .mint_non_fungible(&voter_card_id, VoterCard::new())
-                    });
-                    self.voter_card_id += 1;
-
-                    (VoterCard::new(), voter_card_id, Some(new_voter_card))
-                }
-            };
-
-            self.total_voting_power += voter_card.add_stablecoins(stablecoins.amount());
+            let (mut voter_card, voter_card_id, opt_bucket) = self.get_voter_card_or_create(opt_voter_card_proof);
 
             for position in positions.non_fungibles::<Position>() {
                 let id = position.local_id().clone();
@@ -271,6 +250,7 @@ mod dao {
                 self.total_voting_power += voter_card.add_position(&position_data, id);
             }
 
+            self.locked_positions.put(positions);
             self.update_voter_card_data(&voter_card_id, voter_card);
 
             opt_bucket
@@ -288,9 +268,16 @@ mod dao {
 
             let voter_card_nfr = voter_card.non_fungible::<VoterCard>();
             let voter_card_data = self.get_voter_card_data(voter_card_nfr.local_id());
-            let last_proposal_voted = self.get_proposal(voter_card_data.last_proposal_voted_id);
-
-            assert!(!last_proposal_voted.is_voting_stage(), "Cannot unlock tokens and positions from a VoterCard that is actively particpating in a vote!");
+            let last_proposal_voted = match self.proposals.get(&voter_card_data.last_proposal_voted_id) {
+                None => {
+                    // If the proposal id is 0 and no proposals have been made, we can be in this
+                    // edge casE. Hence, we do nothing
+                }
+                Some(proposal) => {
+                    let last_proposal_voted = ProposalLocalComponent::at(*proposal);
+                    assert!(!last_proposal_voted.is_voting_stage(), "Cannot unlock tokens and positions from a VoterCard that is actively particpating in a vote!");
+                }
+            };
 
             self.total_voting_power -= voter_card_data.voting_power;
             let stablecoin_bucket = self
@@ -302,7 +289,7 @@ mod dao {
             }
 
             self.resource_minter.authorize(|| {
-                borrow_resource_manager!(self.position_address).burn(voter_card);
+                borrow_resource_manager!(self.voter_card_address).burn(voter_card);
             });
 
             (stablecoin_bucket, positions_bucket)
@@ -576,6 +563,39 @@ mod dao {
                         .insert(new_vault.resource_address(), new_vault);
                 }
             };
+        }
+
+        #[inline]
+        fn get_voter_card_or_create(&mut self, opt_voter_card_proof: Option<Proof>) -> (VoterCard, NonFungibleLocalId, Option<Bucket>) {
+            match opt_voter_card_proof {
+                Some(voter_card_proof) => {
+                    let validated_proof = voter_card_proof
+                        .validate_proof(ProofValidationMode::ValidateContainsAmount(
+                            self.voter_card_address,
+                            Decimal::ONE,
+                        ))
+                        .expect("Please provide a valid voter card proof");
+                    let voter_card_id = validated_proof
+                        .non_fungible::<VoterCard>()
+                        .local_id()
+                        .clone();
+                    let voter_card_data = self.get_voter_card_data(&voter_card_id);
+
+                    (voter_card_data, voter_card_id, None)
+                }
+
+                None => {
+                    let voter_card_id = NonFungibleLocalId::Integer(self.voter_card_id.into());
+                    let new_voter_card = self.resource_minter.authorize(|| {
+                        borrow_resource_manager!(self.voter_card_address)
+                            .mint_non_fungible(&voter_card_id, VoterCard::new())
+                    });
+
+                    self.voter_card_id += 1;
+
+                    (VoterCard::new(), voter_card_id, Some(new_voter_card))
+                }
+            }
         }
     }
 }
