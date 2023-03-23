@@ -57,8 +57,8 @@ function Swap() {
         setIntermediateGet(0);
     }
 
-    const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
-    const [token2, setToken2] = useState({name: "", symb: "", address: "", icon_url: ""});
+    const [token1, setToken1] = useState(stable);
+    const [token2, setToken2] = useState(token_default);
 
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
@@ -283,7 +283,7 @@ function Swap() {
     }
 
     useEffect(() => {
-        async function getPoolInfos() {
+        async function getPoolInfos() { 
             if (token1.address == stable.address) {
                 const pool = pools[token2.address];
                 if (!pool) return;
@@ -319,7 +319,8 @@ function Swap() {
             }
         }
         getPoolInfos();
-    }, [token1, token2, tokensOwned])
+    }, [token1, token2, tokensOwned, pools])
+
     useEffect(() => {
         const n = tokensOwned[token1.address];
         if (n == "undefined") setToken1Owned(0);
