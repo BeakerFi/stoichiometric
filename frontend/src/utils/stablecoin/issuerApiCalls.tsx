@@ -191,6 +191,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     const collateral_price = lender.collateral_price * data.collateral_amount;
 
     const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
+    
     const token_promise = getToken(data.collateral_token);
 
     const [amount_to_liquidate,token] = await Promise.all([amount_to_liquidate_promise, token_promise])

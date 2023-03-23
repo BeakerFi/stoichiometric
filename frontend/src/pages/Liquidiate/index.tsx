@@ -19,15 +19,18 @@ import { TokensContext } from "contexts/TokensContext";
 import { loan } from "types";
 
 import { stable_coin as stable, token_default } from "utils/general/constants";
+import { liquidate } from "utils/stablecoin/issuerContractCalls";
 
 function Liquidate() {
     const navigate = useNavigate();
+
+    const { addAlert } = useContext(SnackbarContext);
 
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
 
 
     const { user } = useContext(UserContext);
-    const { device } = useContext(ResponsiveContext);
+    const { device, windowSize } = useContext(ResponsiveContext);
 
     const {loans, pools} = useContext(TokensContext);
 
@@ -47,7 +50,21 @@ function Liquidate() {
         setLoansList(user.address && onlyMine ? loans.filter((x: loan) => x) : loans);
     }, [onlyMine, loans])
 
-    const style = styleFunction(device);
+    const [liquidateLoading, setLiquidateLoading] = useState(false);
+
+    async function sendLiquidate(withdraw: string, id: string) {
+        setLiquidateLoading(true);
+        let flag: boolean;
+        flag = await liquidate(user.address, withdraw, id);
+        if (flag) {
+            addAlert("check", "Transaction submitted!");
+        } else {
+            addAlert("error", "An error occured");
+        }
+        setLiquidateLoading(false);
+    }
+
+    const style = styleFunction(device, liquidateLoading);
 
     return (
         <Dashboard page='liquidate'>
@@ -70,9 +87,9 @@ function Liquidate() {
 
                 <div sx={style.lendContainer}>
                     <div sx={style.lendColumn}>   
-                        {Array.apply(null, Array(Math.ceil(loansList.length/5))).map((x, index) => {return (
+                        {Array.apply(null, Array(Math.ceil(loansList.length/(windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)))).map((x, index) => {return (
                             <div key={"loanRow" + index} sx={style.lendRow}>
-                                {loansList.slice(5*index, 5*(index+1) - 1).map((x: loan, index: number) => {
+                                {loansList.slice((windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*index, (windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*(index+1)).map((x: loan, index: number) => {
                                     const cur_price = pools[x.collateral_token.address] ? pools[x.collateral_token.address].min_rate * (1 + pools[x.collateral_token.address].rate_step**pools[x.collateral_token.address].current_step) : 1;
                                     return (
                                         <div key={"loan" + index} sx={style.lend}>
@@ -96,7 +113,8 @@ function Liquidate() {
                                                     
                                                 </div> 
                                                 : 
-                                                <button>Liquidate</button> }
+                                                <button sx={liquidateLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => liquidateLoading ? null : sendLiquidate(x.amount_to_liquidate.toString() ,x.id)}>{liquidateLoading ? "" : "Liquidate"}</button>
+                                            }
                                         </div>
                                     )
                                 })}
