@@ -17,7 +17,7 @@ mod lender {
         loan_to_value: Decimal,
         interest_rate: Decimal,
         liquidation_threshold: Decimal,
-        liquidation_penalty: Decimal,
+        protocol_liquidation_share: Decimal,
         oracle: ComponentAddress,
     }
 
@@ -108,44 +108,67 @@ mod lender {
             stablecoins_amount: Decimal,
             mut loan: Loan,
         ) -> (Decimal, Bucket, Bucket, Loan) {
-            let interests = self.compute_loan_interests(&loan);
-            let price = self.get_oracle_price();
 
-            let collateral_value = loan.collateral_amount * price;
-            let loan_value = loan.amount_lent + interests;
+            // First check that the loan can indeed be liquidated
+            let accrued_interests = self.compute_interests(&loan);
+            let total_lent = loan.amount_lent + accrued_interests;
+            let collateral_price = self.get_oracle_price();
+            let current_value_ratio = loan.collateral_amount * collateral_price / total_lent;
+            assert!(current_value_ratio <= self.liquidation_threshold,
+                    "Cannot liquidate this loan: the value ration is {} >= {}",
+                    current_value_ratio,
+                    self.liquidation_threshold);
 
-            assert!(
-                collateral_value / loan_value <= self.liquidation_threshold,
-                "Cannot liquidate this loan because liquidation threshold was not hit"
-            );
+            // If the previous assert worked, then it means that the loan can be partially or fully liquidated
+            // In the case where the total amount lent is more valuable than the collateral, we liquidate everything
+            if total_lent >= collateral_price*loan.collateral_amount {
 
-            let minimum_stablecoins_input = (loan_value * self.liquidation_threshold
-                - loan.collateral_amount * (Decimal::ONE - self.liquidation_penalty) * price)
-                / (self.liquidation_threshold - Decimal::ONE);
+                // In this case, we fully liquidate the loan and only take the interests that can be
+                // paid
 
-            assert!(
-                stablecoins_amount >= minimum_stablecoins_input,
-                "You need to provide {} stablecoins to liquidate this loan",
-                minimum_stablecoins_input
-            );
+                assert!(stablecoins_amount >= loan.amount_lent,
+                        "Please provide at least {} SUSD to liquidate this loan",
+                        loan.amount_lent);
 
-            let new_collateral_amount = loan.collateral_amount
-                * (Decimal::ONE - self.liquidation_penalty)
-                - minimum_stablecoins_input / price;
+                // We only claim the interests that can be claimed
+                let real_interests = accrued_interests.min(collateral_price*loan.collateral_amount - loan.amount_lent);
+                let stablecoin_interest = real_interests / collateral_price;
+                let liquidator_amount = loan.collateral_amount - stablecoin_interest;
 
-            let collateral_to_share = loan.collateral_amount - new_collateral_amount;
-            let liquidator_bucket = self.collateral.take(collateral_to_share * dec!("0.9"));
-            let reserve_bucket = self.collateral.take(collateral_to_share * dec!("0.1"));
+                let liquidator_share = self.collateral.take(liquidator_amount);
+                let protocol_share = self.collateral.take(stablecoin_interest);
+                let stablecoins_needed = loan.amount_lent;
 
-            loan.collateral_amount = new_collateral_amount;
-            loan.amount_lent = loan.amount_lent - minimum_stablecoins_input;
+                loan.amount_lent = Decimal::ZERO;
+                lon.collateral_amount = Decimal::ZERO;
 
-            (
-                minimum_stablecoins_input,
-                liquidator_bucket,
-                reserve_bucket,
-                loan,
-            )
+                (stablecoins_needed, liquidator_share, protocol_share, loan)
+
+            }
+            else {
+
+                // We liquidate partially to reach the right loan to value and we don't harvest interests
+
+                let new_total_lent = loan.collateral_amount * collateral_price / self.liquidation_threshold;
+                let stablecoins_needed = total_lent - new_total_lent;
+
+                // Check that the user provided enough to liquidate the loan
+                assert!(stablecoins_amount >= stablecoins_needed,
+                        "Please provide at least {} SUSD to liquidate this loan",
+                        stablecoins_needed
+                );
+
+                let new_collateral_amount = loan.collateral_amount * loan.loan_to_value / self.liquidation_threshold;
+                let collateral_out = loan.collateral_amount - new_collateral_amount;
+
+                let mut liquidator_share = self.collateral.take(collateral_out);
+                let protocol_share = liquidator_share.take(collateral_out * self.protocol_liquidation_share);
+
+                loan.amount_lent = new_total_lent;
+                loan.collateral_amount = new_collateral_amount;
+
+                (stablecoins_needed, liquidator_share, protocol_share, loan)
+            }
         }
 
         pub fn change_parameters(
@@ -187,7 +210,7 @@ mod lender {
             price
         }
 
-        fn compute_loan_interests(&self, loan: &Loan) -> Decimal {
+        fn compute_interests(&self, loan: &Loan) -> Decimal {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
             let loan_days_duration = Decimal::from(current_time - loan.loan_date) / SECONDS_PER_DAY;
 
