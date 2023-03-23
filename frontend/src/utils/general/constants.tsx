@@ -11,6 +11,18 @@ const backend_api_url = 'https://beaker.fi:8888'
 
 
 /*
+
+    Dao constants
+ */
+
+const dao_address = "";
+
+const voter_card_address = "";
+
+const proposal_receipt_address = "";
+
+
+/*
     Dex constants
  */
 
@@ -37,4 +49,4 @@ const token_default = {name: 'Wrapped Bitcoin', symb: 'WBTC', address: 'resource
 
 
 
-export {dAppId, radix_api_url, backend_api_url, router_address, position_address, issuer_address, stablecoin_address, loan_address, stable_coin, token_default}
+export {dAppId, radix_api_url, backend_api_url, dao_address, voter_card_address, proposal_receipt_address, router_address, position_address, issuer_address, stablecoin_address, loan_address, stable_coin, token_default}

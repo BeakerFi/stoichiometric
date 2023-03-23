@@ -110,5 +110,64 @@ interface ComponentState {
 
   type Hexes = { mutable_hex: string, immutable_hex: string, id: string };
 
+  type dao = {
+      total_voting_power: number,
 
-export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes};
+      vote_period: number,
+
+      vote_validity_threshold: number,
+
+      proposals: proposal[],
+
+      reserves: Map<string, number>,
+
+
+}
+
+enum proposedChange {
+      ChangeVotePeriod,
+    ChangeMinimumVoteThreshold,
+
+    GrantIssuingRight,
+
+    AllowClaim,
+
+    AddNewCollateral,
+
+    ChangeLenderParameters,
+
+    ChangeLenderOracle,
+
+    AddTokensToIssuerReserves
+
+}
+
+
+  type proposal = {
+      vote_end: number,
+
+      votes_for: number,
+
+      votes_against: number,
+
+      votes_threshold: number,
+
+      proposed_change_type: proposedChange,
+
+      proposed_change_data: any[]
+
+}
+
+    type voterCard = {
+      voting_power: number,
+
+        stablecoins_locked: number,
+
+        positions_ids_locked: string[],
+
+        proposals_voted: number[]
+
+    }
+
+
+export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposedChange, proposal, voterCard};
