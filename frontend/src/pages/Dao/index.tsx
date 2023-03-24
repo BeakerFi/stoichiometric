@@ -15,21 +15,20 @@ import { UserContext } from "contexts/UserContext";
 import { ResponsiveContext } from "contexts/ResponsiveContext";
 
 import styleFunction from "./style";
+import { TokensContext } from "contexts/TokensContext";
+import { proposal } from "types";
+
+import { voteForProposal, voteAgainstProposal } from "utils/dao/daoContractCalls";
 
 function Dao() {
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
 
-    const { user } = useContext(UserContext);
+    const { user, voterCard } = useContext(UserContext);
     const { device } = useContext(ResponsiveContext);
 
-    const possibleChoices = ["Change Vote Period", "Change Minimum Vote Threshold", "Allow Claim", "Add New Collateral Token", "Change Lender Parameters", "Change Lender Oracle", "Add Tokens To Issuers Reserves"]
+    const { dao } = useContext(TokensContext);
 
-    const voteList = [{title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true, approved: true}, 
-    {title: 'Vote arthur', subtitle: 'ent', score: "9/102", address: 'text_address', finished:false, approved: false},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:false,  approved: false},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true,  approved: false},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished:true,  approved: false},
-    {title: 'Vote for me!', subtitle: 'please', score: "55/89", address: 'test_address', finished: false,  approved: true}]
+    const possibleChoices = ["Change Vote Period", "Change Minimum Vote Threshold", "Allow Claim", "Add New Collateral Token", "Change Lender Parameters", "Change Lender Oracle", "Add Tokens To Issuers Reserves"]
 
     const [addProposal, setAddProposal] = useState<boolean>(false);
 
@@ -46,6 +45,8 @@ function Dao() {
     }
     
     const style = styleFunction(device, expand);
+
+    const currentUnix = Date.now()/1000;
 
     return (
         <Dashboard page='dao'>
@@ -160,38 +161,32 @@ function Dao() {
 
                     }
 
-                    { !addProposal ? voteList.map((x, index) => {
+                    { !addProposal ? dao.proposals.map((x: proposal, index: number) => {
+
                         return (
 
                             <div key={"dao"+index} sx={style.voteContainer}>
                                 <div sx={style.vote}>
                                     <div sx={style.column}>
-                                        <h3>{x.title}</h3>
-                                        <h4>{x.subtitle}</h4>
-                                        <p sx={style.date}>{x.finished ? "Vote" : "Vote ending in"} {x.finished ? x.approved ? <span sx={style.approved}>approved</span> : <span sx={style.declined}>declined</span> : <span>3 days</span>}</p>
+                                        <h3>No Title</h3>
+                                        <h4>No Subtitle</h4>
+                                        <p sx={style.date}>{x.vote_end < currentUnix ? "Vote" : "Vote ending in"} {x.vote_end < currentUnix ? x.votes_for > Math.max(x.votes_against, x.votes_threshold)  ? <span sx={style.approved}>approved</span> : <span sx={style.declined}>declined</span> : <span>{x.vote_end - currentUnix} seconds</span>}</p>
                                         <div sx={style.caracteristics}>
                                             <ul>
-                                                <li>
-                                                    Adding blabla
-                                                </li>
-                                                <li>
-                                                    Removing blabla
-                                                </li>
-                                                <li>
-                                                    Changing blabla
-                                                </li>
-                                                <li>
-                                                    entent
-                                                </li>
+                                                { x.proposed_change_data.map((y, index2) => { return (
+                                                    <li key={index + "proposal" + index2}>
+                                                        {x.proposed_change_data[index2]}
+                                                    </li>
+                                                )})}
                                             </ul>
                                         </div>
                                     </div>
                                     <div sx={style.score}>
-                                        <p>{x.score}</p>
+                                        <p>{x.votes_for - x.votes_against}</p>
                                     </div>
                                 </div>
 
-                                { x.finished ? null :
+                                { x.vote_end < currentUnix ? null :
                                 <div sx={style.voteButtons}>
                                     <button>+</button>
                                     <button>-</button>
