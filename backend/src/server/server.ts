@@ -4,7 +4,7 @@ import { HttpError, NotFoundError } from './errors.js'
 
 import decodePosition from './api/decodePosition.js'
 import decodeLoan from './api/decodeLoan.js'
-import decodeProposalReceipts from './api/decodeProposalReceipts'
+import decodeProposalReceipts from './api/decodeProposalReceipts.js'
 import decodeVoterCard from './api/decodeVoterCard.js'
 
 
