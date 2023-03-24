@@ -1,3 +1,5 @@
+//! TWAP oracle blueprint for a Pool
+
 use scrypto::blueprint;
 
 pub const TIME_BETWEEN_OBSERVATIONS: i64 = 20;
