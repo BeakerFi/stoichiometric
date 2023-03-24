@@ -1,10 +1,16 @@
+//! Circular Array used by the Time Weighted Average Oracle
+
 use scrypto::prelude::*;
 
 const ARRAY_LENGTH: u16 = 65535;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct Observation {
+
+    /// Timestamp of the observation: precise up to a minute
     timestamp: i64,
+
+    /// Step of the observed pool
     step: u16,
 }
 
@@ -16,7 +22,11 @@ impl Observation {
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct ObservationArray {
+
+    /// Index of the start of the array
     start: u16,
+
+    /// Circular Array that stores observations
     data: Vec<Observation>,
 }
 
@@ -28,6 +38,11 @@ impl ObservationArray {
         }
     }
 
+    /// Pushes a new observation in the Array
+    ///
+    /// # Arguments
+    /// * `timestamp` - timestamp of the observation
+    /// * `step` - step of the observation
     pub fn push(&mut self, timestamp: i64, step: u16) {
         let new_obs = Observation::from(timestamp, step);
 
@@ -39,6 +54,10 @@ impl ObservationArray {
         }
     }
 
+    /// Gets an observation at a given index
+    ///
+    /// # Arguments
+    /// * `index` - index of the observation to get
     pub fn get(&self, index: u16) -> Option<&Observation> {
         if index as usize >= self.data.len() {
             return None;
@@ -47,6 +66,11 @@ impl ObservationArray {
         self.data.get(index)
     }
 
+    /// Returns the time weighted average step since a given timestamp
+    ///
+    /// # Arguments
+    /// * `timestamp` - timestamp to compute the average since
+    /// * `current_timestamp` - timestamp at request
     pub fn get_time_weighted_average_step_since(
         &self,
         timestamp: i64,
