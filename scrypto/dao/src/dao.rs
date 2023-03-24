@@ -1,5 +1,8 @@
+//! DAO Component
+
 use scrypto::{blueprint, external_component};
 
+// Import the Proposal component
 external_component! {
     ProposalLocalComponent {
         fn is_voting_stage(&self) -> bool;
@@ -7,6 +10,7 @@ external_component! {
     }
 }
 
+// Import the Router component
 external_component! {
     RouterLocalComponent {
         fn create_pool(&mut self, token: ResourceAddress, initial_rate: Decimal, min_rate: Decimal, max_rate: Decimal);
@@ -14,6 +18,7 @@ external_component! {
     }
 }
 
+// Import the Issuer component
 external_component! {
     IssuerLocalComponent {
         fn new_lender(&mut self, collateral_address: ResourceAddress, loan_to_value: Decimal, interest_rate: Decimal, liquidation_threshold: Decimal, liquidation_incentive: Decimal, oracle: ComponentAddress);
