@@ -157,13 +157,13 @@ mod dao {
                 .create_with_no_initial_supply();
 
             let proposal_receipt_address = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Stoichiometric DAO proposal receipt")
+                .metadata("name", "Stoichiometric proposal receipt")
                 .mintable(
-                    rule!(require(protocol_admin_badge.resource_address())),
+                    rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,
                 )
                 .burnable(
-                    rule!(require(protocol_admin_badge.resource_address())),
+                    rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,
                 )
                 .create_with_no_initial_supply();
@@ -299,7 +299,7 @@ mod dao {
             let current_time = get_current_time();
             let vote_end = current_time + self.vote_period;
             let vote_threshold = self.total_voting_power * self.vote_validity_threshold;
-
+            info!("enter");
             let voter_card_updater = self.protocol_admin_badge.authorize(|| {
                 borrow_resource_manager!(self.resource_minter.resource_address()).mint(Decimal::ONE)
             });
@@ -313,6 +313,7 @@ mod dao {
                 voter_card_updater,
                 self.protocol_admin_badge.resource_address(),
             );
+            info!("ok");
             self.proposals.insert(self.proposal_id, proposal_comp);
 
             let receipt_data = ProposalReceipt {

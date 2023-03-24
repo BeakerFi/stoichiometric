@@ -74,7 +74,7 @@ mod proposal {
                     return Some(self.proposed_change.clone());
                 } else {
                     self.proposal_status = ProposalStatus::Rejected;
-                    return Some(self.proposed_change.clone());
+                    return None;
                 }
             } else {
                 self.proposal_status = ProposalStatus::NotEnoughVotes;
