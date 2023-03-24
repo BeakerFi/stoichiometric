@@ -61,6 +61,22 @@ mod dao {
     }
 
     impl Dao {
+        /// Instantiates and globalizes a new [`Dao`] and returns its address.
+        ///
+        /// We first need to instatiate a Lender. We also need an external oracle to start lending because the AMM is going to be empty. We chose to use Beaker.
+        ///
+        /// # Arguments
+        /// * `vote_period` - Length of a vote.
+        /// * `vote_validity_threshold` - Minimum votes for required for the proposal to be considered as valid.
+        /// * `initial_collateral_token` - The initial token that can be used as collateral.
+        /// * `iloan_to_value` - Loan to value of the first Lender.
+        /// * `interest_rate` - Daily interest rate of a loan.
+        /// * `liquidiation_threshold` - Collateralisation ratio from where you can be liquidated.
+        /// * `liquidiation_penalty` - Penalty when you are liquidated.
+        /// * `oracle` - Address of the oracle used at first.
+        /// * `initial_rate` - Initial rate of the AMM.
+        /// * `min_rate` - Minimum rate.
+        /// * `max_rate` - Maximum rate.
         pub fn new(
             vote_period: i64,
             vote_validity_threshold: Decimal,
@@ -219,7 +235,12 @@ mod dao {
 
             component.globalize()
         }
-
+        
+        /// Lock stablecoins in a votercard
+        ///
+        /// # Arguments
+        /// * `stablecoins` - Bucket of stablecoins.
+        /// * `opt_voter_card_proof` - Proof of the voter card.
         pub fn lock_stablecoins(
             &mut self,
             stablecoins: Bucket,
