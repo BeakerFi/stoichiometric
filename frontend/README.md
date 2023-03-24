@@ -1,3 +1,10 @@
+#How to run the website ?
+ - Download the frontend folder
+ - Open it in any terminal
+ - run `npm install`
+ - run `npm start`
+ - Open your browser and go to localhost:3000
+
 The frontend is build in TSX and uses the React framework. It is divided in three main parts.
 
 1. The contexts
