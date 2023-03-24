@@ -1,6 +1,6 @@
 import decode_hex from './decode_hex.js'
 
-interface VoterCard {
+export interface VoterCard {
     votingPower: number;
     stablecoinsLocked: number;
     positionsLockedIds: number[];
