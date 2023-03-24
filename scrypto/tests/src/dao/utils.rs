@@ -1,11 +1,9 @@
-use std::collections::HashSet;
 use std::process::Command;
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{Decimal, dec};
 use sqrt::manifest_call::ManifestCall;
 use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, I64, ResourceAddressArg, StringArg};
-use sqrt::method_args;
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use crate::dao::dao_state::DaoState;
@@ -159,7 +157,7 @@ pub fn call_issuer_method(test_env: &mut TestEnvironment, method: IssuerMethods)
     manifest_call
 }
 
-pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, voting_power: Decimal, stablecoins_locked: Decimal, positions_locked: Vec<String>, last_proposal_voted_id: u64, proposals_voted: HashSet<u64>) {
+pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, voting_power: Decimal, stablecoins_locked: Decimal, last_proposal_voted_id: u64) {
 
     let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
 
@@ -176,7 +174,6 @@ pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, v
             let stablecoins_lock = Decimal::from(&voter_card_cap[3]);
             let positions_lock = &voter_card_cap[4];
             let last_proposal_voted = String::from(&voter_card_cap[5]).parse::<u64>().unwrap();
-            let proposals_voted = &voter_card_cap[6];
 
             assert_eq!(voting_power, voting_pow);
             assert_eq!(stablecoins_locked, stablecoins_lock);

@@ -179,7 +179,6 @@ mod lender {
                 let virtual_collateral = (Decimal::ONE - self.liquidation_penalty)*loan.collateral_amount;
 
                 let max_input = total_lent*(Decimal::ONE - collateralization_ratio/self.liquidation_threshold).sqrt().unwrap();
-                let max_output = loan.collateral_amount*max_input/(total_lent + max_input);
 
                 let actual_input = max_input.min(stabelcoin_input);
                 let collateral_output = loan.collateral_amount*actual_input/(total_lent + actual_input);

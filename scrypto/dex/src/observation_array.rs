@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-const ARRAY_LENGTH: u16 = 4;
+const ARRAY_LENGTH: u16 = 65535;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct Observation {

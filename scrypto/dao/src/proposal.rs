@@ -1,3 +1,7 @@
+//! # Proposal Blueprint
+//!
+//! Defines a Proposal that can change the state of the ecosystem.
+
 use scrypto::blueprint;
 
 #[blueprint]
@@ -9,18 +13,46 @@ mod proposal {
     use crate::voter_card::VoterCard;
 
     pub struct Proposal {
+        /// id of the proposal
         proposal_id: u64,
+
+        /// Current status of the proposal
         proposal_status: ProposalStatus,
+
+        /// End of the voter period of the proposal
         vote_end: i64,
+
+        /// Number of votes casted for the proposal
         votes_for: Decimal,
+
+        /// Number of votes casted against the proposal
         votes_against: Decimal,
+
+        /// Number of votes that should be casted to consider the vote valid
         votes_threshold: Decimal,
+
+        /// Changed proposed to the ecosystem state
         proposed_change: ProposedChange,
+
+        /// Address of the VoterCard NFR
         voter_card_address: ResourceAddress,
+
+        /// NFR that allows to change the non-fungible data of a voter card
         voter_card_updater: Vault,
     }
 
     impl Proposal {
+
+        /// Instantiates a new [`PoolComponent`] and returns it.
+        ///
+        /// # Arguments
+        /// * `proposal_id` - Id of the proposal
+        /// * `vote_end` - End of the voting period of the proposal
+        /// * `votes_threshold` - Number of votes that should be casted to consider the vote valid
+        /// * `proposed_change` - Changed proposed to the ecosystem state
+        /// * `voter_card_address` - Address of the VoterCard NFR
+        /// * `voter_card_update` - NFR that allows to change the non-fungible data of a voter card
+        /// * `admin_bagde` - Address of the admin badge needed for certains calls
         pub fn new(
             proposal_id: u64,
             vote_end: i64,
@@ -30,10 +62,14 @@ mod proposal {
             voter_card_updater: Bucket,
             admin_badge: ResourceAddress,
         ) -> ComponentAddress {
+
+            // Makes sure that apart for voting, only the DAO can interact with the Proposal
             let proposal_rules = AccessRules::new()
                 .method("vote_for", rule!(allow_all), AccessRule::AllowAll)
                 .method("vote_against", rule!(allow_all), AccessRule::AllowAll)
+                .method("is_voting_stage", rule!(allow_all), AccessRule::AllowAll)
                 .default(rule!(require(admin_badge)), AccessRule::DenyAll);
+
             let mut component = Self {
                 proposal_id,
                 proposal_status: ProposalStatus::VotingStage,
@@ -52,18 +88,33 @@ mod proposal {
             component.globalize()
         }
 
+        /// Votes for the proposal with a VoterCard proof
+        ///
+        /// # Arguments
+        /// * `voter_card_proof` - proof of a voter card
         pub fn vote_for(&mut self, voter_card_proof: Proof) {
             self.vote(voter_card_proof, true);
         }
 
+
+        /// Votes against the proposal with a VoterCard proof
+        ///
+        /// # Arguments
+        /// * `voter_card_proof` - proof of a voter card
         pub fn vote_against(&mut self, voter_card_proof: Proof) {
             self.vote(voter_card_proof, false);
         }
 
+
+        /// Returns whether the current proposal is still in voting stage
         pub fn is_voting_stage(&self) -> bool {
             self.proposal_status.is_voting_stage()
         }
 
+        /// Sends changes to make if the proposal was approved
+        ///
+        /// # Acces Rule
+        /// Can ony be called by the DAO
         pub fn execute(&mut self) -> Option<ProposedChange> {
             let current_time = get_current_time();
             assert!(current_time >= self.vote_end, "Vote has not finished yet!");
@@ -82,6 +133,8 @@ mod proposal {
             }
         }
 
+
+        /// Internal function to cast a vote
         fn vote(&mut self, voter_card_proof: Proof, vote_for: bool) {
             let current_time = get_current_time();
             assert!(

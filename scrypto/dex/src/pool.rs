@@ -7,7 +7,6 @@
 //!
 //! ### Function
 //! - [new](PoolComponent::new) - Instantiates a new [`PoolComponent`] and returns it.
-//! and returns it.
 //!
 //! ### Methods
 //! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the closest rate to the given rate.

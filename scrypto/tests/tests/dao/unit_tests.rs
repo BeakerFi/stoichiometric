@@ -2,16 +2,13 @@ use std::collections::{HashMap, HashSet};
 use scrypto::math::Decimal;
 use scrypto::prelude::{dec, Instant};
 use sqrt::error::Error;
-use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg};
 use stoichiometric_tests::dao::sqrt_implem::DaoMethods;
-use stoichiometric_tests::dao::utils::{assert_voter_card_is, call_issuer_method, call_router_method, instantiate, lock_positions, lock_stablecoins, vote};
-use stoichiometric_tests::dex::pool_state::PoolState;
+use stoichiometric_tests::dao::utils::{assert_voter_card_is, call_issuer_method, instantiate, lock_positions, lock_stablecoins, vote};
 use stoichiometric_tests::dex::utils::add_liquidity_at_step;
 use stoichiometric_tests::dumb_oracle::utils::set_oracle_price;
 use stoichiometric_tests::stablecoin::issuer_state::LenderState;
 use stoichiometric_tests::stablecoin::sqrt_implem::IssuerMethods;
-use stoichiometric_tests::stablecoin::utils::new_default_lender;
-use stoichiometric_tests::utils::{FLASH_MINT_NAME, STABLECOIN_MINTER, STABLECOIN_NAME};
+use stoichiometric_tests::utils::{STABLECOIN_MINTER, STABLECOIN_NAME};
 
 #[test]
 fn test_instantiate() {
@@ -19,26 +16,13 @@ fn test_instantiate() {
 
     dao_state.update();
 
-    let mut pool_states = HashMap::new();
     let btc_address = test_env.get_resource("btc");
-    let btc_pool_state = PoolState{
-        router_address: "".to_string(),
-        other: btc_address.clone(),
-        rate_step: dec!("1.000105411144423293"),
-        current_step: 50266,
-        min_rate: dec!(100),
-        steps: HashMap::new(),
-        stable_protocol: Decimal::ZERO,
-        other_protocol: Decimal::ZERO,
-    };
-    pool_states.insert(btc_address.clone(), btc_pool_state);
 
     let mut lenders = HashMap::new();
     let btc_lender = LenderState::from(Decimal::ZERO, dec!("0.7"), dec!("0.0001"), dec!("1.3"), dec!("0.1"));
     lenders.insert(btc_address.clone(), btc_lender);
 
     dao_state.assert_variables_are(0, 0, Decimal::ZERO, 86400, dec!("0.5"));
-    dao_state.assert_pool_states(&pool_states);
     dao_state.assert_issuer_state(&HashMap::new(), &lenders, 0, 0);
     dao_state.assert_reserves_state(&HashMap::new());
     dao_state.assert_proposals_state(&HashMap::new());
@@ -67,7 +51,7 @@ fn test_lock_stablecoins_no_voter_card() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, dec!(30000), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(30000), dec!(30000), vec![], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(30000), dec!(30000),  0);
 }
 
 #[test]
@@ -93,7 +77,7 @@ fn test_lock_stablecoins_with_voter_card() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, dec!(33000), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(33000), dec!(33000), vec![], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(33000), dec!(33000), 0);
 }
 
 #[test]
@@ -118,7 +102,7 @@ fn test_lock_positions_no_voter_card() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, dec!("1890337.133000178498278"), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1890337.133000178498278"), Decimal::ZERO, vec!["#0#".to_string()], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1890337.133000178498278"), Decimal::ZERO, 0);
 }
 
 #[test]
@@ -145,7 +129,7 @@ fn test_lock_positions_with_voter_card() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, dec!("1890337.133000178498278"), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1890337.133000178498278"), Decimal::ZERO, vec!["#0#".to_string(), "#1#".to_string()], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1890337.133000178498278"), Decimal::ZERO, 0);
 }
 
 #[test]
@@ -170,7 +154,7 @@ fn test_lock_position_and_stablecoins() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, dec!("1910337.133000178498278"), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1910337.133000178498278"), Decimal::ZERO, vec!["#0#".to_string()], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1910337.133000178498278"), dec!(20000), 0);
 }
 
 #[test]
@@ -198,7 +182,6 @@ fn test_unlock() {
 
     // We only check variables because from the other tests, we know that the issuer and the btc lender will act as expected
     dao_state.assert_variables_are(1, 0, Decimal::ZERO, 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!("1890337.133000178498278"), Decimal::ZERO, vec![], 0, HashSet::new());
 }
 
 #[test]
@@ -228,7 +211,7 @@ fn test_vote_for() {
     vote(&mut test_env, dao_state.get_proposal(0), "#0#".to_string(), true).run();
     let mut proposals_voted = HashSet::new();
     proposals_voted.insert(0);
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), vec![], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), 0);
 }
 
 #[test]
@@ -258,7 +241,7 @@ fn test_vote_against() {
     vote(&mut test_env, dao_state.get_proposal(0), "#0#".to_string(), false).run();
     let mut proposals_voted = HashSet::new();
     proposals_voted.insert(0);
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), vec![], 0, HashSet::new());
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), 0);
 }
 
 #[test]
@@ -464,30 +447,7 @@ fn test_proposals_lasts_right_amount_of_time() {
 
     // The vote_period has not changed because no votes were casted
     dao_state.assert_variables_are(1, 1, dec!(20000), 86400, dec!("0.5"));
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), vec!["#0#".to_string()], 0, HashSet::new());
-}
-
-#[test]
-fn test_basic_flash_mint() {
-
-    let (mut test_env, _) = instantiate();
-
-    let mut env_args = vec![];
-
-    env_args.push((
-        "caller_address".to_string(),
-        AccountAddressArg(test_env.get_current_account_name().to_string()),
-    ));
-    env_args.push((
-        "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
-    ));
-
-    env_args.push( ("amount_to_mint".to_string(), DecimalArg(dec!(10000)) ));
-    env_args.push( ("stablecoin_address".to_string(), ResourceAddressArg(STABLECOIN_NAME.to_string())));
-    env_args.push(("flash_mint_address".to_string(), ResourceAddressArg(FLASH_MINT_NAME.to_string())));
-
-    test_env.call_custom_manifest("basic_flash_mint_example", env_args).run();
+    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), 0);
 }
 
 

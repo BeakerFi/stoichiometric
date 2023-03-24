@@ -268,7 +268,7 @@ mod dao {
 
             let voter_card_nfr = voter_card.non_fungible::<VoterCard>();
             let voter_card_data = self.get_voter_card_data(voter_card_nfr.local_id());
-            let last_proposal_voted = match self.proposals.get(&voter_card_data.last_proposal_voted_id) {
+            match self.proposals.get(&voter_card_data.last_proposal_voted_id) {
                 None => {
                     // If the proposal id is 0 and no proposals have been made, we can be in this
                     // edge casE. Hence, we do nothing

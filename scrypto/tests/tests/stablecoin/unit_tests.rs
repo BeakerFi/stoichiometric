@@ -1,14 +1,13 @@
 use scrypto::prelude::{dec, Decimal, Instant};
 use sqrt::error::Error;
 use std::collections::HashMap;
-use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg};
 use stoichiometric_tests::dumb_oracle::utils::set_oracle_price;
 use stoichiometric_tests::stablecoin::issuer_state::LenderState;
 use stoichiometric_tests::stablecoin::sqrt_implem::IssuerMethods;
 use stoichiometric_tests::stablecoin::utils::{
     assert_current_has_loan, assert_current_has_no_loan_id, instantiate, new_default_lender,
 };
-use stoichiometric_tests::utils::{ADMIN_BADGE_NAME, FLASH_MINT_NAME, STABLECOIN_NAME};
+use stoichiometric_tests::utils::{ADMIN_BADGE_NAME, STABLECOIN_NAME};
 
 #[test]
 fn test_instantiate() {
