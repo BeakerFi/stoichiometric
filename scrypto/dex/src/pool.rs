@@ -96,7 +96,8 @@ mod pool {
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
             let mut steps = HashMap::new();
-            let initial_step = PoolStepComponent::new(stable.clone(), other.clone(), initial_rate.clone());
+            let initial_step =
+                PoolStepComponent::new(stable.clone(), other.clone(), initial_rate.clone());
             steps.insert(current_step.clone(), initial_step);
 
             let component = Self {

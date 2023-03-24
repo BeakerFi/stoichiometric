@@ -74,11 +74,10 @@ mod dao {
             min_rate: Decimal,
             max_rate: Decimal,
         ) -> ComponentAddress {
-
-            assert!(vote_validity_threshold.is_positive() && vote_validity_threshold < Decimal::ONE,
-                    "The validity threshold should be included in the range 0< <1"
-                    );
-
+            assert!(
+                vote_validity_threshold.is_positive() && vote_validity_threshold < Decimal::ONE,
+                "The validity threshold should be included in the range 0< <1"
+            );
 
             // Creates the protocol admin badge which will control everything
             let protocol_admin_badge: Bucket = ResourceBuilder::new_fungible()
@@ -231,7 +230,8 @@ mod dao {
                 "You can only lock stablecoins as fungible resource"
             );
 
-            let (mut voter_card, voter_card_id, opt_bucket) = self.get_voter_card_or_create(opt_voter_card_proof);
+            let (mut voter_card, voter_card_id, opt_bucket) =
+                self.get_voter_card_or_create(opt_voter_card_proof);
 
             self.total_voting_power += voter_card.add_stablecoins(stablecoins.amount());
             self.locked_stablecoins.put(stablecoins);
@@ -240,13 +240,18 @@ mod dao {
             opt_bucket
         }
 
-        pub fn lock_positions(&mut self, positions: Bucket, opt_voter_card_proof: Option<Proof>) -> Option<Bucket>{
+        pub fn lock_positions(
+            &mut self,
+            positions: Bucket,
+            opt_voter_card_proof: Option<Proof>,
+        ) -> Option<Bucket> {
             assert!(
                 positions.resource_address() == self.position_address,
                 "You can only lock positions as non fungible resource"
             );
 
-            let (mut voter_card, voter_card_id, opt_bucket) = self.get_voter_card_or_create(opt_voter_card_proof);
+            let (mut voter_card, voter_card_id, opt_bucket) =
+                self.get_voter_card_or_create(opt_voter_card_proof);
 
             for position in positions.non_fungibles::<Position>() {
                 let id = position.local_id().clone();
@@ -572,7 +577,10 @@ mod dao {
         }
 
         #[inline]
-        fn get_voter_card_or_create(&mut self, opt_voter_card_proof: Option<Proof>) -> (VoterCard, NonFungibleLocalId, Option<Bucket>) {
+        fn get_voter_card_or_create(
+            &mut self,
+            opt_voter_card_proof: Option<Proof>,
+        ) -> (VoterCard, NonFungibleLocalId, Option<Bucket>) {
             match opt_voter_card_proof {
                 Some(voter_card_proof) => {
                     let validated_proof = voter_card_proof

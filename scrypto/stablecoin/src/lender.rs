@@ -30,7 +30,6 @@ mod lender {
             liquidation_penalty: Decimal,
             oracle: ComponentAddress,
         ) -> LenderComponent {
-
             assert!(
                 loan_to_value.is_positive() && loan_to_value < Decimal::ONE,
                 "LTV should be such that 0<LTV<1"
@@ -119,9 +118,12 @@ mod lender {
             // Check that after removing collateral, the (collateral value)/(loan value) is still
             // greater than the liquidation threshold
 
-            assert!(new_collateral_amount*collateral_price/(loan.amount_lent + interests) >= self.liquidation_threshold,
-                    "Cannot remove {} because it would make the loan liquidatable",
-                    amount);
+            assert!(
+                new_collateral_amount * collateral_price / (loan.amount_lent + interests)
+                    >= self.liquidation_threshold,
+                "Cannot remove {} because it would make the loan liquidatable",
+                amount
+            );
 
             loan.collateral_amount = new_collateral_amount;
             (loan, self.collateral.take(amount))
@@ -132,34 +134,37 @@ mod lender {
             stabelcoin_input: Decimal,
             mut loan: Loan,
         ) -> (Decimal, Bucket, Option<Bucket>, Loan) {
-
             // First check that the loan can indeed be liquidated
             let accrued_interests = self.compute_interests(&loan);
             let total_lent = loan.amount_lent + accrued_interests;
             let collateral_price = self.get_oracle_price();
             let collateralization_ratio = loan.collateral_amount * collateral_price / total_lent;
 
-            assert!(collateralization_ratio <= self.liquidation_threshold,
-                    "Cannot liquidate this loan: the collateralization ratio is {} >= {}",
-                    collateralization_ratio,
-                    self.liquidation_threshold);
-
+            assert!(
+                collateralization_ratio <= self.liquidation_threshold,
+                "Cannot liquidate this loan: the collateralization ratio is {} >= {}",
+                collateralization_ratio,
+                self.liquidation_threshold
+            );
 
             // If the previous assert worked, then it means that the loan can be partially or fully liquidated
 
             // In the case where the collateralization ratio is smaller than 1, we liquidate everything
             // Note that there is not necessarily bad debt because without counting interests, the ratio could be > 1
             if collateralization_ratio < Decimal::ONE {
-
                 // In this case, we fully liquidate the loan and only take the interests that can be
                 // paid
 
-                assert!(stabelcoin_input >= loan.amount_lent,
-                        "Please provide at least {} SUSD to liquidate this loan",
-                        loan.amount_lent);
+                assert!(
+                    stabelcoin_input >= loan.amount_lent,
+                    "Please provide at least {} SUSD to liquidate this loan",
+                    loan.amount_lent
+                );
 
                 // We only claim 10% of the interests that can be claimed
-                let real_interests = dec!("0.1")*accrued_interests.min(collateral_price*loan.collateral_amount - loan.amount_lent);
+                let real_interests = dec!("0.1")
+                    * accrued_interests
+                        .min(collateral_price * loan.collateral_amount - loan.amount_lent);
                 let stablecoin_interest = real_interests / collateral_price;
                 let liquidator_amount = loan.collateral_amount - stablecoin_interest;
 
@@ -170,23 +175,31 @@ mod lender {
                 loan.amount_lent = Decimal::ZERO;
                 loan.collateral_amount = Decimal::ZERO;
 
-                (stablecoins_needed, liquidator_share, Some(protocol_share), loan)
-
-            }
-            else {
-
+                (
+                    stablecoins_needed,
+                    liquidator_share,
+                    Some(protocol_share),
+                    loan,
+                )
+            } else {
                 //In the other case, we compute the maximum amount that can be liquidated
-                let virtual_collateral = (Decimal::ONE - self.liquidation_penalty)*loan.collateral_amount;
-                let virtual_collateralization_ratio = virtual_collateral*collateral_price/total_lent;
-                let max_input = total_lent*(Decimal::ONE - virtual_collateralization_ratio/self.liquidation_threshold).sqrt().unwrap();
+                let virtual_collateral =
+                    (Decimal::ONE - self.liquidation_penalty) * loan.collateral_amount;
+                let virtual_collateralization_ratio =
+                    virtual_collateral * collateral_price / total_lent;
+                let max_input = total_lent
+                    * (Decimal::ONE - virtual_collateralization_ratio / self.liquidation_threshold)
+                        .sqrt()
+                        .unwrap();
 
                 let actual_input = max_input.min(stabelcoin_input);
-                let collateral_output = loan.collateral_amount*actual_input/(total_lent + actual_input);
+                let collateral_output =
+                    loan.collateral_amount * actual_input / (total_lent + actual_input);
 
                 let new_amount_lent = loan.amount_lent - actual_input;
                 let new_collateral_amount = loan.collateral_amount - collateral_output;
 
-                loan.amount_lent  = new_amount_lent;
+                loan.amount_lent = new_amount_lent;
                 loan.collateral_amount = new_collateral_amount;
 
                 let liquidator_bucket = self.collateral.take(collateral_output);
@@ -194,14 +207,15 @@ mod lender {
             }
         }
 
-        pub fn clear_bad_debt(&mut self, mut loan :Loan) -> (Decimal, Bucket, Loan){
-
+        pub fn clear_bad_debt(&mut self, mut loan: Loan) -> (Decimal, Bucket, Loan) {
             // Check that there is indeed bad debt
             let collateral_price = self.get_oracle_price();
             let collateral_value = loan.collateral_amount * collateral_price;
 
-            assert!(collateral_value < loan.amount_lent,
-                    "There is no bad debt to clear!");
+            assert!(
+                collateral_value < loan.amount_lent,
+                "There is no bad debt to clear!"
+            );
 
             // If there is bad debt, fully liquidate the loan
             let collateral = self.collateral.take(loan.collateral_amount);

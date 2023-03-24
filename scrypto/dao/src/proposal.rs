@@ -42,7 +42,6 @@ mod proposal {
     }
 
     impl Proposal {
-
         /// Instantiates a new [`PoolComponent`] and returns it.
         ///
         /// # Arguments
@@ -62,7 +61,6 @@ mod proposal {
             voter_card_updater: Bucket,
             admin_badge: ResourceAddress,
         ) -> ComponentAddress {
-
             // Makes sure that apart for voting, only the DAO can interact with the Proposal
             let proposal_rules = AccessRules::new()
                 .method("vote_for", rule!(allow_all), AccessRule::AllowAll)
@@ -96,7 +94,6 @@ mod proposal {
             self.vote(voter_card_proof, true);
         }
 
-
         /// Votes against the proposal with a VoterCard proof
         ///
         /// # Arguments
@@ -104,7 +101,6 @@ mod proposal {
         pub fn vote_against(&mut self, voter_card_proof: Proof) {
             self.vote(voter_card_proof, false);
         }
-
 
         /// Returns whether the current proposal is still in voting stage
         pub fn is_voting_stage(&self) -> bool {
@@ -132,7 +128,6 @@ mod proposal {
                 return None;
             }
         }
-
 
         /// Internal function to cast a vote
         fn vote(&mut self, voter_card_proof: Proof, vote_for: bool) {

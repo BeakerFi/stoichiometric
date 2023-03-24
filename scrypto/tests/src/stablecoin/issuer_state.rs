@@ -62,7 +62,10 @@ impl LenderState {
             assert_eq!(value.loan_to_value, state.loan_to_value);
             assert_eq!(value.interest_rate, state.interest_rate);
             assert_eq!(value.liquidation_threshold, state.liquidation_threshold);
-            assert_eq!(value.protocol_liquidation_share, state.protocol_liquidation_share);
+            assert_eq!(
+                value.protocol_liquidation_share,
+                state.protocol_liquidation_share
+            );
         }
     }
 }

@@ -6,7 +6,6 @@ const ARRAY_LENGTH: u16 = 65535;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct Observation {
-
     /// Timestamp of the observation: precise up to a minute
     timestamp: i64,
 
@@ -22,7 +21,6 @@ impl Observation {
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]
 pub struct ObservationArray {
-
     /// Index of the start of the array
     start: u16,
 

@@ -1,3 +1,4 @@
+use crate::dumb_oracle::utils::{instantiate_oracle, new_oracle};
 use crate::stablecoin::issuer_state::IssuerState;
 use crate::stablecoin::sqrt_implem::{IssuerBlueprint, IssuerMethods};
 use crate::utils::{run_command, ADMIN_BADGE_NAME, STABLECOIN_NAME};
@@ -8,7 +9,6 @@ use sqrt::method::Arg::{FungibleBucketArg, ResourceAddressArg};
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use std::process::Command;
-use crate::dumb_oracle::utils::{instantiate_oracle, new_oracle};
 
 pub fn instantiate() -> (TestEnvironment, IssuerState) {
     let mut test_env = TestEnvironment::new();

@@ -1,7 +1,10 @@
 use crate::utils::{PROPOSAL_RECEIPT, VOTER_CARD_NAME};
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
-use sqrt::method::Arg::{ComponentAddressArg, DecimalArg, NonFungibleBucketArg, ResourceAddressArg, StringArg, VecArg, I64, FungibleBucketArg};
+use sqrt::method::Arg::{
+    ComponentAddressArg, DecimalArg, FungibleBucketArg, NonFungibleBucketArg, ResourceAddressArg,
+    StringArg, VecArg, I64,
+};
 use sqrt::method::{Arg, Method};
 use sqrt::{enum_arg, method_args, tuple_arg};
 
@@ -73,12 +76,7 @@ impl Method for DaoMethods {
                 ))
             }
             DaoMethods::Gift(token, amount) => {
-                method_args!(
-                    FungibleBucketArg(
-                        token.clone(),
-                        amount.clone()
-                    )
-                )
+                method_args!(FungibleBucketArg(token.clone(), amount.clone()))
             }
 
             DaoMethods::MakeChangeVotePeriodProposal(vote_period) => {

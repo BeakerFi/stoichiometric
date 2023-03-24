@@ -607,7 +607,7 @@ fn test_remove_collateral() {
         "btc",
         dec!("1.82"),
         dec!(28000),
-        2678400,
+        0,
         dec!("0.0001"),
     );
 }
@@ -635,7 +635,8 @@ fn test_remove_collateral_too_much_fails() {
             "#0#".to_string(),
         ))
         .should_panic(Error::AssertFailed(
-            "Cannot remove 1.180000000000000001 because it would make the loan liquidatable".to_string(),
+            "Cannot remove 1.180000000000000001 because it would make the loan liquidatable"
+                .to_string(),
         ))
         .run();
 }
@@ -773,7 +774,7 @@ fn test_partial_liquidation_too_much_sent() {
     issuer_state.update();
     let mut lenders = HashMap::new();
     let btc_lender = LenderState::from(
-        dec!("10.757428685805805817"),
+        dec!("10.695154559476600963"),
         dec!("0.7"),
         dec!("0.0001"),
         dec!("1.3"),
@@ -788,8 +789,8 @@ fn test_partial_liquidation_too_much_sent() {
         &test_env,
         "#0#",
         "btc",
-        dec!("0.757428685805805817"),
-        dec!("4078.462154338954392"),
+        dec!("0.695154559476600963"),
+        dec!("3368.825942078912358"),
         0,
         dec!("0.0001"),
     );
@@ -852,7 +853,6 @@ fn test_partial_liquidation_after_time() {
     let reserves = HashMap::new();
     issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
 
-
     assert_current_has_loan(
         &test_env,
         "#0#",
@@ -873,10 +873,8 @@ fn test_partial_liquidation_after_time() {
     );
 }
 
-
 #[test]
 fn test_full_liquidation_after_time() {
-
     let (mut test_env, mut issuer_state) = instantiate();
 
     new_default_lender(&mut test_env, "btc");
@@ -889,7 +887,6 @@ fn test_full_liquidation_after_time() {
             dec!(6000),
         ))
         .run();
-
 
     // Change time
     let new_time = Instant::new(0).add_days(31).unwrap();
@@ -922,7 +919,10 @@ fn test_full_liquidation_after_time() {
     );
     lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
     let mut reserves = HashMap::new();
-    reserves.insert(test_env.get_resource("btc").clone(), dec!("0.000299102691924227"));
+    reserves.insert(
+        test_env.get_resource("btc").clone(),
+        dec!("0.000299102691924227"),
+    );
     issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
 
     assert_current_has_loan(
@@ -944,7 +944,6 @@ fn test_full_liquidation_after_time() {
         dec!("0.0001"),
     );
 }
-
 
 #[test]
 fn test_liquidate_threshold_not_hit_fails() {
@@ -980,7 +979,6 @@ fn test_liquidate_threshold_not_hit_fails() {
         .run();
 }
 
-
 #[test]
 fn test_change_lender_parameter() {
     let (mut test_env, mut issuer_state) = instantiate();
@@ -1010,4 +1008,3 @@ fn test_change_lender_parameter() {
     lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
     issuer_state.assert_state_is(&HashMap::new(), &lenders, 0, 0);
 }
-

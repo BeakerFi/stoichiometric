@@ -77,7 +77,11 @@ mod issuer {
                 )
                 .method("liquidate", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("clear_bad_debt", AccessRule::AllowAll, AccessRule::DenyAll)
-                .method("burn_fully_liquidated_loans", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method(
+                    "burn_fully_liquidated_loans",
+                    AccessRule::AllowAll,
+                    AccessRule::DenyAll,
+                )
                 .method("flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method(
                     "repay_flash_mint",
@@ -237,7 +241,6 @@ mod issuer {
                 None => {}
             }
 
-
             self.resource_minter.authorize(|| {
                 borrow_resource_manager!(self.loan_address)
                     .update_non_fungible_data(&loan_id, new_loan_data);
@@ -246,10 +249,7 @@ mod issuer {
             (repayment, liquidator_bucket)
         }
 
-        pub fn clear_bad_debt(
-            &mut self,
-            loan_id: NonFungibleLocalId,
-        ) {
+        pub fn clear_bad_debt(&mut self, loan_id: NonFungibleLocalId) {
             // Get the information about the bad debt from the lender
             let loan: Loan =
                 borrow_resource_manager!(self.loan_address).get_non_fungible_data(&loan_id);
@@ -257,8 +257,7 @@ mod issuer {
             let (amount_to_clear, collateral, new_loan_data) = lender.clear_bad_debt(loan);
 
             // Try to repay bad debt from reserves
-            match self.reserves.get_mut(&self.stablecoin_address)
-            {
+            match self.reserves.get_mut(&self.stablecoin_address) {
                 Some(vault) => {
                     if vault.amount() < amount_to_clear {
                         panic!("Not enough stablecoin reserves to clear debt");
@@ -276,14 +275,18 @@ mod issuer {
         }
 
         pub fn burn_fully_liquidated_loans(&self, loans: Bucket) {
-            assert!(loans.resource_address() == self.loan_address,
-                    "Please provide loans to liquidate");
+            assert!(
+                loans.resource_address() == self.loan_address,
+                "Please provide loans to liquidate"
+            );
 
             for loan in loans.non_fungibles::<Loan>() {
                 let loan_data = self.get_loan_data(&loan);
 
-                assert!(loan_data.amount_lent.is_zero() && loan_data.collateral_amount.is_zero(),
-                        "One of the supplied loans is not fully liquidated");
+                assert!(
+                    loan_data.amount_lent.is_zero() && loan_data.collateral_amount.is_zero(),
+                    "One of the supplied loans is not fully liquidated"
+                );
             }
 
             self.burn_bucket(loans);
@@ -390,7 +393,6 @@ mod issuer {
             lender.change_oracle(oracle);
         }
 
-
         pub fn get_lender_state(&self, collateral_token: ResourceAddress) -> Vec<Decimal> {
             let lender = self.get_lender(&collateral_token);
             lender.get_state()
@@ -445,7 +447,8 @@ mod issuer {
         #[inline]
         fn update_loan_data_from_id(&self, loan_id: &NonFungibleLocalId, new_data: Loan) {
             self.resource_minter.authorize(|| {
-                borrow_resource_manager!(self.loan_address).update_non_fungible_data(loan_id, new_data);
+                borrow_resource_manager!(self.loan_address)
+                    .update_non_fungible_data(loan_id, new_data);
             });
         }
 
