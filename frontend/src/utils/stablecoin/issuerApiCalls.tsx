@@ -149,7 +149,7 @@ async function decode_hex(mutable_hex:string,immutable_hex:string ): Promise<dec
     params.append('mutable_data_hex', mutable_hex);
     params.append('immutable_data_hex', immutable_hex);
 
-    const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
+    const request = new Request( `${backend_api_url}/loan?${params}`, {
         method: 'GET',
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     });
@@ -175,6 +175,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     };
 
     const lender: lender = lenders[data.collateral_token];
+
     if (!lender) return {
         collateral_token: token_default,
         collateral_amount: 0,
@@ -190,6 +191,7 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     const collateral_price = lender.collateral_price * data.collateral_amount;
 
     const amount_to_liquidate_promise = amountToLiquidate(data.collateral_amount, collateral_price, data.amount_lent, lender.liquidation_threshold, lender.liquidation_penalty, data.interest_rate, data.loan_time);
+    
     const token_promise = getToken(data.collateral_token);
 
     const [amount_to_liquidate,token] = await Promise.all([amount_to_liquidate_promise, token_promise])
@@ -209,12 +211,24 @@ async function getLoanInformation(mutable_data: string, immutable_data: string, 
     };
 }
 
+interface PromiseFulfilledResult {
+    status: "fulfilled";
+    value: any;
+}
+
+interface PromiseRejectedResult {
+    status: "rejected";
+    reason: any;
+}
+
+type PromiseSettledResult = PromiseFulfilledResult | PromiseRejectedResult;
 
 async function getAllLoansInformation(loan_ids: string[], lenders: Map<string, lender> ) {
-    return Promise.allSettled(loan_ids.map(async id => {
+    const loans = await Promise.allSettled(loan_ids.map(async id => {
          const hex = await getHex(id)
          return getLoanInformation(hex.mutable_hex, hex.immutable_hex, lenders, hex.id)
-        }))
+    }));
+    return loans.filter(x => x.status == "fulfilled").map(x => (x as PromiseFulfilledResult).value);
 }
 
 async function getAllCollection(): Promise<string[]> {

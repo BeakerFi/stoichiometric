@@ -55,12 +55,41 @@ function Liquidity() {
 
     const [chosePosition, setChosePosition] = useState(false);
 
+    const [token1, setToken1] = useState(token_default);
+
+    const [token1Select, setToken1Select] = useState(false);
+
+    const [search, setSearch] = useState("");
+
+    const [searchPosition, setSearchPosition] = useState("");
+
+    const [swapLoading, setSwapLoading] = useState(false);
+
+    const [positionsList, setPositionsList] = useState(positions);
+
+    const [nftId, setNftId] = useState<string | null>(null);
+
+    const [positionInfos, setPositionInfos] = useState<position>({
+        token: token_default,
+        liquidity: 0,
+        price_x: 0,
+        value_locked: '?',
+        x_fees: '?',
+        y_fees: '?',
+        nfIdValue: null,
+        id: null,
+    });
+
+    const [feesLoading, setFeesLoading] = useState(false);
+
+    const [removeLoading, setRemoveLoading] = useState(false);
+
+
+
     function resetValues() {
         setSent(0);
         setGet(0);
     }
-
-    const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
 
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
@@ -107,9 +136,6 @@ function Liquidity() {
     const token1AddressRef = useRef(token1.address)
     token1AddressRef.current = token1.address
 
-    const [token1InPool, setToken1InPool] = useState(0);
-    const [stableInPool, setStableInPool] = useState(0);
-
 
     function findRatio(x: number) {
         var currentStep = pools[token1.address]["current_step"];
@@ -120,11 +146,17 @@ function Liquidity() {
 
             if (step.step_id == currentStep) {
                 stableRatio = parseFloat(step.stablecoin_amount)/(parseFloat(step.stablecoin_amount) + parseFloat(step.rate)*parseFloat(step.other_token_amount));
-                return [stableRatio, parseFloat(step.rate)]
+
+                console.log(parseFloat(step.stablecoin_amount));
+                console.log(parseFloat(step.other_token_amount));
+                console.log(stableRatio);
+
+                return [isNaN(stableRatio) ? 1 : stableRatio, parseFloat(step.rate)]
             }
         }
         return [1, 1];
     }
+
 
     function calculateGet(x: number) { 
         var result = findRatio(x);
@@ -133,10 +165,11 @@ function Liquidity() {
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+
         if (currentStep > maxStep) {setSent(0); return 10;}
         if (currentStep < minStep) return 0;
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return 0;
+        if (stableRatio == 1) return x*price;
         return ((currentStep - minStep + 1)*(x/(maxStep - currentStep + 1) * price)*stableRatio/(1 - stableRatio))
     }
 
@@ -148,10 +181,11 @@ function Liquidity() {
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+
         if (currentStep > maxStep) {return 0;}
         if (currentStep < minStep) {setGet(0); return 10;}
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return 0;
+        if (stableRatio == 1) return x/price;
         return ((maxStep - currentStep + 1)*(x/(currentStep - minStep + 1)/ price)*(1 - stableRatio)/(stableRatio))
     }
 
@@ -184,6 +218,7 @@ function Liquidity() {
             }
         }
     }
+
 
     useEffect(() => {if (pools[token1.address]) setGet(calculateGet(sent))}, [price1, price2]);
 
@@ -243,8 +278,6 @@ function Liquidity() {
         resetValues();
     }, [token1])
 
-    const [token1Select, setToken1Select] = useState(false);
-
     function resetSelect() {
         setSearch('');
         setToken1Select(false);
@@ -258,10 +291,6 @@ function Liquidity() {
         resetSelect();
         resetValues();
     }
-
-    const [search, setSearch] = useState("");
-
-    const [searchPosition, setSearchPosition] = useState("");
 
     function getSearch(list: token[]) {
         return list.filter(x => {
@@ -301,40 +330,6 @@ function Liquidity() {
         setPositionsList(getSearchPosition(positions));
     }, [positions, searchPosition])
 
-    const [swapLoading, setSwapLoading] = useState(false);
-
-    const [positionsList, setPositionsList] = useState(positions);
-
-    const [nftId, setNftId] = useState<string | null>(null);
-
-    const [positionInfos, setPositionInfos] = useState<position>({
-        token: token_default,
-        liquidity: 0,
-        price_x: 0,
-        value_locked: '?',
-        x_fees: '?',
-        y_fees: '?',
-        nfIdValue: null,
-        id: null,
-    });
-
-    async function getPosInfos(id: string, invert: boolean) {
-        const result:any = false/*await getPositionInfos(id); TODO
-        if (result) {
-            if (!invert) setPositionInfos(result);
-            else setPositionInfos({
-                liquidity: result.liquidity,
-                token_x: result.token_y,
-                token_y: result.token_x,
-                price_x: result.price_y,
-                price_y: result.price_x,
-                value_locked: result.value_locked,
-                x_fees: result.y_fees,
-                y_fees: result.x_fees,
-            })
-        }*/
-    }
-
     useEffect(() => {
         if (nftId == null) {
             setPositionInfos({
@@ -348,37 +343,21 @@ function Liquidity() {
                 id: null,
             })
         }
-        else {  
-            setPositionInfos({
-                token: token_default,
-                liquidity: 0,
-                price_x: 0,
-                value_locked: '?',
-                x_fees: '?',
-                y_fees: '?',
-                nfIdValue: null,
-                id: nftId,
-            })
-            getPosInfos(nftId, invertPosition);
-        }
     }, [nftId]);
-
-    const [invertPosition, setInvertPosition] = useState(false);
 
     function findPosition(tk1Address: string, tk2Address: string) {
         if (!positions) return
         for (const position of positions) {
-            if (position.token.address == tk1Address) { setInvertPosition(false); return position.id; }
-            if (position.token.address == tk2Address) { setInvertPosition(true); return position.id; }
+            if (position.token.address == tk1Address) { return position.id; }
         }
-
-        setInvertPosition(false);
         return null;
     }
+
 
     useEffect(() => {
         setNftId(findPosition(token1.address, stable.address));
     }, [token1, positions])
+
 
     async function sendSwap() {
         setSwapLoading(true);
@@ -388,9 +367,11 @@ function Liquidity() {
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
 
+        console.log(minStep, maxStep);
+
         for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0])
         if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
-        for (var i = currentStep + 1; i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
+        for (var i = Math.max(currentStep + 1, minStep); i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
 
         if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
         else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)
@@ -404,7 +385,6 @@ function Liquidity() {
         setSwapLoading(false);
     }
 
-    const [feesLoading, setFeesLoading] = useState(false);
 
     async function claimF() {
         setFeesLoading(true);
@@ -421,7 +401,6 @@ function Liquidity() {
         else {addAlert("error", "You don't have a position"); return false;}
     }
 
-    const [removeLoading, setRemoveLoading] = useState(false);
 
     async function removeL(liqu: string) {
         setRemoveLoading(true);
@@ -461,6 +440,8 @@ function Liquidity() {
     }
 
 
+
+
     const style = styleFunction(device, swapLoading, token1Select, chosePosition, price1, price2, minPrice, maxPrice);
 
 
@@ -473,70 +454,85 @@ function Liquidity() {
             )})}
 
             <div sx={style.main}>
+
                 <div sx={style.top}>
+
                     <div sx={style.container}>
+
                         <div sx={style.buttons}>
                             <span sx={myPosition && user.address ? style.inactive : style.active} onClick={() => {setMyPosition(false); setChosePosition(false); }}>Provide Liquidity</span>
                             { user.address ?
                                 <span sx={myPosition ? style.active : style.inactive} onClick={() => {setMyPosition(true); resetSelect(); }}>My Position</span>
-                             : null}
+                            : 
+                                null
+                            }
                         </div>
+
                         { myPosition && user.address ? 
-                            ( <div sx={style.myPositionColumn}>
-                                    <div sx={style.chosePositionContainer}>
-                                        <div sx={style.chosePositionZone}>
-                                            <h2><div sx={style.close} onClick={() => setChosePosition(false)}/>Your positions</h2>
-                                            <div sx={style.inputBar}>
-                                                <input type="text" id="searchPosition" required={true} placeholder=" " autoComplete="off" onChange={searchPositionChange}/>
-                                                <label htmlFor="searchPosition">Search for a position</label>
-                                            </div>
-                                            <div sx={style.poolsList}>
-                                                {  positionsList.map((position: position, index: number) => {
-                                                    return (
-                                                        <div key={"position" + index} sx={style.poolChoice} onClick={() => {
-                                                            setChosePosition(false);
-                                                            setInvertPosition(false);
-                                                            setToken1(position.token!);
-                                                            setNftId(position.id);
-                                                        }}>
-                                                            <img src={position.token!.icon_url}/>
-                                                            <img src={stable.icon_url}/>
-                                                            <p>{position.token!.symb} - {stable.symb}</p>
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div sx={style.chosePosition}  onClick={() => setChosePosition(true)}>
-                                        <img src={token1.icon_url}/>
-                                        <img src={stable.icon_url}/>
-                                        <p>{token1.symb} - {stable.symb}</p>
-                                        <div sx={style.expand2}/>
-                                    </div>
-                                    <div sx={style.swapZone}>
-                                        <h1>🌻 My Fees</h1>
-                                        <div sx={style.swapInfos}>
-                                            <span sx={style.swapInfoMain}><span>Total Locked</span><div>{price > 0 ? formatToString(positionInfos.liquidity/Math.sqrt(price)) : '?'} {token1.symb} + {price > 0 ? formatToString(positionInfos.liquidity*Math.sqrt(price)) : '?'} {stable.symb}</div></span>
-                                            <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
-                                            <span sx={style.swapInfo}><span>Fees</span>{positionInfos.x_fees == "?" ? "?" : formatToString2(positionInfos.x_fees)} {token1.symb} + {positionInfos.y_fees == "?" ? "?" : formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
-                                            <span sx={style.swapInfo}><span>Current ROI</span>No Data</span>
-                                        </div>
-                                        <button sx={feesLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
-                                    </div>
-                                    <div sx={style.swapZone}>
-                                        <h1>🍂 Remove Liquidity</h1>
-                                        <div sx={style.swapInfos}>
-                                            <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {stable.symb}</div></span>
-                                            <span sx={style.swapInfo}><span>Value</span>$?</span>
-                                        </div>
-                                        <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
-                                    </div>
-                                </div>
-                            )
+
+                            <div sx={style.myPositionColumn}>
                             
-                            : (
+                                <div sx={style.chosePositionContainer}>
+
+                                    <div sx={style.chosePositionZone}>
+
+                                        <h2><div sx={style.close} onClick={() => setChosePosition(false)}/>Your positions</h2>
+                                        <div sx={style.inputBar}>
+                                            <input type="text" id="searchPosition" required={true} placeholder=" " autoComplete="off" onChange={searchPositionChange}/>
+                                            <label htmlFor="searchPosition">Search for a position</label>
+                                        </div>
+
+                                        <div sx={style.poolsList}>
+                                            {  positionsList.map((position: position, index: number) => {
+                                                return (
+                                                    <div key={"position" + index} sx={style.poolChoice} onClick={() => {
+                                                        setChosePosition(false);
+                                                        setToken1(position.token!);
+                                                        setNftId(position.id);
+                                                        setPositionInfos(position);
+                                                    }}>
+                                                        <img src={position.token!.icon_url}/>
+                                                        <img src={stable.icon_url}/>
+                                                        <p>{position.token!.symb} - {stable.symb}</p>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div sx={style.chosePosition}  onClick={() => setChosePosition(true)}>
+                                    <img src={token1.icon_url}/>
+                                    <img src={stable.icon_url}/>
+                                    <p>{token1.symb} - {stable.symb}</p>
+                                    <div sx={style.expand2}/>
+                                </div>
+
+                                <div sx={style.swapZone}>
+                                    <h1>🌻 My Fees</h1>
+                                    <div sx={style.swapInfos}>
+                                        <span sx={style.swapInfoMain}><span>Total Locked</span><div>? {token1.symb} + ? {stable.symb}</div></span>
+                                        <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
+                                        <span sx={style.swapInfo}><span>Fees</span>{positionInfos.x_fees == "?" ? "?" : formatToString2(positionInfos.x_fees)} {token1.symb} + {positionInfos.y_fees == "?" ? "?" : formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
+                                    </div>
+                                    <button sx={feesLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
+                                </div>
+
+                                <div sx={style.swapZone}>
+                                    <h1>🍂 Remove Liquidity</h1>
+                                    <div sx={style.swapInfos}>
+                                        <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {stable.symb}</div></span>
+                                        <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
+                                    </div>
+                                    <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
+                                </div>
+
+                            </div>
+                            
+                        : 
                             <div sx={style.swapZone}>
+
                                 <h1>🌱 Provide Liquidity</h1>
                                 <div sx={style.inputBar}>
                                     <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
@@ -547,7 +543,9 @@ function Liquidity() {
                                         <div sx={style.expand}/>
                                     </div>
                                 </div>
+
                                 <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
+                                
                                 <div sx={style.inputBar}>
                                     <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={getChange} value={get}/>
                                     <label htmlFor="get">You lock</label>
@@ -556,7 +554,9 @@ function Liquidity() {
                                         <p>{stable.symb}</p>
                                     </div>
                                 </div>
+
                                 <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
+                                
                                 <div sx={style.rangeInput}>
                                     <p>Price Range ({stable.symb + "/" + token1.symb})</p>
                                     <div sx={style.ranges}>
@@ -578,15 +578,15 @@ function Liquidity() {
                                         </div>
                                     </div>
                                 </div>
+
                                 <div sx={style.swapInfos}>
                                     <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
                                     <span sx={style.swapInfo}><span>Current Price</span>1 {token1.symb} = {price == 0 ? "?" : formatToString(price)} {stable.symb}</span>
                                 </div>
 
-                                {
-                                    user.address ? 
+                                { user.address ? 
                                     <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Provide Liquidity"}</button>
-                                    : 
+                                : 
                                     <ConnectWallet2 />
                                 }
 
@@ -609,11 +609,16 @@ function Liquidity() {
                                         })}
                                     </div>
                                 </div>
+
                             </div>
-                        )}
+                        
+                        }
                     </div>
+
                 </div>
+
             </div>
+            
         </Dashboard>
     )
 }

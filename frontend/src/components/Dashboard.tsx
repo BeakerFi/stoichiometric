@@ -15,7 +15,7 @@ export interface Props {
     page: string;
 }
 
-const pages = ["swap", "liquidity", "lend", "liquidate", "dao"];
+const pages = ["swap", "liquidity", "lend", "liquidate", "dao", "card"];
 
 const Dashboard: React.FC<Props> = (props) => {
     const { device } = useContext( ResponsiveContext );

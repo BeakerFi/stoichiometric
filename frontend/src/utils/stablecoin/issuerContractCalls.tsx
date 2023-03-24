@@ -194,7 +194,7 @@ async function liquidate(account: string, stablecoins_to_withdraw: string, loan_
         version: 1,
     })
 
-    return result.isOk;
+    return result.isOk();
 }
 
 export { takeLoan, repayLoan, addCollateral, removeCollateral, liquidate }

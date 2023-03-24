@@ -8,11 +8,12 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
-import {loan, position} from "types";
+import {loan, position, voterCard} from "types";
 import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
 import { token_default } from "utils/general/constants";
+import { getVoterCard } from "utils/dao/daoApiCalls";
 
 const UserContext = React.createContext(null as any);
 
@@ -29,7 +30,7 @@ interface User {
 const UserCtx: React.FC<Props> = (props) => {
     const { addAlert } = useContext(SnackbarContext);
 
-    const { lenders, tokens } = useContext(TokensContext);
+    const { lenders, tokens, pools } = useContext(TokensContext);
 
     const [user, setUser] = useState<User>({address: null, name: null})
 
@@ -39,7 +40,17 @@ const UserCtx: React.FC<Props> = (props) => {
 
     const [positions, setPositions] = useState<position[]>([]);
 
-    const [myLoans, setMyLoans] = useState<any[]>([]);
+    const [myLoans, setMyLoans] = useState<loan[]>([]);
+
+    const [voterCard, setVoterCard] = useState<voterCard>({
+        voting_power: 0,
+
+        stablecoins_locked: 0,
+
+        positions_ids_locked: [],
+
+        proposals_voted: []
+    })
 
     const [achievements, setAchievements] = useState({
         ach_0: false,
@@ -58,31 +69,38 @@ const UserCtx: React.FC<Props> = (props) => {
 
     const [tokensOwned, setTokensOwned] = useState<any[]>([]);
 
+
     async function setNbTokens(address?: string) {
         if (address == undefined) {
             if (user.address) {
 
                 const result:any = await getOwnedTokens(user.address);
 
-                if (result.length) setTokensOwned(result[0]);
+                if (result && result.length) setTokensOwned(result[0]);
+
+                const voter:voterCard = await getVoterCard(user.address);
+
+                setVoterCard(voter);
             } else return
         }
         else {
             const result:any = await getOwnedTokens(address);
             if (result && result.length) setTokensOwned(result[0]);
+            const voter:voterCard = await getVoterCard(address);
+            setVoterCard(voter)
         }
     } 
 
     async function setMyPositions(address?: string) {
         if (address == undefined) {
             if (user.address) {
-                const result:any = await getOwnedPositions(user.address);
+                const result:any = await getOwnedPositions(user.address, pools, tokens);
                 const loans: any = await getLoansOwnedBy(user.address);
                 setPositions(result);
                 setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return
         } else {
-            const result:any = await getOwnedPositions(address);
+            const result:any = await getOwnedPositions(address, pools, tokens);
             const loans: any = await getLoansOwnedBy(address);
             setPositions(result);
             setMyLoans(await getAllLoansInformation(loans, lenders));
@@ -134,14 +152,13 @@ const UserCtx: React.FC<Props> = (props) => {
     async function setUserValues(address:string) {
         setNbTokens(address);
         setMyPositions(address);
-        addAlert("check", "Your account is connected");
     }
 
     useEffect(() => {
         if (user.address) {
             setUserValues(user.address);
         }
-    }, [user])
+    }, [user, tokens, pools])
 
     async function connectUser() {
         if(!connectionLoading) {
@@ -162,9 +179,10 @@ const UserCtx: React.FC<Props> = (props) => {
         setTokensOwned([]);
         addAlert("check", "Your are logged out");
     }
+    
 
     return (
-        <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans}}>
+        <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans, voterCard}}>
             {props.children}
         </UserContext.Provider>
     )

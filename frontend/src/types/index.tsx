@@ -124,8 +124,9 @@ interface ComponentState {
 
 }
 
-enum proposedChange {
-      ChangeVotePeriod,
+export enum proposedChange {
+    ChangeVotePeriod,
+    
     ChangeMinimumVoteThreshold,
 
     GrantIssuingRight,
@@ -141,6 +142,7 @@ enum proposedChange {
     AddTokensToIssuerReserves
 
 }
+
 
 
   type proposal = {
@@ -170,4 +172,4 @@ enum proposedChange {
     }
 
 
-export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposedChange, proposal, voterCard};
+export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposal, voterCard};

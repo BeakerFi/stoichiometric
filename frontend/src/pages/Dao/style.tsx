@@ -1,4 +1,4 @@
-function styleFunction(device: string) { 
+function styleFunction(device: string, expand:boolean) { 
     return {
         main: {
             display: 'flex',
@@ -6,7 +6,7 @@ function styleFunction(device: string) {
             alignItems: 'center',
             position: 'absolute' as 'absolute',
             left: `${device == "mobile" ? "10px" : device == "tablet" ? "115px" : '170px'}`,
-            top: `${device == "mobile" ? "95px" : "200px"}`,
+            top: `${device == "mobile" ? "95px" : "100px"}`,
             height: `${device == "mobile" ? "calc(100% - 105px)" : "calc(100% - 60px)"}`,
             width: `${device == "mobile" ? "calc(100% - 20px)" : device == "tablet" ? "calc(100% - 135px)" : 'calc(100% - 190px)'}`,
         },
@@ -111,7 +111,7 @@ function styleFunction(device: string) {
         },
 
         votesContainer: {
-            height: 'calc(100vh - 250px)',
+            height: 'calc(100vh - 150px)',
             overflow: 'scroll'
         },
 
@@ -181,7 +181,7 @@ function styleFunction(device: string) {
             padding: '5px 20px',
             position: 'relative' as 'relative',
             paddingRight: '40px',
-            marginBottom: '20px',
+            marginBottom: `${expand ? '10px' : '20px'}`,
             cursor: 'pointer',
 
             '&:hover': {
@@ -201,6 +201,19 @@ function styleFunction(device: string) {
             "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
                         mask:`url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(90deg)',
+            position: 'absolute' as 'absolute',
+            right: '10px',
+            top: '50%',
+        },
+
+        expand2: {
+            height: '12px',
+            aspectRatio: '1',
+            background: 'text',
+            opacity: '.3',
+            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
+                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            transform: 'TranslateY(-50%) Rotate(-90deg)',
             position: 'absolute' as 'absolute',
             right: '10px',
             top: '50%',
@@ -226,6 +239,30 @@ function styleFunction(device: string) {
 
         declined: {
             color: 'red !important'
+        },
+
+        possibleChoices: {
+            display: 'flex',
+            flexDirection: 'column' as 'column',
+            marginBottom: '40px',
+            border: 'solid 1px',
+            borderColor: 'background3',
+            borderRadius: '5px',
+            padding: '5px 10px',
+
+            '& p': {
+                fontFamily: 'primary',
+                fontSize: 1,
+                color: 'text',
+                margin: '0',
+                padding: '0',
+                marginBottom: '5px',
+                cursor: 'pointer', 
+                opacity: '.7',
+                '&: hover': {
+                    opacity: 1
+                }
+            }
         }
     }
 }

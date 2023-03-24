@@ -7,6 +7,7 @@ import Liquidity from 'pages/Liquidity';
 import Lend from 'pages/Lend';
 import Liquidate from 'pages/Liquidiate';
 import Dao from 'pages/Dao';
+import Card from 'pages/Card';
 // ==============================|| MAIN ROUTING ||============================== //
 
 const MainRoutes = [
@@ -28,6 +29,10 @@ const MainRoutes = [
     }, {
         path: '/dao',
         element: <Dao />
+    },
+    {
+        path: '/card',
+        element: <Card />
     }
 ];
 

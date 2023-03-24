@@ -53,12 +53,45 @@ function Loan() {
 
     const [dir, setDir] = useState<number>(0);
 
+    const [token1Select, setToken1Select] = useState(false);
+
+    const [search, setSearch] = useState("");
+
+    const [swapLoading, setSwapLoading] = useState(false);
+
+    const [lock, setLock] = useState<boolean>(false);
+
+    const [boolMyLoans, setBoolMyLoans] = useState<boolean>(false);
+
+    const [choseLend, setChoseLend] = useState<boolean>(false);
+
+    const [removePercentage, setRemovePercentage] = useState<number>(0);
+
+    const [currentLoan, setCurrentLoan] = useState<loan>({
+        collateral_token: token_default,
+        collateral_amount: 0,
+        amount_lent: 0,
+        loan_date: 0,
+        liquidation_price: 0,
+        loan_to_value: 0,
+        interest_rate: 0,
+        amount_to_liquidate: 0,
+        id: '"'
+    })
+
+    const [repayLoading, setRepayLoading] = useState<boolean>(false);
+
+    const [addCollateralLoading, setAddCollateralLoading] = useState<boolean>(false);
+
+    const [token1, setToken1] = useState(token_default);
+
+    
+
+
     function resetValues() {
         setSent(0);
         if (!lock) setGet(0);
     }
-
-    const [token1, setToken1] = useState({name: "", symb: "", address: "", icon_url: ""});
 
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
@@ -88,6 +121,7 @@ function Loan() {
 
     }, [tokens])
 
+
     const token1AddressRef = useRef(token1.address)
     token1AddressRef.current = token1.address
 
@@ -110,6 +144,7 @@ function Loan() {
             else return formatToString(s)
         }
     }
+
 
     const sentChange = (event: any) => {
         var s = event.target.value;
@@ -172,16 +207,21 @@ function Loan() {
         }
     }
 
+
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
+            console.log(lenders[token1.address]);
             if (!lenders[token1.address]) return;
+
             const infos = await getLenderInformation(lenders[token1.address].lender_address);
-            if (infos) setPrice(infos["price"] * infos["loan_to_value"]);
+            console.log("infos", infos);
+
+            if (infos) setPrice(infos["collateral_price"] * infos["loan_to_value"]);
             if (infos) setDir(infos["daily_interest_rate"]);
         }
         getPoolInfos();
-    }, [token1, tokensOwned])
+    }, [token1, tokensOwned, lenders])
     useEffect(() => {
         const n = tokensOwned[token1.address];
         if (n == "undefined") setToken1Owned(0);
@@ -191,8 +231,6 @@ function Loan() {
     useEffect(() => {
         resetValues();
     }, [token1])
-
-    const [token1Select, setToken1Select] = useState(false);
 
     function resetSelect() {
         setSearch('');
@@ -207,8 +245,6 @@ function Loan() {
         resetSelect();
         resetValues();
     }
-
-    const [search, setSearch] = useState("");
 
     function getSearch(list: token[]) {
         return list.filter(token => {
@@ -229,8 +265,6 @@ function Loan() {
         setTokensList(getSearch(tokens));
     }, [tokens, search])
 
-    const [swapLoading, setSwapLoading] = useState(false);
-
     async function sendSwap() {
         setSwapLoading(true);
         const flag = await swap_direct(user.address, token1.address, stable.address, sent.toString())
@@ -244,17 +278,9 @@ function Loan() {
         setSwapLoading(false);
     }
 
-    const [lock, setLock] = useState<boolean>(false);
-
     function toggleLock() {
         setLock(!lock);
     }
-
-    const [boolMyLoans, setBoolMyLoans] = useState<boolean>(false);
-
-    const [choseLend, setChoseLend] = useState<boolean>(false);
-
-    const [removePercentage, setRemovePercentage] = useState<number>(0);
 
     async function sendTakeLoan(account: string, token: string, amount: string, borrow: string) {
         setSwapLoading(true);
@@ -268,22 +294,6 @@ function Loan() {
         }
         setSwapLoading(false);
     }  
-
-    const style = styleFunction(device, swapLoading, token1Select, choseLend, lock);
-
-    const [currentLoan, setCurrentLoan] = useState<loan>({
-        collateral_token: token_default,
-        collateral_amount: 0,
-        amount_lent: 0,
-        loan_date: 0,
-        liquidation_price: 0,
-        loan_to_value: 0,
-        interest_rate: 0,
-        amount_to_liquidate: 0,
-        id: '"'
-    })
-
-    const [repayLoading, setRepayLoading] = useState<boolean>(false);
 
     const currentUnix = Date.now()/1000;
 
@@ -299,8 +309,6 @@ function Loan() {
         }
         setRepayLoading(false);
     }
-
-    const [addCollateralLoading, setAddCollateralLoading] = useState<boolean>(false);
 
     async function sendAddCollateral(account: string, collateralToken: string, collateralAmount: number, loanId: string) {
         setAddCollateralLoading(true);
@@ -330,6 +338,9 @@ function Loan() {
         setRemoveCollateralLoading(false);
     }
 
+
+    const style = styleFunction(device, swapLoading, token1Select, choseLend, lock);
+
     return (
         <Dashboard page="lend">
             <Snackbar />
@@ -344,15 +355,22 @@ function Loan() {
                 <div sx={style.top}>
 
                     <div sx={style.container}>
+
                         <div sx={style.buttons}>
+
                             <span sx={boolMyLoans && user.address ? style.inactive : style.active} onClick={() => {setBoolMyLoans(false)}}>Borrow SUSD</span>
                             { user.address ?
                                 <span sx={boolMyLoans ? style.active : style.inactive} onClick={() => {setBoolMyLoans(true);}}>My Loans</span>
-                                : null}
+                            : 
+                                null
+                            }
+
                         </div>
 
                         { boolMyLoans && user.address ? 
-                            (<div sx={style.myPositionColumn}>
+
+                            <div sx={style.myPositionColumn}>
+
                                 <div sx={style.chosePositionContainer}>
                                     <div sx={style.chosePositionZone}>
                                         <h2><div sx={style.close} onClick={() => setChoseLend(false)}/>Your Loans</h2>
@@ -372,11 +390,13 @@ function Loan() {
                                         </div>
                                     </div>
                                 </div>
+
                                 <div sx={style.chosePosition}  onClick={() => setChoseLend(true)}>
                                     <img src={token1.icon_url}/>
                                     <p>{token1.symb}</p>
                                     <div sx={style.expand2}/>
                                 </div>
+
                                 <div sx={style.swapZone}>
                                     <h1>🐰 Repay the Loan</h1>
                                     <div sx={style.swapInfos}>
@@ -385,8 +405,8 @@ function Loan() {
                                         <span sx={style.swapInfo}><span>Interest</span>{Math.ceil((currentUnix - currentLoan.loan_date)/86400)*currentLoan.amount_lent * currentLoan.interest_rate} {stable.symb}</span>                                           
                                     </div>
                                     <button sx={repayLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => repayLoading || !currentLoan.id ? null : sendRepayLoan(user.address, Math.ceil((currentUnix - currentLoan.loan_date)/86400)*currentLoan.amount_lent*currentLoan.interest_rate + currentLoan.amount_lent, currentLoan.id)} >{repayLoading ? "" : "Repay"}</button>
-
                                 </div>
+
                                 <div sx={style.swapZone}>
                                     <h1>🐷 Add Collateral</h1>
                                     <div sx={style.inputBar}>
@@ -397,10 +417,11 @@ function Loan() {
                                             <p>{currentLoan.collateral_token.symb}</p>
                                         </div>
                                     </div>
-                                    <span sx={style.tokenAddress}><span>Token Address</span>{currentLoan.collateral_token.address.slice(0,5) + "..." + currentLoan.collateral_token.address.slice(token1.address.length - 10, currentLoan.collateral_token.address.length)}</span>
 
+                                    <span sx={style.tokenAddress}><span>Token Address</span>{currentLoan.collateral_token.address.slice(0,5) + "..." + currentLoan.collateral_token.address.slice(token1.address.length - 10, currentLoan.collateral_token.address.length)}</span>
                                     <button sx={addCollateralLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => addCollateralLoading || !currentLoan.id ? null : sendAddCollateral(user.address, currentLoan.collateral_token.address, adding, currentLoan.id)} >{addCollateralLoading ? "" : "Add"}</button>
                                 </div>
+
                                 <div sx={style.swapZone}>
                                     <h1>🦊 Remove Collateral</h1>
                                     <div sx={style.rangeRow}>
@@ -413,11 +434,14 @@ function Loan() {
                                         <span sx={style.swapInfo}><span>Value</span>$?</span>
                                     </div>
                                     <button sx={removeCollateralLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeCollateralLoading || !currentLoan.id ? null : sendRemoveCollateral(user.address, currentLoan.collateral_amount * removePercentage/100, currentLoan.id)} >{removeCollateralLoading ? "" : "Remove"}</button>
-
                                 </div>
+
                             </div>
-                        ) : 
+
+                        : 
+
                             <div sx={style.swapZone}>
+
                                 <h1>📝 Borrow SUSD</h1>
 
                                 { lock ? 
@@ -444,7 +468,7 @@ function Loan() {
 
                                 <div sx={style.inputBar}>
                                     <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
-                                    <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You lock"}</label>
+                                    <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? 0 : formatToString(token1Owned)} ${token1.symb}`: "You lock"}</label>
                                     <div sx={style.token} onClick={() => setToken1Select(true)}>
                                         <img src={token1.icon_url}/>
                                         <p>{token1.symb}</p>
@@ -459,15 +483,15 @@ function Loan() {
                                     <span sx={style.swapInfo}><span>Daily Interest Rate</span>{dir}</span>
                                 </div>
 
-                                {
-                                    user.address ? 
+                                { user.address ? 
                                     <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendTakeLoan(user.address, token1.address, sent.toString(), get.toString())}>{swapLoading ? "" : "Lend"}</button>
-                                    : 
+                                : 
                                     <ConnectWallet2 />
                                 }
 
 
                                 <div sx={style.selectToken}>
+
                                     <h2><div sx={style.close} onClick={resetSelect}/>Select Currency</h2>
                                     <div sx={style.inputBar}>
                                         <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
@@ -485,11 +509,13 @@ function Loan() {
                                         })}
                                     </div>
                                 </div>
+
                             </div>
                         }
-
                     </div>
+
                 </div>
+
             </div>
         </Dashboard>
     )

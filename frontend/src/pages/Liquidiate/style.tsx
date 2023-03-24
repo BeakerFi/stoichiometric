@@ -1,4 +1,4 @@
-function styleFunction(device: string) {
+function styleFunction(device: string, liquidateLoading: boolean) {
     return {
         main: {
             display: 'flex',
@@ -6,13 +6,13 @@ function styleFunction(device: string) {
             alignItems: 'center',
             position: 'absolute' as 'absolute',
             left: `${device == "mobile" ? "10px" : device == "tablet" ? "115px" : '170px'}`,
-            top: `${device == "mobile" ? "95px" : "200px"}`,
+            top: `${device == "mobile" ? "95px" : "100px"}`,
             height: `${device == "mobile" ? "calc(100% - 105px)" : "calc(100% - 60px)"}`,
             width: `${device == "mobile" ? "calc(100% - 20px)" : device == "tablet" ? "calc(100% - 135px)" : 'calc(100% - 190px)'}`,
         },
 
         lend: {
-            width: '250px',
+            width: `${device == "mobile" ? '100%' : '250px'}`,
             height: '150px',
             padding: '20px',
             marginBottom: '20px',
@@ -21,26 +21,6 @@ function styleFunction(device: string) {
             flexDirection: 'column' as 'column',
             position: 'relative' as 'relative',
             borderRadius: '5px',
-
-            '& button': {
-                position: 'absolute' as 'absolute',
-                left: '50%',
-                bottom: '20px',
-                transform: 'TranslateX(-50%)',
-                background: 'primary',
-                color: 'white',
-                fontFamily: 'primary',
-                fontSize: 0,
-                border: 'none',
-                borderRadius: '5px',
-                padding: '5px 10px',
-                cursor: 'pointer',
-                width: '100px',
-
-                '&:hover': {
-                    opacity: '.8'
-                }
-            },
 
             '& p': {
                 color: 'text2',
@@ -80,7 +60,7 @@ function styleFunction(device: string) {
             color: 'text',
             fontFamily: 'primary',
             fontSize: 0,
-            width: '1300px',
+            width: '80vw',
             marginBottom: '20px',
 
             '& input': {
@@ -97,20 +77,19 @@ function styleFunction(device: string) {
             justifyContent: 'space-between',
             flexDirection: 'column' as 'column',
             alignItems: 'center',
-            width: '1300px'
+            width: `80vw`,
         },
 
         lendRow: {
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
             width: '100%',
-            
+            justifyContent: 'space-between',
         },
 
         lendContainer: {
             overflow: 'scroll',
-            height: 'calc(100vh - 250px)',
+            height: 'calc(100vh - 180px)',
         },
 
         barContainer: {
@@ -160,6 +139,44 @@ function styleFunction(device: string) {
                 transform: 'translateY(-50%)',
             },
         },
+
+        swapButton: {
+            background: 'primary',
+            position: 'absolute' as 'absolute',
+            bottom: '20px',
+            left: '50%',
+            transform: 'TranslateX(-50%)',
+            border: 'none',
+            color: 'white',
+            borderRadius: '10px',
+            width: '150px',
+            height: '50px',
+            fontFamily: 'primary',
+            fontSize: 2,
+            cursor: 'pointer', 
+            '&:hover': {
+                opacity: `${liquidateLoading ? '1' : '.8'}`
+            }
+        },
+
+        swapButtonLoading: {
+            background: 'primary',
+            cursor: 'default !important',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            '&::after': {
+                content: '""',
+                border: 'solid 3px',
+                borderLeftColor: 'primary',
+                borderRadius: '1000px',
+                height: '30% !important',
+                aspectRatio: '1',
+                background: 'transparent',
+                animation: 'rotating 1s linear infinite',
+            },
+        },
+
     }
 }
 
