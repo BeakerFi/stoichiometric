@@ -235,7 +235,7 @@ mod dao {
 
             component.globalize()
         }
-        
+
         /// Lock stablecoins in a votercard
         ///
         /// # Arguments
