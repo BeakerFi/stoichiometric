@@ -56,7 +56,7 @@ impl Method for IssuerMethods {
                 loan_to_value,
                 interest_rate,
                 liquidation_threshold,
-                liquidation_incentive,
+                liquidation_penalty,
                 oracle,
             ) => {
                 method_args!(
@@ -64,7 +64,7 @@ impl Method for IssuerMethods {
                     DecimalArg(loan_to_value.clone()),
                     DecimalArg(interest_rate.clone()),
                     DecimalArg(liquidation_threshold.clone()),
-                    DecimalArg(liquidation_incentive.clone()),
+                    DecimalArg(liquidation_penalty.clone()),
                     ComponentAddressArg(oracle.clone())
                 )
             }

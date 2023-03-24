@@ -232,7 +232,11 @@ mod issuer {
             let bucket_to_burn = repayment.take(amount_to_burn);
             self.burn_bucket(bucket_to_burn);
 
-            self.put_in_reserves(reserve_bucket);
+            match reserve_bucket {
+                Some(buck) => self.put_in_reserves(buck),
+                None => {}
+            }
+
 
             self.resource_minter.authorize(|| {
                 borrow_resource_manager!(self.loan_address)

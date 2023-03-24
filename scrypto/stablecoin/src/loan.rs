@@ -18,9 +18,6 @@ pub struct Loan {
     /// Time at the moment of loan,
     pub loan_date: i64,
 
-    /// Loan To Value at the moment of loan
-    pub loan_to_value: Decimal,
-
     /// Daily interest rate at the moment of loan
     pub interest_rate: Decimal,
 }
@@ -31,7 +28,6 @@ impl Loan {
         collateral_amount: Decimal,
         amount_lent: Decimal,
         loan_date: i64,
-        loan_to_value: Decimal,
         interest_rate: Decimal,
     ) -> Self {
         Self {
@@ -39,7 +35,6 @@ impl Loan {
             collateral_amount,
             amount_lent,
             loan_date,
-            loan_to_value,
             interest_rate,
         }
     }
