@@ -1,6 +1,6 @@
 import { exec } from 'child_process'
 
-const DECODER = "./src/stochio/decoder/stoichiometric-decoder"
+const DECODER = "./target/release/stoichiometric-decoder"
 
 
 export default async function decode_hex(code:number, mutable_data_hex:string, immutable_data_hex:string):Promise<{ stdout: string, stderr: string }> {
