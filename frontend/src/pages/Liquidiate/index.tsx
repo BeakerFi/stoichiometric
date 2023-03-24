@@ -82,7 +82,7 @@ function Liquidate() {
                                                 <div sx={style.barContainer}>
 
                                                     <div sx={style.bar}>
-                                                        <div sx={{right: `Min(100%, ${(cur_price - x.liquidation_price)/(cur_price/2)*100}%)`, background: `${(cur_price - x.liquidation_price)/(cur_price/2) < .3 ? "green" : (cur_price - x.liquidation_price)/(cur_price/2) < .7 ? "orange" : "red"}`}}/>
+                                                        <div sx={{right: `Min(100%, ${(cur_price - x.liquidation_price)/(cur_price/2)*100}%)`, background: `${(cur_price - x.liquidation_price)/(cur_price/2) > .7 ? "green" : (cur_price - x.liquidation_price)/(cur_price/2) > .3 ? "orange" : "red"}`}}/>
                                                     </div>
 
                                                     <div sx={style.infos}>

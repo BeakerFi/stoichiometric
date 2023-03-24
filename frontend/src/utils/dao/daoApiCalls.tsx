@@ -22,21 +22,22 @@ async function getDao(): Promise<dao> {
         .then( (tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
         .catch(console.error);
 
+    if (!data) return {total_voting_power: 0, vote_period: 0, vote_validity_threshold: 0, proposals: [], reserves: new Map<string, number>()}
 
     // @ts-ignore
-    const proposals_list: any[] = data[11];
+    const proposals_list: any[] = data[10];
 
     // @ts-ignore
-    const locked_stablecoins = parseFloat(data[13]);
+    const locked_stablecoins = parseFloat(data[12]);
 
     // @ts-ignore
-    const total_voting_power = parseFloat(data[16]);
+    const total_voting_power = parseFloat(data[14]);
 
     // @ts-ignore
-    const vote_period = parseFloat(data[17]);
+    const vote_period = parseFloat(data[15]);
 
     // @ts-ignore
-    const vote_validity_threshold = parseFloat(data[18]);
+    const vote_validity_threshold = parseFloat(data[16]);
 
     const proposals = await getProposalsData(proposals_list);
 
@@ -53,6 +54,7 @@ async function getProposalsData(proposals_list: any[]): Promise<proposal[]> {
             return getProposalData(proposal);
         })
     );
+
 }
 
 async function getProposalData(proposal: string[]): Promise<proposal> {
@@ -167,8 +169,8 @@ async function getVoterCard(account: string): Promise<voterCard> {
 async function voterCardDataFromHex(mutable_hex: string, immutable_hex: string): Promise<voterCard> {
 
     const params = new URLSearchParams();
-    params.append('mutable_data_hex', immutable_hex);
-    params.append('immutable_data_hex', mutable_hex);
+    params.append('mutable_data_hex', mutable_hex);
+    params.append('immutable_data_hex', immutable_hex);
 
     const request = new Request( `${backend_api_url}/voter_cards?${params}`, {
         method: 'GET',

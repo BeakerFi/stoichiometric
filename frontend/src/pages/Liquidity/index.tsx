@@ -369,9 +369,9 @@ function Liquidity() {
 
         console.log(minStep, maxStep);
 
-        for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0])
+        for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) { steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0]);}
         if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
-        for (var i = Math.max(currentStep + 1, minStep); i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
+        for (var i = Math.max(currentStep + 1, minStep); i<=maxStep; ++i) {steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])}
 
         if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
         else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)

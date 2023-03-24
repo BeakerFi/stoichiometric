@@ -327,3 +327,6 @@ async function lockPositionToVoterCard(account: string, position_id: string, vot
                     Expression("ENTIRE_WORKTOP");
 `;
 }
+
+
+export {executeProposal, allowClaimProposal, minimumVoteThreshold, changeVotePeriod, voteAgainstProposal, voteForProposal, lockPositionNoVoterCard, lockPositionToVoterCard, lockStablecoinsNoVoterCard, lockStablecoinsToVoterCard};
