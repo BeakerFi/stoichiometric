@@ -77,9 +77,10 @@ pub fn decode_position(immutable_hex: &String, mutable_hex: &String) {
         let last_stable_fees_per_liq = decode_decimal_hex(&step_position[72..138]);
         let last_other_fees_per_liq = decode_decimal_hex(&step_position[138..204]);
 
-        step_positions_string = format!("{}({}, ({}, {}, {}))  ", step_positions_string, step, liquidity, last_stable_fees_per_liq, last_other_fees_per_liq);
+        step_positions_string = format!("{}{} {} {} {}@", step_positions_string, step, liquidity, last_stable_fees_per_liq, last_other_fees_per_liq);
     }
 
+    step_positions_string.pop();
 
     let immutable_data_fixed = &immutable_hex[6..];
     let immutable_vec_bytes = decode_hex(&format!("5c{}",immutable_data_fixed)).expect("The input string could not be parsed correctly");
@@ -88,7 +89,7 @@ pub fn decode_position(immutable_hex: &String, mutable_hex: &String) {
     let bech = Bech32Encoder::new(&NetworkDefinition::nebunet());
     let other_token = bech.encode_resource_address_to_string(&other_token_address);
 
-    println!("{} {}", other_token, step_positions_string);
+    println!("{}@{}", other_token, step_positions_string);
 }
 
 pub fn decode_voter_card(mutable_hex: &String) {
@@ -100,24 +101,17 @@ pub fn decode_voter_card(mutable_hex: &String) {
 
     let mut positions_ids_string = String::new();
     for id in positions_locked_ids {
-        positions_ids_string = format!("{}{}, ", positions_ids_string, id);
+        positions_ids_string = format!("{}{} ", positions_ids_string, id);
     }
     positions_ids_string.pop();
-    positions_ids_string.pop();
-
-    positions_ids_string= format!("({})", positions_ids_string);
 
     let mut proposals_voted_string = String::new();
     for id in proposals_voted {
-        proposals_voted_string = format!("{}{}, ", proposals_voted_string, id);
+        proposals_voted_string = format!("{}{} ", proposals_voted_string, id);
     }
     proposals_voted_string.pop();
-    proposals_voted_string.pop();
 
-    proposals_voted_string = format!("({})", proposals_voted_string);
-
-
-    println!("{} {} {} {} {}", voting_power, stablecoins_locked, positions_ids_string, last_proposal_voted_id, proposals_voted_string);
+    println!("{}@{}@{}@{}@{}", voting_power, stablecoins_locked, positions_ids_string, last_proposal_voted_id, proposals_voted_string);
 }
 
 pub fn decode_proposal_receipt(immutable_hex: &String){
