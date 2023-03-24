@@ -1,8 +1,10 @@
-use crate::pool_state::PoolState;
-use crate::router_sqrt::{RouterBlueprint, RouterMethods, POSITION_NAME};
+use crate::dex::pool_state::PoolState;
+use crate::dex::sqrt_implem::{RouterBlueprint, RouterMethods};
+use crate::utils::{run_command, ADMIN_BADGE_NAME, POSITION_NAME, STABLECOIN_NAME};
 use lazy_static::lazy_static;
 use regex::Regex;
-use scrypto::prelude::{dec, Decimal};
+use scrypto::math::Decimal;
+use scrypto::prelude::dec;
 use sqrt::manifest_call::ManifestCall;
 use sqrt::method::Arg::{
     AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg, StringArg, U16,
@@ -12,48 +14,37 @@ use sqrt::test_environment::TestEnvironment;
 use std::collections::HashMap;
 use std::process::Command;
 
-pub fn run_command(command: &mut Command) -> String {
-    let output = command.output().expect("Failed to run command line");
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
-    if !output.status.success() {
-        println!("stdout:\n{}", stdout);
-        panic!("{}", stderr);
-    }
-    stdout
-}
-
 pub fn instantiate() -> TestEnvironment {
     let mut test_env = TestEnvironment::new();
     let router_blueprint = Box::new(RouterBlueprint {});
-    let mut router_package = Package::new(".");
+    let mut router_package = Package::new("../dex");
     router_package.add_blueprint("router_bp", router_blueprint);
     test_env.publish_package("router", router_package);
     test_env.create_fixed_supply_token("usd", dec!(10000000));
     test_env.create_fixed_supply_token("btc", dec!(10000000));
+    test_env.create_fixed_supply_token(ADMIN_BADGE_NAME, Decimal::ONE);
     test_env.new_component(
         "router_comp",
         "router_bp",
-        vec![ResourceAddressArg("usd".to_string())],
+        vec![
+            ResourceAddressArg(ADMIN_BADGE_NAME.to_string()),
+            ResourceAddressArg("usd".to_string()),
+        ],
     );
     test_env
 }
 
 pub fn create_pool(
     test_env: &mut TestEnvironment,
-    stable_amount: Decimal,
     other: &str,
-    other_amount: Decimal,
+    initial_rate: Decimal,
     min_rate: Decimal,
     max_rate: Decimal,
 ) -> PoolState {
     test_env
         .call_method(RouterMethods::CreatePool(
-            "usd".to_string(),
-            stable_amount,
             other.to_string(),
-            other_amount,
-            stable_amount / other_amount,
+            initial_rate,
             min_rate,
             max_rate,
         ))
@@ -107,11 +98,11 @@ pub fn add_liquidity_at_step<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
         "token_a_address".to_string(),
-        ResourceAddressArg("usd".to_string()),
+        ResourceAddressArg(STABLECOIN_NAME.to_string()),
     ));
     env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
     env_args.push((
@@ -140,10 +131,9 @@ pub fn add_liquidity_at_step<'a>(
 pub fn add_liquidity_at_steps<'a>(
     test_env: &'a mut TestEnvironment,
     amount_stable: Decimal,
-    token_b: &'a str,
-    amount_b: Decimal,
-    start_step: u16,
-    stop_step: u16,
+    other: &'a str,
+    amount_other: Decimal,
+    steps: Vec<(u16, Decimal, Decimal)>,
     position_id: Option<String>,
 ) -> ManifestCall<'a> {
     let mut env_args = Vec::new();
@@ -153,21 +143,32 @@ pub fn add_liquidity_at_steps<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
-        "token_a_address".to_string(),
+        "stablecoin_address".to_string(),
         ResourceAddressArg("usd".to_string()),
     ));
-    env_args.push(("token_a_amount".to_string(), DecimalArg(amount_stable)));
+    env_args.push(("stablecoin_amount".to_string(), DecimalArg(amount_stable)));
     env_args.push((
-        "token_b_address".to_string(),
-        ResourceAddressArg(token_b.to_string()),
+        "other_token".to_string(),
+        ResourceAddressArg(other.to_string()),
     ));
-    env_args.push(("token_b_amount".to_string(), DecimalArg(amount_b)));
+    env_args.push(("other_token_amount".to_string(), DecimalArg(amount_other)));
 
-    env_args.push(("start_step".to_string(), U16(start_step)));
-    env_args.push(("stop_step".to_string(), U16(stop_step)));
+    let mut step_string = String::new();
+
+    for (step, stable_amount, other_amount) in steps {
+        let new_string = format!(
+            "Tuple({}u16, Decimal(\"{}\"), Decimal(\"{}\"))",
+            step, stable_amount, other_amount
+        );
+        step_string = format!("{}{} ,", step_string, new_string);
+    }
+    step_string.pop();
+    step_string.pop();
+
+    env_args.push(("steps_string".to_string(), StringArg(step_string)));
 
     let manifest_name = match position_id {
         None => "add_liquidity_at_steps_no_pos",
@@ -199,7 +200,7 @@ pub fn add_liquidity<'a>(
     ));
     env_args.push((
         "component_address".to_string(),
-        ComponentAddressArg(test_env.get_current_component_name().to_string()),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
     ));
     env_args.push((
         "token_a_address".to_string(),

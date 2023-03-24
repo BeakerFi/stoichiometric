@@ -5,6 +5,7 @@ use scrypto::prelude::Decimal;
 use std::collections::HashMap;
 use std::process::Command;
 
+#[derive(Clone)]
 pub struct StepState {
     stable: Decimal,
     other: Decimal,
@@ -89,14 +90,14 @@ impl StepState {
 }
 
 pub struct PoolState {
-    router_address: String,
-    other: String,
-    rate_step: Decimal,
-    current_step: u16,
-    min_rate: Decimal,
-    steps: HashMap<u16, StepState>,
-    stable_protocol: Decimal,
-    other_protocol: Decimal,
+    pub router_address: String,
+    pub other: String,
+    pub rate_step: Decimal,
+    pub current_step: u16,
+    pub min_rate: Decimal,
+    pub steps: HashMap<u16, StepState>,
+    pub stable_protocol: Decimal,
+    pub other_protocol: Decimal,
 }
 
 impl PoolState {

@@ -7,7 +7,6 @@
 //!
 //! ### Function
 //! - [new](PoolComponent::new) - Instantiates a new [`PoolComponent`] and returns it.
-//! and returns it.
 //!
 //! ### Methods
 //! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the closest rate to the given rate.
@@ -54,24 +53,25 @@ mod pool {
         other_protocol_fees: Vault,
 
         /// Price oracle
-        oracle: OracleComponent
+        oracle: OracleComponent,
     }
 
     impl Pool {
         /// Instantiates a new [`PoolComponent`] and returns it.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing the initial liquidity in stablecoins
-        /// * `bucket_other` - Bucket containing the initial liquidity in the other token
+        /// * `stable` - ResourceAddress of the stablecoin
+        /// * `bucket_other` - ResourceAddress of the other token
+        /// * `initial_rate` - Initial exhcange rate of the pool
         /// * `min_rate` - Minimum exchange rate of the pool
         /// * `max_rate` - Maximum exchange rate of the pool
         pub fn new(
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            stable: ResourceAddress,
+            other: ResourceAddress,
             initial_rate: Decimal,
             min_rate: Decimal,
             max_rate: Decimal,
-        ) -> (PoolComponent, Bucket, Bucket, Position) {
+        ) -> PoolComponent {
             assert!(
                 min_rate > Decimal::ZERO,
                 "The minimum rate should be positive"
@@ -95,27 +95,22 @@ mod pool {
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
+            let mut steps = HashMap::new();
+            let initial_step = PoolStepComponent::new(stable.clone(), other.clone(), initial_rate.clone());
+            steps.insert(current_step.clone(), initial_step);
+
             let component = Self {
                 rate_step,
                 current_step,
                 min_rate,
-                steps: HashMap::new(),
-                stable_protocol_fees: Vault::new(bucket_stable.resource_address()),
-                other_protocol_fees: Vault::new(bucket_other.resource_address()),
-                oracle: OracleComponent::new()
+                steps,
+                stable_protocol_fees: Vault::new(stable),
+                other_protocol_fees: Vault::new(other),
+                oracle: OracleComponent::new(),
             }
             .instantiate();
 
-            // Adds the initial liquidity
-            let position = Position::from(bucket_other.resource_address());
-            let (stable_ret, other_ret, pos_ret) = component.add_liquidity_at_step(
-                bucket_stable,
-                bucket_other,
-                current_step,
-                position,
-            );
-
-            (component, stable_ret, other_ret, pos_ret)
+            component
         }
 
         /// Adds liquidity to the pool at the closest rate to the given rate.
@@ -139,18 +134,24 @@ mod pool {
         /// Adds liquidity to the pool at the given step.
         ///
         /// # Arguments
-        /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
-        /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
+        /// * `bucket_a` - Bucket containing first token to add as liquidity
+        /// * `bucket_b` - Bucket containing second token to add as liquidity
         /// * `step` - Step at which to provide liquidity
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_step(
             &mut self,
-            bucket_stable: Bucket,
-            bucket_other: Bucket,
+            bucket_a: Bucket,
+            bucket_b: Bucket,
             step: u16,
             mut position: Position,
         ) -> (Bucket, Bucket, Position) {
             let step_position = position.get_step(step);
+            let (bucket_stable, bucket_other) =
+                if bucket_a.resource_address() == self.stable_protocol_fees.resource_address() {
+                    (bucket_a, bucket_b)
+                } else {
+                    (bucket_b, bucket_a)
+                };
 
             // Get or create the given step
             let pool_step = match self.steps.get_mut(&step) {
@@ -184,31 +185,24 @@ mod pool {
         /// # Arguments
         /// * `bucket_stable` - Bucket containing stablecoins to add as liquidity
         /// * `bucket_other` - Bucket containing the other tokens to add as liquidity
-        /// * `start_step` - Start step at which to provide liquidity
-        /// * `stop_step` - Stop step at which to provide liquidity
+        /// * `steps` - List of steps and amounts of tokens to add to each steps
         /// * `position` - [`Position`] of the user
         pub fn add_liquidity_at_steps(
             &mut self,
             mut bucket_stable: Bucket,
             mut bucket_other: Bucket,
-            start_step: u16,
-            stop_step: u16,
+            steps: Vec<(u16, Decimal, Decimal)>,
             position: Position,
         ) -> (Bucket, Bucket, Position) {
-            // We put the same amount of tokens at each step
-            let nb_steps = stop_step - start_step + 1;
-            let stable_per_step = bucket_stable.amount() / nb_steps;
-            let other_per_step = bucket_other.amount() / nb_steps;
-
             let mut position = position;
             let mut ret_stable = Bucket::new(bucket_stable.resource_address());
             let mut ret_other = Bucket::new(bucket_other.resource_address());
 
-            for i in start_step..stop_step + 1 {
+            for (step, amount_stable, amount_other) in steps {
                 let (tmp_stable, tmp_other, tmp_pos) = self.add_liquidity_at_step(
-                    bucket_stable.take(stable_per_step),
-                    bucket_other.take(other_per_step),
-                    i,
+                    bucket_stable.take(amount_stable),
+                    bucket_other.take(amount_other),
+                    step,
                     position,
                 );
                 ret_stable.put(tmp_stable);
@@ -416,10 +410,11 @@ mod pool {
             self.oracle.new_observation(current_time, self.current_step);
         }
 
-        pub fn get_twap_since(&self, timestamp: i64) -> Decimal
-        {
+        pub fn get_twap_since(&self, timestamp: i64) -> Decimal {
             let current_time = Clock::current_time(TimePrecision::Minute).seconds_since_unix_epoch;
-            let twas = self.oracle.get_time_weighted_average_step_since(timestamp, current_time);
+            let twas = self
+                .oracle
+                .get_time_weighted_average_step_since(timestamp, current_time);
             let twap = self.rate_step.powi(twas as i64);
             twap
         }
