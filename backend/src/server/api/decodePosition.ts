@@ -1,7 +1,7 @@
-import decode_position from "../../decoder/decode_position.js";
+import decode_position, { Position } from "../../decoder/decode_position.js";
 import { BadRequestError } from "../errors.js";
 
-export default async function decodePosition(url:URL){
+export default async function decodePosition(url:URL):Promise<Position>{
     const mutable_data_hex = url.searchParams.get('mutable_data_hex')
     const immutable_data_hex = url.searchParams.get('immutable_data_hex')
 
@@ -15,4 +15,6 @@ export default async function decodePosition(url:URL){
 
     const result = await decode_position(mutable_data_hex,immutable_data_hex);
     console.log('decode_position:',mutable_data_hex,immutable_data_hex,":", result);
+    return result;
+
 }

@@ -56,7 +56,7 @@ export const server = createServer(options, async (req, res) => {
         default:
             throw new NotFoundError('Endpoint not found');
     }
-    if (result == undefined) {
+    if (result != undefined) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.write(JSON.stringify(result))
     } else {

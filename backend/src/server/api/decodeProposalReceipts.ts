@@ -1,7 +1,7 @@
-import decode_proposal_receipt from "../../decoder/decode_proposal_receipt.js";
+import decode_proposal_receipt, { Proposal_id } from "../../decoder/decode_proposal_receipt.js";
 import { BadRequestError } from "../errors.js";
 
-export default async function decodeProposalReceipt(url:URL){
+export default async function decodeProposalReceipt(url:URL):Promise<Proposal_id>{
     const mutable_data_hex = url.searchParams.get('mutable_data_hex')
 
     if (mutable_data_hex == undefined) {
@@ -10,4 +10,6 @@ export default async function decodeProposalReceipt(url:URL){
 
     const result = await decode_proposal_receipt(mutable_data_hex);
     console.log('decode_proposal_receipt:',mutable_data_hex,":", result);
+    return result;
+
 }
