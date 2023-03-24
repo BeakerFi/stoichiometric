@@ -10,7 +10,7 @@ pub struct LenderState {
     loan_to_value: Decimal,
     interest_rate: Decimal,
     liquidation_threshold: Decimal,
-    liquidation_incentive: Decimal,
+    protocol_liquidation_share: Decimal,
 }
 
 impl LenderState {
@@ -19,14 +19,14 @@ impl LenderState {
         loan_to_value: Decimal,
         interest_rate: Decimal,
         liquidation_threshold: Decimal,
-        liquidation_incentive: Decimal,
+        protocol_liquidation_share: Decimal,
     ) -> Self {
         Self {
             collateral_amount,
             loan_to_value,
             interest_rate,
             liquidation_threshold,
-            liquidation_incentive,
+            protocol_liquidation_share,
         }
     }
 
@@ -42,7 +42,7 @@ impl LenderState {
             loan_to_value: Decimal::from(&lender_cap[2]),
             interest_rate: Decimal::from(&lender_cap[3]),
             liquidation_threshold: Decimal::from(&lender_cap[4]),
-            liquidation_incentive: Decimal::from(&lender_cap[5]),
+            protocol_liquidation_share: Decimal::from(&lender_cap[5]),
         }
     }
 
@@ -62,7 +62,7 @@ impl LenderState {
             assert_eq!(value.loan_to_value, state.loan_to_value);
             assert_eq!(value.interest_rate, state.interest_rate);
             assert_eq!(value.liquidation_threshold, state.liquidation_threshold);
-            assert_eq!(value.liquidation_incentive, state.liquidation_incentive);
+            assert_eq!(value.protocol_liquidation_share, state.protocol_liquidation_share);
         }
     }
 }

@@ -117,28 +117,12 @@ mod issuer {
             loan_to_value: Decimal,
             interest_rate: Decimal,
             liquidation_threshold: Decimal,
-            liquidation_incentive: Decimal,
+            protocol_liquidation_share: Decimal,
             oracle: ComponentAddress,
         ) {
             assert!(
                 self.lenders.get(&collateral_address).is_none(),
                 "There is already a lender for the given token"
-            );
-            assert!(
-                loan_to_value.is_positive() && loan_to_value < Decimal::ONE,
-                "LTV should be such that 0<LTV<1"
-            );
-            assert!(
-                interest_rate.is_positive() && interest_rate < Decimal::ONE,
-                "The daily interest rate should be such that 0<DIR<1"
-            );
-            assert!(
-                liquidation_threshold > Decimal::ONE,
-                "The liquidation threshold should be greater than one"
-            );
-            assert!(
-                liquidation_incentive.is_positive(),
-                "The liquidation incentive should be positive"
             );
 
             let new_lender = LenderComponent::new(
@@ -146,7 +130,7 @@ mod issuer {
                 loan_to_value,
                 interest_rate,
                 liquidation_threshold,
-                liquidation_incentive,
+                protocol_liquidation_share,
                 oracle,
             );
 
@@ -212,10 +196,6 @@ mod issuer {
             let loan_nfr = valid_proof.non_fungible::<Loan>();
             let loan = self.get_loan_data(&loan_nfr);
 
-            assert!(
-                loan.collateral_token == collateral.resource_address(),
-                "Please provide the right tokens to add as collateral"
-            );
             let lender = self.get_lender(&loan.collateral_token);
 
             let new_loan_data = lender.add_collateral(collateral, loan);
@@ -270,10 +250,10 @@ mod issuer {
             let loan: Loan =
                 borrow_resource_manager!(self.loan_address).get_non_fungible_data(&loan_id);
             let lender = self.get_lender(&loan.collateral_token);
-            let (mut amount_to_clear, collateral, new_loan_data) = lender.clear_bad_debt(loan);
+            let (amount_to_clear, collateral, new_loan_data) = lender.clear_bad_debt(loan);
 
             // Try to repay bad debt from reserves
-            match self.reserves.get(&self.stablecoin_address)
+            match self.reserves.get_mut(&self.stablecoin_address)
             {
                 Some(vault) => {
                     if vault.amount() < amount_to_clear {
@@ -283,6 +263,7 @@ mod issuer {
                     self.burn_bucket(reserves_input);
 
                     self.update_loan_data_from_id(&loan_id, new_loan_data);
+                    self.put_in_reserves(collateral);
                 }
                 None => {
                     panic!("Cannot clear debt");
@@ -359,7 +340,7 @@ mod issuer {
         }
 
         pub fn take_tokens(&mut self, token: ResourceAddress, amount: Decimal) -> Bucket {
-            self.reserves.get(&token).unwrap().take(amount)
+            self.reserves.get_mut(&token).unwrap().take(amount)
         }
 
         pub fn change_lender_parameters(

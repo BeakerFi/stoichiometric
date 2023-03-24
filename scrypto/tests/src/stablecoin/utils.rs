@@ -69,7 +69,7 @@ pub fn assert_current_has_loan(
     let output = run_command(Command::new("resim").arg("show").arg(current_account));
 
     lazy_static! {
-        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.)*"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
+        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
     }
 
     for loan_capture in LOAN_RE.captures_iter(&output) {
