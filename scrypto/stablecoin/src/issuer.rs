@@ -11,7 +11,9 @@ external_component! {
 
         fn remove_collateral(&mut self, collateral: Decimal, loan: Loan) -> (Loan, Bucket);
 
-        fn liquidate(&mut self, stablecoins_amount: Decimal, loan: Loan) -> (Decimal, Bucket, Bucket, Loan);
+        fn liquidate(&mut self, stablecoins_amount: Decimal, loan: Loan) -> (Decimal, Bucket, Option<Bucket>, Loan);
+
+        fn clear_bad_debt(&mut self, loan :Loan) -> (Decimal, Bucket, Loan);
 
         fn change_parameters(&mut self, loan_to_value: Decimal, interest_rate: Decimal,  liquidation_threshold: Decimal, liquidation_penalty: Decimal);
 
@@ -261,9 +263,9 @@ mod issuer {
             self.burn_bucket(bucket_to_burn);
 
             match reserve_bucket {
-                Some(buck) => self.put_in_reserves(buck),
+                Some(buck) => { self.put_in_reserves(buck) },
                 None => {}
-            }
+            };
 
 
             self.resource_minter.authorize(|| {
@@ -281,7 +283,7 @@ mod issuer {
             // Get the information about the bad debt from the lender
             let loan: Loan =
                 borrow_resource_manager!(self.loan_address).get_non_fungible_data(&loan_id);
-            let lender = self.get_lender(&loan.collateral_token);
+            let mut lender = self.get_lender(&loan.collateral_token);
             let (amount_to_clear, collateral, new_loan_data) = lender.clear_bad_debt(loan);
 
             // Try to repay bad debt from reserves
@@ -417,11 +419,6 @@ mod issuer {
             lender.change_oracle(oracle);
         }
 
-        pub fn give_tokens(&mut self, tokens: Vec<Bucket>) {
-            for bucket in tokens {
-                self.put_in_reserves(bucket);
-            }
-        }
 
         pub fn get_lender_state(&self, collateral_token: ResourceAddress) -> Vec<Decimal> {
             let lender = self.get_lender(&collateral_token);

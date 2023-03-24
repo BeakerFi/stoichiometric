@@ -29,7 +29,7 @@ mod lender {
             liquidation_threshold: Decimal,
             liquidation_penalty: Decimal,
             oracle: ComponentAddress,
-        ) -> LenderComponent {
+        ) -> ComponentAddress {
 
             assert!(
                 loan_to_value.is_positive() && loan_to_value < Decimal::ONE,
@@ -177,7 +177,6 @@ mod lender {
             else {
 
                 //In the other case, we compute the maximum amount that can be liquidated
-                let virtual_collateral = (Decimal::ONE - self.liquidation_penalty)*loan.collateral_amount;
 
                 let max_input = total_lent*(Decimal::ONE - collateralization_ratio/self.liquidation_threshold).sqrt().unwrap();
 
