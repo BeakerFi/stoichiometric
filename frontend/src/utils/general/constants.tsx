@@ -7,7 +7,7 @@ const dAppId = "account_tdx_b_1pq8yjqm777eg2jhla6sdye5swlkt7wyj65tqjzgav44qw9m04
 
 const radix_api_url = "https://betanet.radixdlt.com"
 
-const backend_api_url = 'https://beaker.fi:8888'
+const backend_api_url = 'https://beaker.fi:9999'
 
 
 /*

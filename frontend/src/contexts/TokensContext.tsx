@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { lender } from "types";
+import { stable_coin } from "utils/general/constants";
 
 import { getTokensPoolsAndLenders } from "utils/general/generalApiCalls";
 import { getAllCollection, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
@@ -23,7 +24,7 @@ const TokensCtx: React.FC<Props> = (props) => {
         async function setToks() {
             setTokensLoading(true);
             const x = await getTokensPoolsAndLenders();
-            setTokens(x.tokens);
+            setTokens(x.tokens.concat([stable_coin]));
 
             var poolsList: any[] = [];
             for (var i = 0; i < x.pools.length; ++i) poolsList[x.pools[i].token.address] = x.pools[i];

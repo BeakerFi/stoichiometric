@@ -4,12 +4,10 @@ import {
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest, NonFungibleDataResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
-import {dao_address, loan_address, radix_api_url, stablecoin_address, voter_card_address} from "../general/constants";
+import {backend_api_url, dao_address, loan_address, radix_api_url, stablecoin_address, voter_card_address} from "../general/constants";
 import {getToken} from "../general/generalApiCalls";
 
-async function getDao(): Promise<dao> {
-
-    /*
+async function getDao(): Promise<dao> {   
     const obj: EntityDetailsRequest = {
         "address": dao_address
     };
@@ -45,9 +43,6 @@ async function getDao(): Promise<dao> {
     const reserves = await getReserves(locked_stablecoins);
 
     return {total_voting_power: total_voting_power, vote_period: vote_period, vote_validity_threshold: vote_validity_threshold, proposals: proposals, reserves: reserves};
-    */
-
-     return {total_voting_power: 0, vote_period: 86400, vote_validity_threshold: 0.5, proposals: [], reserves: new Map<string, number>()}
 }
 
 
@@ -126,9 +121,9 @@ async function getReserves(locked_stablecoins: number): Promise<Map<string, numb
     return reserves;
 }
 
+
 async function getVoterCard(account: string): Promise<voterCard> {
 
-    /*
     const id_obj: EntityNonFungibleIdsRequest = {
         "address": account,
         "resource_address": voter_card_address
@@ -145,6 +140,8 @@ async function getVoterCard(account: string): Promise<voterCard> {
         .catch(console.error);
 
     // @ts-ignore
+    if (!id_data || !id_data.length) return {voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: []};
+
     const voter_card_id = id_data[0]["non_fungible_id"];
 
     const nfr_obj:NonFungibleDataRequest = {
@@ -163,14 +160,23 @@ async function getVoterCard(account: string): Promise<voterCard> {
 
     const mutable_hex = responseData.mutable_data_hex;
 
-    return voterCardDataFromHex(mutable_hex);*/
-
-    return {voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: [] };
+    return voterCardDataFromHex(mutable_hex);
 }
 
 async function voterCardDataFromHex(mutable_hex: string): Promise<voterCard> {
 
-    return {voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: []};
+    const params = new URLSearchParams();
+    params.append('mutable_data_hex', mutable_hex);
+
+    const request = new Request( `${backend_api_url}/voter_cards?${params}`, {
+        method: 'GET',
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+    });
+
+    const res = await fetch(request);
+
+    console.log(res);
+    return res.json();
 }
 
 export {getDao, getVoterCard}

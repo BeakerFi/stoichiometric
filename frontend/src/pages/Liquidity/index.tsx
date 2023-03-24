@@ -120,7 +120,12 @@ function Liquidity() {
 
             if (step.step_id == currentStep) {
                 stableRatio = parseFloat(step.stablecoin_amount)/(parseFloat(step.stablecoin_amount) + parseFloat(step.rate)*parseFloat(step.other_token_amount));
-                return [stableRatio, parseFloat(step.rate)]
+
+                console.log(parseFloat(step.stablecoin_amount));
+                console.log(parseFloat(step.other_token_amount));
+                console.log(stableRatio);
+
+                return [isNaN(stableRatio) ? 1 : stableRatio, parseFloat(step.rate)]
             }
         }
         return [1, 1];
@@ -133,10 +138,11 @@ function Liquidity() {
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+
         if (currentStep > maxStep) {setSent(0); return 10;}
         if (currentStep < minStep) return 0;
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return 0;
+        if (stableRatio == 1) return x*price;
         return ((currentStep - minStep + 1)*(x/(maxStep - currentStep + 1) * price)*stableRatio/(1 - stableRatio))
     }
 
@@ -148,10 +154,11 @@ function Liquidity() {
         var currentStep = pools[token1.address]["current_step"];
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+
         if (currentStep > maxStep) {return 0;}
         if (currentStep < minStep) {setGet(0); return 10;}
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return 0;
+        if (stableRatio == 1) return x/price;
         return ((maxStep - currentStep + 1)*(x/(currentStep - minStep + 1)/ price)*(1 - stableRatio)/(stableRatio))
     }
 
@@ -388,9 +395,11 @@ function Liquidity() {
         var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
         var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
 
+        console.log(minStep, maxStep);
+
         for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0])
         if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
-        for (var i = currentStep + 1; i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
+        for (var i = Math.max(currentStep + 1, minStep); i<=maxStep; ++i) steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])
 
         if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
         else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)

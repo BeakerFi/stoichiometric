@@ -149,7 +149,7 @@ async function decode_hex(mutable_hex:string,immutable_hex:string ): Promise<dec
     params.append('mutable_data_hex', mutable_hex);
     params.append('immutable_data_hex', immutable_hex);
 
-    const request = new Request( `${backend_api_url}/decode_loan?${params}`, {
+    const request = new Request( `${backend_api_url}/loan?${params}`, {
         method: 'GET',
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     });

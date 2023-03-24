@@ -436,7 +436,7 @@ function Swap() {
                             }
                             <div sx={style.inputBar}>
                                 <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
-                                <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? "?" : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>
+                                <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? 0 : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>
                                 <div sx={style.token} onClick={() => setToken1Select(true)}>
                                     <img src={token1.icon_url}/>
                                     <p>{token1.symb}</p>
