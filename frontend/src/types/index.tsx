@@ -1,7 +1,7 @@
 type token = {
     address: string,
-    name: string, 
-    symb: string, 
+    name: string,
+    symb: string,
     icon_url: string
 }
 
@@ -79,8 +79,8 @@ type loan = {
 
     interest_rate: number,
 
-    amount_to_liquidate : number,
-    
+    amount_to_liquidate: number,
+
     id: string
 }
 
@@ -88,45 +88,45 @@ type loan = {
 interface ComponentState {
     data_json: any; // replace "any" with the actual type of the data
     // define any other properties of the ComponentState object here
-  }
-  
-  interface EntityDetailsResponseComponentDetails {
+}
+
+interface EntityDetailsResponseComponentDetails {
     discriminator: "component";
     package_address: string;
     blueprint_name: string;
     state: ComponentState; // specify the type of the "state" object
     access_rules_chain: object;
-  }
+}
 
-  type decoded = {
+type decoded = {
     collateral_token: string,
     collateral_amount: number,
     amount_lent: number,
     loan_time: number,
     loan_to_value: number,
     interest_rate: number
-  }
+}
 
 
-  type Hexes = { mutable_hex: string, immutable_hex: string, id: string };
+type Hexes = { mutable_hex: string, immutable_hex: string, id: string };
 
-  type dao = {
-      total_voting_power: number,
+type dao = {
+    total_voting_power: number,
 
-      vote_period: number,
+    vote_period: number,
 
-      vote_validity_threshold: number,
+    vote_validity_threshold: number,
 
-      proposals: proposal[],
+    proposals: proposal[],
 
-      reserves: Map<string, number>,
+    reserves: Map<string, number>,
 
 
 }
 
 export enum proposedChange {
     ChangeVotePeriod,
-    
+
     ChangeMinimumVoteThreshold,
 
     GrantIssuingRight,
@@ -145,31 +145,31 @@ export enum proposedChange {
 
 
 
-  type proposal = {
-      vote_end: number,
+type proposal = {
+    vote_end: number,
 
-      votes_for: number,
+    votes_for: number,
 
-      votes_against: number,
+    votes_against: number,
 
-      votes_threshold: number,
+    votes_threshold: number,
 
-      proposed_change_type: proposedChange,
+    proposed_change_type: proposedChange,
 
-      proposed_change_data: any[]
+    proposed_change_data: any[]
 
 }
 
-    type voterCard = {
-      voting_power: number,
+type voterCard = {
+    voting_power: number,
 
-        stablecoins_locked: number,
+    stablecoins_locked: number,
 
-        positions_ids_locked: string[],
+    positions_ids_locked: string[],
 
-        proposals_voted: number[]
+    proposals_voted: number[]
 
-    }
+}
 
 
-export type {token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails,decoded,Hexes, dao, proposal, voterCard};
+export type { token, pool, step, position, account, tokenOwned, lender, loan, EntityDetailsResponseComponentDetails, decoded, Hexes, dao, proposal, voterCard };

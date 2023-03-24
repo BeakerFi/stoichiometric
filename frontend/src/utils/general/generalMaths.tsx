@@ -14,13 +14,13 @@ function formatToString(n: number) {
     if (x < 0) {
         const s = x.toLocaleString("en-US");
         return s.slice(1, s.length)
-  }
-  if (isNaN(x)) return "?";
-  else return x.toLocaleString("en-US", {maximumFractionDigits: 9})
+    }
+    if (isNaN(x)) return "?";
+    else return x.toLocaleString("en-US", { maximumFractionDigits: 9 })
 }
 
 function formatToString2(n: number) {
-  return parseFloat(Math.abs(n).toFixed(2)).toLocaleString("en-US");
+    return parseFloat(Math.abs(n).toFixed(2)).toLocaleString("en-US");
 }
 
 export { randomIntFromInterval, formatToString, formatToString2, twoDecimals };

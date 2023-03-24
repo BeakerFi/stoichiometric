@@ -5,10 +5,10 @@ import {
     stablecoin_address,
     voter_card_address
 } from "../general/constants";
-import {rdt} from "../connectToWallet";
+import { rdt } from "../connectToWallet";
 
 async function executeProposal(account: string, proposal_id: string) {
-    const manifest =`
+    const manifest = `
                     CALL_METHOD
                         ComponentAddress("${account}")
                         "withdraw_by_ids"
@@ -209,8 +209,7 @@ async function lockStablecoinsNoVoterCard(account: string, amount: number) {
     return !result.isErr();
 }
 
-async function lockStablecoinsToVoterCard(account: string, amount: number, voter_card_id: string)
-{
+async function lockStablecoinsToVoterCard(account: string, amount: number, voter_card_id: string) {
     const manifest = `
                 CALL_METHOD
                     ComponentAddress("${account}")
@@ -329,4 +328,4 @@ async function lockPositionToVoterCard(account: string, position_id: string, vot
 }
 
 
-export {executeProposal, allowClaimProposal, minimumVoteThreshold, changeVotePeriod, voteAgainstProposal, voteForProposal, lockPositionNoVoterCard, lockPositionToVoterCard, lockStablecoinsNoVoterCard, lockStablecoinsToVoterCard};
+export { executeProposal, allowClaimProposal, minimumVoteThreshold, changeVotePeriod, voteAgainstProposal, voteForProposal, lockPositionNoVoterCard, lockPositionToVoterCard, lockStablecoinsNoVoterCard, lockStablecoinsToVoterCard };

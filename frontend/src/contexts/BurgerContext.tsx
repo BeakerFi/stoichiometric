@@ -15,11 +15,11 @@ const BurgerCtx: React.FC<Props> = (props) => {
     }
 
     return (
-        <BurgerContext.Provider value={{burgerOpen, toggleBurger}}>
+        <BurgerContext.Provider value={{ burgerOpen, toggleBurger }}>
             {props.children}
         </BurgerContext.Provider>
     )
 
 };
 
-export {BurgerContext, BurgerCtx};
+export { BurgerContext, BurgerCtx };

@@ -1,28 +1,28 @@
-import {dao, proposal, proposedChange, token, voterCard} from "../../types";
+import { dao, proposal, proposedChange, token, voterCard } from "../../types";
 import {
     EntityDetailsRequest,
     EntityNonFungibleIdsRequest,
     NonFungibleDataRequest, NonFungibleDataResponse
 } from "@radixdlt/babylon-gateway-api-sdk";
-import {backend_api_url, dao_address, loan_address, radix_api_url, stablecoin_address, voter_card_address} from "../general/constants";
-import {getToken} from "../general/generalApiCalls";
+import { backend_api_url, dao_address, loan_address, radix_api_url, stablecoin_address, voter_card_address } from "../general/constants";
+import { getToken } from "../general/generalApiCalls";
 
-async function getDao(): Promise<dao> {   
+async function getDao(): Promise<dao> {
     const obj: EntityDetailsRequest = {
         "address": dao_address
     };
 
     let data;
-    await fetch( radix_api_url + `/entity/details`, {
+    await fetch(radix_api_url + `/entity/details`, {
         method: 'POST',
         body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8', })
     })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
-    if (!data) return {total_voting_power: 0, vote_period: 0, vote_validity_threshold: 0, proposals: [], reserves: new Map<string, number>()}
+    if (!data) return { total_voting_power: 0, vote_period: 0, vote_validity_threshold: 0, proposals: [], reserves: new Map<string, number>() }
 
     // @ts-ignore
     const proposals_list: any[] = data[10];
@@ -43,7 +43,7 @@ async function getDao(): Promise<dao> {
 
     const reserves = await getReserves(locked_stablecoins);
 
-    return {total_voting_power: total_voting_power, vote_period: vote_period, vote_validity_threshold: vote_validity_threshold, proposals: proposals, reserves: reserves};
+    return { total_voting_power: total_voting_power, vote_period: vote_period, vote_validity_threshold: vote_validity_threshold, proposals: proposals, reserves: reserves };
 }
 
 
@@ -64,13 +64,13 @@ async function getProposalData(proposal: string[]): Promise<proposal> {
     };
 
     let data;
-    await fetch( radix_api_url + `/entity/details`, {
+    await fetch(radix_api_url + `/entity/details`, {
         method: 'POST',
         body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8', })
     })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data["details"]["state"]["data_json"] )
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data["details"]["state"]["data_json"])
         .catch(console.error);
 
 
@@ -87,7 +87,7 @@ async function getProposalData(proposal: string[]): Promise<proposal> {
     let votes_threshold = parseFloat(data[5]);
 
 
-    return {vote_end: vote_end, votes_for: votes_for, votes_against: votes_against, votes_threshold: votes_threshold, proposed_change_type: proposedChange.ChangeVotePeriod, proposed_change_data: [4]};
+    return { vote_end: vote_end, votes_for: votes_for, votes_against: votes_against, votes_threshold: votes_threshold, proposed_change_type: proposedChange.ChangeVotePeriod, proposed_change_data: [4] };
 }
 
 async function getReserves(locked_stablecoins: number): Promise<Map<string, number>> {
@@ -97,13 +97,13 @@ async function getReserves(locked_stablecoins: number): Promise<Map<string, numb
     };
 
     let data;
-    await fetch( radix_api_url + `/entity/resources`, {
+    await fetch(radix_api_url + `/entity/resources`, {
         method: 'POST',
         body: JSON.stringify(obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8', })
     })
-        .then( (response) => response.json() )
-        .then( (tmp_data) => data = tmp_data )
+        .then((response) => response.json())
+        .then((tmp_data) => data = tmp_data)
         .catch(console.error);
 
 
@@ -111,14 +111,14 @@ async function getReserves(locked_stablecoins: number): Promise<Map<string, numb
     const fungibles = data.fungible_resources.items;
 
     let reserves = new Map<string, number>();
-    fungibles.map(async (fungible: any[]) =>{
-            const address = fungible["address"];
-            let amount = parseFloat(fungible["amount"]["value"]);
-            if (address === stablecoin_address) {
-                amount = amount - locked_stablecoins;
-            }
-            reserves[address] = amount;
-        });
+    fungibles.map(async (fungible: any[]) => {
+        const address = fungible["address"];
+        let amount = parseFloat(fungible["amount"]["value"]);
+        if (address === stablecoin_address) {
+            amount = amount - locked_stablecoins;
+        }
+        reserves[address] = amount;
+    });
 
     return reserves;
 }
@@ -135,18 +135,18 @@ async function getVoterCard(account: string): Promise<voterCard> {
     await fetch(radix_api_url + `/entity/non-fungible/ids`, {
         method: 'POST',
         body: JSON.stringify(id_obj),
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8', })
     })
         .then((response) => response.json())
         .then((tmp_data) => id_data = tmp_data["non_fungible_ids"]["items"])
         .catch(console.error);
 
     // @ts-ignore
-    if (!id_data || !id_data.length) return {voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: []};
+    if (!id_data || !id_data.length) return { voting_power: 0, stablecoins_locked: 0, positions_ids_locked: [], proposals_voted: [] };
 
     const voter_card_id = id_data[0]["non_fungible_id"];
 
-    const nfr_obj:NonFungibleDataRequest = {
+    const nfr_obj: NonFungibleDataRequest = {
         "address": voter_card_address,
         "non_fungible_id": voter_card_id
     };
@@ -172,13 +172,13 @@ async function voterCardDataFromHex(mutable_hex: string, immutable_hex: string):
     params.append('mutable_data_hex', mutable_hex);
     params.append('immutable_data_hex', immutable_hex);
 
-    const request = new Request( `${backend_api_url}/voter_cards?${params}`, {
+    const request = new Request(`${backend_api_url}/voter_cards?${params}`, {
         method: 'GET',
-        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
+        headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8', })
     });
 
     const res = await (await fetch(request)).json();
-    return {voting_power: res.votingPower, stablecoins_locked: res.stablecoinsLocked, positions_ids_locked: res.positionsLockedIds, proposals_voted: res.proposalsVoted};
+    return { voting_power: res.votingPower, stablecoins_locked: res.stablecoinsLocked, positions_ids_locked: res.positionsLockedIds, proposals_voted: res.proposalsVoted };
 }
 
-export {getDao, getVoterCard}
+export { getDao, getVoterCard }

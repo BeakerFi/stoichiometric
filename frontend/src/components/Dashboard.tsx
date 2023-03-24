@@ -18,12 +18,12 @@ export interface Props {
 const pages = ["swap", "liquidity", "lend", "liquidate", "dao", "card"];
 
 const Dashboard: React.FC<Props> = (props) => {
-    const { device } = useContext( ResponsiveContext );
-    const { burgerOpen, toggleBurger } = useContext( BurgerContext );
+    const { device } = useContext(ResponsiveContext);
+    const { burgerOpen, toggleBurger } = useContext(BurgerContext);
 
-    const { user } = useContext( UserContext );
+    const { user } = useContext(UserContext);
 
-    const style = {
+    const style = {
         navlink: {
             zIndex: '1000',
             textDecoration: 'none',
@@ -38,19 +38,19 @@ const Dashboard: React.FC<Props> = (props) => {
         mobileNavlinkContainer: {
 
         },
-    
+
         top: {
             position: 'absolute' as 'absolute',
             left: '0',
             top: '0',
-    
+
             width: 'calc(100% - 20px - 30px)',
             borderRadius: '10px',
             background: 'background2',
 
             margin: '10px 10px',
             padding: '15px',
-    
+
             display: 'flex',
             flexDirection: 'column' as 'column',
             alignItems: 'center',
@@ -70,7 +70,7 @@ const Dashboard: React.FC<Props> = (props) => {
 
         mobileMenu: {
             zIndex: "2000",
-    
+
             width: 'calc(100% - 30px)',
             height: `${burgerOpen ? 'auto' : '0'}`,
             overflow: 'hidden',
@@ -82,7 +82,7 @@ const Dashboard: React.FC<Props> = (props) => {
             transition: 'opacity .1s',
 
             padding: `${burgerOpen ? '15px' : '0 15px'}`,
-    
+
             display: 'flex',
             alignItems: 'center',
 
@@ -93,28 +93,28 @@ const Dashboard: React.FC<Props> = (props) => {
             position: 'absolute' as 'absolute',
             left: '0',
             top: '0',
-    
+
             height: 'calc(100% - 60px - 30px)',
             borderRadius: '10px',
             background: 'background2',
 
             margin: '30px 20px',
             padding: '15px',
-    
+
             display: 'flex',
             flexDirection: 'column' as 'column',
             alignItems: 'center',
             boxShadow: '0 1px 4px',
             color: 'shadow'
         },
-    
+
         beaker: {
             fontFamily: 'primary',
             textDecoration: "none",
             fontSize: 4,
             color: 'text',
             fontWeight: '600',
-    
+
             margin: '0',
             padding: '0'
         },
@@ -125,16 +125,16 @@ const Dashboard: React.FC<Props> = (props) => {
             fontSize: 3,
             color: 'text',
             fontWeight: '600',
-    
+
             margin: '0',
             padding: '0'
         },
-    
+
         fi: {
             fontFamily: 'primary',
             fontSize: 1,
             color: 'primary',
-    
+
             margin: '0',
             padding: '0'
         },
@@ -184,7 +184,7 @@ const Dashboard: React.FC<Props> = (props) => {
             height: '22px',
             aspectRatio: '1',
             opacity: '.3',
-    
+
             margin: '0',
             padding: '0',
 
@@ -201,7 +201,7 @@ const Dashboard: React.FC<Props> = (props) => {
             height: '19px',
             aspectRatio: '1',
             opacity: '.3',
-    
+
             margin: '0',
             padding: '0',
 
@@ -291,18 +291,19 @@ const Dashboard: React.FC<Props> = (props) => {
             zIndex: '4000'
         },
     }
-    
-    function icon(x: string) { return(
-        {
-            "-webkit-mask":`url('/pages/${x}.svg') center/contain no-repeat`,
-            mask:`url('/pages/${x}.svg') center/contain no-repeat`,
-        })
+
+    function icon(x: string) {
+        return (
+            {
+                "-webkit-mask": `url('/pages/${x}.svg') center/contain no-repeat`,
+                mask: `url('/pages/${x}.svg') center/contain no-repeat`,
+            })
     }
 
     return (
         <div>
             <div>
-                { device == "mobile" ? 
+                {device == "mobile" ?
                     <div>
                         <div sx={style.top}>
                             <div sx={style.row}>
@@ -318,62 +319,66 @@ const Dashboard: React.FC<Props> = (props) => {
                                     </h1>
                                 </NavLink>
                                 <div sx={style.right}>
-                                    <ConnectWallet/>
+                                    <ConnectWallet />
                                 </div>
                             </div>
                             <div sx={style.mobileMenu}>
                                 {
                                     pages.map((x, index) => {
                                         if (x == props.page) return (
-                                            <div key={"dashboard_mobile" + index} sx={{...style.mobileLinkContainer, ...style.active}}>
-                                                <div sx={{...style.mobileLink, ...style.linkActive, ...icon(x)}}/>
+                                            <div key={"dashboard_mobile" + index} sx={{ ...style.mobileLinkContainer, ...style.active }}>
+                                                <div sx={{ ...style.mobileLink, ...style.linkActive, ...icon(x) }} />
                                             </div>
                                         )
-                                        else { return (
-                                            <div key={"dashboard_mobile" + index} sx={style.mobileNavlinkContainer}>
-                                                <NavLink to={`/${x}`} sx={style.navlink}>
-                                                    <div sx={style.mobileLinkContainer}>
-                                                        <div sx={{...style.mobileLink, ...icon(x)}}/>
-                                                    </div>
-                                                </NavLink>
-                                            </div>
-                                        )}
+                                        else {
+                                            return (
+                                                <div key={"dashboard_mobile" + index} sx={style.mobileNavlinkContainer}>
+                                                    <NavLink to={`/${x}`} sx={style.navlink}>
+                                                        <div sx={style.mobileLinkContainer}>
+                                                            <div sx={{ ...style.mobileLink, ...icon(x) }} />
+                                                        </div>
+                                                    </NavLink>
+                                                </div>
+                                            )
+                                        }
                                     })
                                 }
                             </div>
                         </div>
                     </div>
-                : <div sx={style.left}> 
-                    <NavLink sx={style.navlink} to={"/"}>
-                        { device == "laptop" || device == "desktop" ?
-                            <h1 sx={style.beaker}>
-                                Stoic<span sx={style.fi}>.fi</span>
-                            </h1>
-                            : <h1 sx={style.beaker}><span sx={style.beakerTablet}>Stc</span></h1>
-                        }
-                    </NavLink>
-                    {
-                        pages.map((x, index) => {
-                            if (x == props.page) return (
-                                <div key={"dashboard" + index} sx={{...style.linkContainer, ...style.active}}>
-                                    <div sx={{...style.link, ...style.linkActive, ...icon(x)}}/>
-                                </div>
-                            )
-                            else { return (
-                                <div key={"dashboard" + index} sx={style.navlinkContainer}>
-                                    <NavLink to={`/${x}`} sx={style.navlink}>
-                                        <div sx={style.linkContainer}>
-                                            <div sx={{...style.link, ...icon(x)}}/>
+                    : <div sx={style.left}>
+                        <NavLink sx={style.navlink} to={"/"}>
+                            {device == "laptop" || device == "desktop" ?
+                                <h1 sx={style.beaker}>
+                                    Stoic<span sx={style.fi}>.fi</span>
+                                </h1>
+                                : <h1 sx={style.beaker}><span sx={style.beakerTablet}>Stc</span></h1>
+                            }
+                        </NavLink>
+                        {
+                            pages.map((x, index) => {
+                                if (x == props.page) return (
+                                    <div key={"dashboard" + index} sx={{ ...style.linkContainer, ...style.active }}>
+                                        <div sx={{ ...style.link, ...style.linkActive, ...icon(x) }} />
+                                    </div>
+                                )
+                                else {
+                                    return (
+                                        <div key={"dashboard" + index} sx={style.navlinkContainer}>
+                                            <NavLink to={`/${x}`} sx={style.navlink}>
+                                                <div sx={style.linkContainer}>
+                                                    <div sx={{ ...style.link, ...icon(x) }} />
+                                                </div>
+                                            </NavLink>
                                         </div>
-                                    </NavLink>
-                                </div>
-                            )}
-                        })
-                    }
-                    <div sx={style.bottom}>
-                        <ConnectWallet/>
+                                    )
+                                }
+                            })
+                        }
+                        <div sx={style.bottom}>
+                            <ConnectWallet />
+                        </div>
                     </div>
-                </div>
                 }
             </div>
             {props.children}

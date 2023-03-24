@@ -18,7 +18,7 @@ const TokensCtx: React.FC<Props> = (props) => {
     const [pools, setPools] = useState<any[]>([]);
     const [lenders, setLenders] = useState<any[]>([]);
     const [loans, setLoans] = useState<any[]>([]);
-    const [dao, setDao] = useState<any>({total_voting_power: 0, vote_period: 0, vote_validity_threshold: 0, proposals: [], reserves: new Map<string, number>()});
+    const [dao, setDao] = useState<any>({ total_voting_power: 0, vote_period: 0, vote_validity_threshold: 0, proposals: [], reserves: new Map<string, number>() });
 
     const [tokensLoading, setTokensLoading] = useState(false);
 
@@ -34,7 +34,7 @@ const TokensCtx: React.FC<Props> = (props) => {
             setPools(poolsList);
 
             var l: any = [];
-            for (var i = 0; i < x.lenders.length; ++i) { 
+            for (var i = 0; i < x.lenders.length; ++i) {
                 l[x.lenders[i].token] = x.lenders[i].lender;
             }
             setLenders(l);
@@ -54,11 +54,11 @@ const TokensCtx: React.FC<Props> = (props) => {
 
 
     return (
-        <TokensContext.Provider value={{tokens, tokensLoading, pools, lenders, loans, dao}}>
+        <TokensContext.Provider value={{ tokens, tokensLoading, pools, lenders, loans, dao }}>
             {props.children}
         </TokensContext.Provider>
     )
 
 };
 
-export {TokensContext, TokensCtx};
+export { TokensContext, TokensCtx };

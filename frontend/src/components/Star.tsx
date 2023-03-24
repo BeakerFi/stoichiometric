@@ -14,9 +14,9 @@ interface Props {
     height?: string;
 }
 
-const Star: React.FC<Props> = ( props ) => {
+const Star: React.FC<Props> = (props) => {
     const mousePosition = useMousePosition();
-    const { device, windowSize } = useContext( ResponsiveContext );
+    const { device, windowSize } = useContext(ResponsiveContext);
 
     let x: number;
     let y: number;
@@ -30,13 +30,13 @@ const Star: React.FC<Props> = ( props ) => {
     props.top ? y = parseFloat(props.top) : props.bottom ? y = parseFloat(props.bottom) : y = 0;
 
     function translate(x: GLfloat, y: GLfloat) {
-        if (x > y) return Math.sqrt(Math.abs(x-y));
-        else return -Math.sqrt(Math.abs(x-y));
+        if (x > y) return Math.sqrt(Math.abs(x - y));
+        else return -Math.sqrt(Math.abs(x - y));
     }
 
     const style = {
         movingSquare: {
-            height: `${device == "mobile" ? parseFloat(height)/2 : height}px`,
+            height: `${device == "mobile" ? parseFloat(height) / 2 : height}px`,
             aspectRatio: '1',
             background: color,
             animation: 'opacityChange 2.2s infinite alternate',
@@ -46,12 +46,12 @@ const Star: React.FC<Props> = ( props ) => {
             bottom: `${props.bottom}%`,
             left: `${props.left}%`,
             right: `${props.right}%`,
-            transform: `Translate(${translate(mousePosition.x, windowSize.width*x/100)}px,${translate(mousePosition.y, windowSize.height*y/100)}px)`
+            transform: `Translate(${translate(mousePosition.x, windowSize.width * x / 100)}px,${translate(mousePosition.y, windowSize.height * y / 100)}px)`
         }
     }
 
     return (
-        <div sx={style.movingSquare}/>
+        <div sx={style.movingSquare} />
     )
 };
 

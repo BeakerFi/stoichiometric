@@ -50,7 +50,7 @@ const ConnectWallet: React.FC<Props> = (props) => {
                 color: 'white'
             }
         },
-    
+
         buttonLoading: {
             background: 'primary',
             cursor: 'default !important',
@@ -66,7 +66,7 @@ const ConnectWallet: React.FC<Props> = (props) => {
                 animation: 'rotating 1s linear infinite',
             }
         },
-    
+
         buttonConnected: {
             background: 'primary',
 
@@ -74,36 +74,36 @@ const ConnectWallet: React.FC<Props> = (props) => {
                 transform: 'Rotate(180deg)',
             }
         },
-    
+
         iconLogin: {
             transform: 'scaleX(-1)',
-    
+
             background: 'text',
             height: '17px',
             aspectRatio: '1',
             opacity: '.3',
-    
+
             margin: '0',
             padding: '0',
-            "-webkit-mask":`url('/pages/wallet.svg') center/contain no-repeat`,
-                mask:`url('/pages/wallet.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/pages/wallet.svg') center/contain no-repeat`,
+            mask: `url('/pages/wallet.svg') center/contain no-repeat`,
         },
-    
+
         iconProfile: {
-    
+
             background: 'white',
             height: '17px',
             aspectRatio: '1',
             opacity: '1',
-    
+
             margin: '0',
             padding: '0',
-            "-webkit-mask":`url('/pages/parameters.svg') center/contain no-repeat`,
-                mask:`url('/pages/parameters.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/pages/parameters.svg') center/contain no-repeat`,
+            mask: `url('/pages/parameters.svg') center/contain no-repeat`,
 
             transition: 'transform .2s'
         },
-    
+
         loading: {
             position: 'absolute' as 'absolute',
         },
@@ -119,7 +119,7 @@ const ConnectWallet: React.FC<Props> = (props) => {
         },
 
     };
-    
+
 
     /*        { device == 'mobile' && !connectionLoading ?
     <p sx={style.phrase}>{user.address ? user.address.slice(0,10)+"..."+user.address.slice(user.address.length - 5, user.address.length) : "Connect wallet"}</p>
@@ -128,14 +128,15 @@ const ConnectWallet: React.FC<Props> = (props) => {
 */
 
     if (!user.address) {
-    return (
-            <button sx={connectionLoading ? {...style.button, ...style.buttonLoading} : style.button } onClick={connectUser}>
-                <div sx={connectionLoading ? style.loading : style.iconLogin } ></div>
+        return (
+            <button sx={connectionLoading ? { ...style.button, ...style.buttonLoading } : style.button} onClick={connectUser}>
+                <div sx={connectionLoading ? style.loading : style.iconLogin} ></div>
             </button>
-    )} else {
+        )
+    } else {
         return (
             <NavLink to={`/profile`}>
-                <button sx={{...style.button, ...style.buttonConnected}}>
+                <button sx={{ ...style.button, ...style.buttonConnected }}>
                     <div sx={style.iconProfile}></div>
                 </button>
             </NavLink>

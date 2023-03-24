@@ -11,6 +11,6 @@ const globalTheme = {
 };
 
 
-const themes = {light: light, dark: dark, global : globalTheme};
+const themes = { light: light, dark: dark, global: globalTheme };
 
 export default themes;

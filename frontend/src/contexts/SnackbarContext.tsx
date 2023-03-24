@@ -14,20 +14,20 @@ const SnackbarCtx: React.FC<Props> = (props) => {
     alertsRef.current = alerts
 
     function popAlert(array: any[]) {
-        setAlerts(array.filter((elm, idx) => idx !== array.length-1));
+        setAlerts(array.filter((elm, idx) => idx !== array.length - 1));
     }
 
-    const addAlert = (type : string, message : string) => {
-        setAlerts([{type, message}, ...alertsRef.current])
+    const addAlert = (type: string, message: string) => {
+        setAlerts([{ type, message }, ...alertsRef.current])
         setTimeout(() => popAlert(alertsRef.current), 5000)
     };
 
     return (
-        <SnackbarContext.Provider value={{alerts, addAlert}}>
+        <SnackbarContext.Provider value={{ alerts, addAlert }}>
             {props.children}
         </SnackbarContext.Provider>
     )
 
 };
 
-export {SnackbarContext, SnackbarCtx};
+export { SnackbarContext, SnackbarCtx };

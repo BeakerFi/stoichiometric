@@ -43,12 +43,12 @@ const loan_address = "resource_tdx_b_1qr2g063eurussjcajx3585684tz8m0lszzz298dh0l
 
 const flash_mint_address = "resource_tdx_b_1qq0k3ggft9demr2k874xta398dj7j0p984efu3wl08dsx0grle";
 
-const stable_coin = {name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png"}
+const stable_coin = { name: "Stoichiometric USD", symb: "SUSD", address: stablecoin_address, icon_url: "https://cdn-icons-png.flaticon.com/512/3215/3215346.png" }
 
-const token_default = {name: 'Wrapped Bitcoin', symb: 'WBTC', address: 'resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r', icon_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png'};
-
-
+const token_default = { name: 'Wrapped Bitcoin', symb: 'WBTC', address: 'resource_tdx_b_1qre9sv98scqut4k9g3j6kxuvscczv0lzumefwgwhuf6qdu4c3r', icon_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1200px-Bitcoin.svg.png' };
 
 
 
-export {dAppId, radix_api_url, backend_api_url, dao_address, voter_card_address, proposal_receipt_address, router_address, position_address, issuer_address, stablecoin_address, loan_address, flash_mint_address, stable_coin, token_default}
+
+
+export { dAppId, radix_api_url, backend_api_url, dao_address, voter_card_address, proposal_receipt_address, router_address, position_address, issuer_address, stablecoin_address, loan_address, flash_mint_address, stable_coin, token_default }

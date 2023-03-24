@@ -75,11 +75,11 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 background: 'background2',
                 borderRadius: '5px',
                 color: 'text',
-    
+
                 '&:focus': {
                     outline: 'none',
                     borderColor: 'text',
-    
+
                     '& ~ label': {
                         left: '10px',
                         top: '0',
@@ -88,7 +88,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                         color: 'text'
                     }
                 },
-    
+
                 '&:not(:placeholder-shown) ~ label': {
                     left: '10px',
                     top: '0',
@@ -96,7 +96,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                     transform: 'TranslateY(-50%)',
                 }
             },
-    
+
             '& label': {
                 position: 'absolute' as 'absolute',
                 left: '20px',
@@ -111,7 +111,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 cursor: 'text',
                 background: 'background2',
                 color: 'text2',
-            }, 
+            },
 
             '& #get ~ label, #get': {
                 cursor: 'not-allowed'
@@ -126,8 +126,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             opacity: '.3',
             transform: 'Rotate(90deg)',
             background: 'text',
-            "-webkit-mask":`url('/icons/swap.svg') center/contain no-repeat`,
-                        mask:`url('/icons/swap.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/swap.svg') center/contain no-repeat`,
+            mask: `url('/icons/swap.svg') center/contain no-repeat`,
             '&:hover': {
                 opacity: '1'
             }
@@ -141,8 +141,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             opacity: '.3',
             transform: 'Rotate(90deg)',
             background: 'text',
-            "-webkit-mask":`url('/icons/swap.svg') center/contain no-repeat`,
-                        mask:`url('/icons/swap.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/swap.svg') center/contain no-repeat`,
+            mask: `url('/icons/swap.svg') center/contain no-repeat`,
             '&:hover': {
                 opacity: '1'
             }
@@ -214,8 +214,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%)',
             position: 'absolute' as 'absolute',
             right: '0',
@@ -227,8 +227,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(180deg)',
             zIndex: '25',
             cursor: 'pointer',
@@ -286,8 +286,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 transform: 'Rotate(90deg)',
                 margin: '0 5px',
                 aspectRatio: '1',
-                background: 'text',"-webkit-mask":`url('/icons/smallArrow.svg') center/contain no-repeat`,
-                mask:`url('/icons/smallArrow.svg') center/contain no-repeat`,
+                background: 'text', "-webkit-mask": `url('/icons/smallArrow.svg') center/contain no-repeat`,
+                mask: `url('/icons/smallArrow.svg') center/contain no-repeat`,
             }
         },
 
@@ -301,7 +301,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             justifyContent: 'space-between',
             marginTop: '5px',
         },
-        
+
         swapButton: {
             background: 'primary',
             border: 'none',
@@ -311,7 +311,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             height: '50px',
             fontFamily: 'primary',
             fontSize: 2,
-            cursor: 'pointer', 
+            cursor: 'pointer',
             '&:hover': {
                 opacity: `${swapLoading ? '1' : '.8'}`
             }
@@ -415,7 +415,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             width: '100%'
         },
 
-        alert :{
+        alert: {
             width: '60%',
             border: 'solid 1px',
             borderColor: 'red',
@@ -433,7 +433,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 textAlign: 'center' as 'center'
             }
         }
-    }  
+    }
 }
 
 export default styleFunction;

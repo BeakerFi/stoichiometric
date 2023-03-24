@@ -8,7 +8,7 @@ import { getOwnedTokens } from "utils/general/generalApiCalls";
 
 import { getOwnedPositions } from "utils/dex/routerApiCalls";
 
-import {loan, position, voterCard} from "types";
+import { loan, position, voterCard } from "types";
 import { getLoansOwnedBy, getAllLoansInformation } from "utils/stablecoin/issuerApiCalls";
 import { TokensContext } from "./TokensContext";
 
@@ -32,7 +32,7 @@ const UserCtx: React.FC<Props> = (props) => {
 
     const { lenders, tokens, pools } = useContext(TokensContext);
 
-    const [user, setUser] = useState<User>({address: null, name: null})
+    const [user, setUser] = useState<User>({ address: null, name: null })
 
     const [accountsList, setAccountsList] = useState<User[]>([]);
 
@@ -74,33 +74,33 @@ const UserCtx: React.FC<Props> = (props) => {
         if (address == undefined) {
             if (user.address) {
 
-                const result:any = await getOwnedTokens(user.address);
+                const result: any = await getOwnedTokens(user.address);
 
                 if (result && result.length) setTokensOwned(result[0]);
 
-                const voter:voterCard = await getVoterCard(user.address);
+                const voter: voterCard = await getVoterCard(user.address);
 
                 setVoterCard(voter);
             } else return
         }
         else {
-            const result:any = await getOwnedTokens(address);
+            const result: any = await getOwnedTokens(address);
             if (result && result.length) setTokensOwned(result[0]);
-            const voter:voterCard = await getVoterCard(address);
+            const voter: voterCard = await getVoterCard(address);
             setVoterCard(voter)
         }
-    } 
+    }
 
     async function setMyPositions(address?: string) {
         if (address == undefined) {
             if (user.address) {
-                const result:any = await getOwnedPositions(user.address, pools, tokens);
+                const result: any = await getOwnedPositions(user.address, pools, tokens);
                 const loans: any = await getLoansOwnedBy(user.address);
                 setPositions(result);
                 setMyLoans(await getAllLoansInformation(loans, lenders));
             } else return
         } else {
-            const result:any = await getOwnedPositions(address, pools, tokens);
+            const result: any = await getOwnedPositions(address, pools, tokens);
             const loans: any = await getLoansOwnedBy(address);
             setPositions(result);
             setMyLoans(await getAllLoansInformation(loans, lenders));
@@ -108,9 +108,9 @@ const UserCtx: React.FC<Props> = (props) => {
     }
 
     useEffect(() => {
-        rdt.state$.subscribe(async state => { 
-            setUser({address: state.accounts ? state.accounts[0].address : null, name: state.accounts ? state.accounts[0].label : null });
-            setAccountsList(state.accounts ? state.accounts.map(x => { return {address: x.address, name: x.label}}) : [])         
+        rdt.state$.subscribe(async state => {
+            setUser({ address: state.accounts ? state.accounts[0].address : null, name: state.accounts ? state.accounts[0].label : null });
+            setAccountsList(state.accounts ? state.accounts.map(x => { return { address: x.address, name: x.label } }) : [])
         });
     }, []);
 
@@ -146,10 +146,10 @@ const UserCtx: React.FC<Props> = (props) => {
             } else return
         }
         setLoans()
-        
+
     }, [lenders])
 
-    async function setUserValues(address:string) {
+    async function setUserValues(address: string) {
         setNbTokens(address);
         setMyPositions(address);
     }
@@ -161,7 +161,7 @@ const UserCtx: React.FC<Props> = (props) => {
     }, [user, tokens, pools])
 
     async function connectUser() {
-        if(!connectionLoading) {
+        if (!connectionLoading) {
             addAlert("warning", "Please approve connexion on your Wallet");
             setConnectionLoading(true);
 
@@ -175,18 +175,18 @@ const UserCtx: React.FC<Props> = (props) => {
         setConnectionLoading(false);
         resetRdt();
 
-        setUser({address: null, name: null});
+        setUser({ address: null, name: null });
         setTokensOwned([]);
         addAlert("check", "Your are logged out");
     }
-    
+
 
     return (
-        <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans, voterCard}}>
+        <UserContext.Provider value={{ user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans, voterCard }}>
             {props.children}
         </UserContext.Provider>
     )
 
 };
 
-export {UserContext, UserCtx};
+export { UserContext, UserCtx };
