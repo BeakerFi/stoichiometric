@@ -62,24 +62,22 @@ pub fn assert_current_has_loan(
     collateral_amount: Decimal,
     amount_lent: Decimal,
     loan_date: i64,
-    loan_to_value: Decimal,
     interest_rate: Decimal,
 ) {
     let current_account = test_env.get_current_account_address();
     let output = run_command(Command::new("resim").arg("show").arg(current_account));
 
     lazy_static! {
-        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.)*"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
+        static ref LOAN_RE: Regex = Regex::new(r#"NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(ResourceAddress\("(\w*)"\), (\w*)i64, Decimal\("([\d.]*)"\)\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\)\) \}"#).unwrap();
     }
 
     for loan_capture in LOAN_RE.captures_iter(&output) {
         if loan_id.to_string() == String::from(&loan_capture[1]) {
             let collateral_token_found = String::from(&loan_capture[2]);
             let loan_date_found = String::from(&loan_capture[3]).parse::<i64>().unwrap();
-            let loan_to_value_found = Decimal::from(&loan_capture[4]);
-            let interest_rate_found = Decimal::from(&loan_capture[5]);
-            let collateral_amount_found = Decimal::from(&loan_capture[6]);
-            let amount_lent_found = Decimal::from(&loan_capture[7]);
+            let interest_rate_found = Decimal::from(&loan_capture[4]);
+            let collateral_amount_found = Decimal::from(&loan_capture[5]);
+            let amount_lent_found = Decimal::from(&loan_capture[6]);
 
             assert_eq!(
                 test_env.get_resource(collateral_token).clone(),
@@ -88,7 +86,6 @@ pub fn assert_current_has_loan(
             assert_eq!(collateral_amount, collateral_amount_found);
             assert_eq!(amount_lent, amount_lent_found);
             assert_eq!(loan_date, loan_date_found);
-            assert_eq!(loan_to_value, loan_to_value_found);
             assert_eq!(interest_rate, interest_rate_found);
 
             return;

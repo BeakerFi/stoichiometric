@@ -1,3 +1,7 @@
+//! # Stoichiometric Dex
+//!
+//! This package implements a concentrated-liquidity constant-summ AMM
+
 pub mod constants;
 pub mod decimal_maths;
 pub mod observation_array;

@@ -1,11 +1,9 @@
-use std::collections::HashSet;
 use std::process::Command;
 use lazy_static::lazy_static;
 use regex::Regex;
 use scrypto::prelude::{Decimal, dec};
 use sqrt::manifest_call::ManifestCall;
 use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, I64, ResourceAddressArg, StringArg};
-use sqrt::method_args;
 use sqrt::package::Package;
 use sqrt::test_environment::TestEnvironment;
 use crate::dao::dao_state::DaoState;
@@ -123,6 +121,26 @@ pub fn lock_positions(test_env: &mut TestEnvironment, position_ids: Vec<String>,
     test_env.call_custom_manifest(manifest_name, env_args)
 }
 
+pub fn vote(test_env: &mut TestEnvironment, proposal_address: String, voter_card_id: String, vote_for: bool) -> ManifestCall{
+
+    let mut env_args = Vec::new();
+    env_args.push((
+        "caller_address".to_string(),
+        AccountAddressArg(test_env.get_current_account_name().to_string()),
+    ));
+    env_args.push((
+        "component_address".to_string(),
+        StringArg(proposal_address),
+    ));
+
+    env_args.push(("voter_card_id".to_string(), StringArg(voter_card_id)));
+    env_args.push(("voter_card_address".to_string(), ResourceAddressArg(VOTER_CARD_NAME.to_string())));
+
+    let manifest_name = if vote_for { "vote_for_proposal" } else { "vote_against_proposal" };
+
+    test_env.call_custom_manifest(manifest_name, env_args)
+
+}
 
 pub fn call_router_method(test_env: &mut TestEnvironment, method: RouterMethods) -> ManifestCall
 {
@@ -139,12 +157,12 @@ pub fn call_issuer_method(test_env: &mut TestEnvironment, method: IssuerMethods)
     manifest_call
 }
 
-pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, voting_power: Decimal, stablecoins_locked: Decimal, positions_locked: Vec<String>, last_proposal_voted_id: u64, proposals_voted: HashSet<u64>) {
+pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, voting_power: Decimal, stablecoins_locked: Decimal, last_proposal_voted_id: u64) {
 
     let output = run_command(Command::new("resim").arg("show").arg(test_env.get_current_account_address()));
 
     lazy_static!{
-        static ref VOTER_CARD_RE: Regex = Regex::new(r#"/NonFungible \{ id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Array<NonFungibleLocalId>\((.*)\), (\w*)u64, Array<U64>\((.*)\)\) \}/g"#).unwrap();
+        static ref VOTER_CARD_RE: Regex = Regex::new(r#"id: NonFungibleLocalId\("(.*)"\), immutable_data: Tuple\(\), mutable_data: Tuple\(Decimal\("([\d.]*)"\), Decimal\("([\d.]*)"\), Array<NonFungibleLocalId>\((.*)\), (\w*)u64, Array<U64>\((.*)\)\)"#).unwrap();
     }
 
     for voter_card_cap in VOTER_CARD_RE.captures_iter(&output) {
@@ -156,11 +174,20 @@ pub fn assert_voter_card_is(test_env: &TestEnvironment, voter_card_id: String, v
             let stablecoins_lock = Decimal::from(&voter_card_cap[3]);
             let positions_lock = &voter_card_cap[4];
             let last_proposal_voted = String::from(&voter_card_cap[5]).parse::<u64>().unwrap();
-            let proposals_voted = &voter_card_cap[6];
 
             assert_eq!(voting_power, voting_pow);
             assert_eq!(stablecoins_locked, stablecoins_lock);
             assert_eq!(last_proposal_voted_id, last_proposal_voted);
+
+            let mut positions_found = Vec::new();
+            lazy_static!{
+                static ref POSITION_LOCKED_RE: Regex = Regex::new(r#"NonFungibleLocalId\("(.*)"\)"#).unwrap();
+            }
+
+            for position in POSITION_LOCKED_RE.captures_iter(positions_lock)
+            {
+                positions_found.push(String::from(&position[1]));
+            }
 
             return;
         }

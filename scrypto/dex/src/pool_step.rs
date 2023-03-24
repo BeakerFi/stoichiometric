@@ -1,4 +1,4 @@
-//! # Pool Blueprint
+//! # PoolStep Blueprint
 //!
 //! Implements a constant-sum AMM that does not recompound fees. This blueprint is to be
 //! instantiated privately.

@@ -1,3 +1,5 @@
+//! #Stoichiometric DAO
+
 pub mod dao;
 pub mod proposal;
 pub mod proposal_receipt;

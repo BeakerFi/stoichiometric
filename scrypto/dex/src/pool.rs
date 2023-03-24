@@ -7,7 +7,6 @@
 //!
 //! ### Function
 //! - [new](PoolComponent::new) - Instantiates a new [`PoolComponent`] and returns it.
-//! and returns it.
 //!
 //! ### Methods
 //! - [add_liquidity](PoolComponent::add_liquidity) - Adds liquidity to the pool at the closest rate to the given rate.
@@ -124,15 +123,16 @@ mod pool {
             assert!(dec_step >= Decimal::zero() && dec_step <= Decimal::from(NB_STEP));
             let current_step: u16 = ((dec_step.floor().0) / Decimal::ONE.0).try_into().unwrap();
 
+            let mut steps = HashMap::new();
+            let initial_step = PoolStepComponent::new(stable.clone(), other.clone(), initial_rate.clone());
+            steps.insert(current_step.clone(), initial_step);
+
             let component = Self {
                 last_checked_price: initial_rate,
                 rate_step,
                 current_step,
                 min_rate,
-                max_rate,
-                stable_prot_fees: Decimal::ZERO,
-                other_prot_fees: Decimal::ZERO,
-                steps: HashMap::new(),
+                steps,
                 stable_protocol_fees: Vault::new(stable),
                 other_protocol_fees: Vault::new(other),
                 oracle: OracleComponent::new(),

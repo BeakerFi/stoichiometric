@@ -7,16 +7,8 @@ use stoichiometric_tests::dex::utils::{
     add_liquidity, add_liquidity_at_step, add_liquidity_at_steps, assert_current_position,
     assert_no_positions, create_pool, instantiate,
 };
-use stoichiometric_tests::utils::{ADMIN_BADGE_NAME, POSITION_NAME};
+use stoichiometric_tests::utils::{ POSITION_NAME};
 
-#[test]
-fn test_instantiate() {
-    let test_env = instantiate();
-    assert_eq!(
-        test_env.amount_owned_by_current(ADMIN_BADGE_NAME),
-        Decimal::ONE
-    );
-}
 
 #[test]
 fn test_create_pool() {
@@ -24,7 +16,9 @@ fn test_create_pool() {
 
     let pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
 
-    let pool_states = HashMap::new();
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, StepState::from(Decimal::ZERO, Decimal::ZERO, dec!(20000), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO));
+
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
         50266,
@@ -40,7 +34,9 @@ fn test_create_multiple_pools() {
     let mut test_env = instantiate();
 
     let pool_usd_btc = create_pool(&mut test_env, "btc", dec!(20000), dec!(100), dec!(100000));
-    let pool_states = HashMap::new();
+    let mut pool_states = HashMap::new();
+    pool_states.insert(50266, StepState::from(Decimal::ZERO, Decimal::ZERO, dec!(20000), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO));
+
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),
         50266,
@@ -52,7 +48,9 @@ fn test_create_multiple_pools() {
 
     test_env.create_fixed_supply_token("eth", dec!(1000000));
     let pool_usd_eth = create_pool(&mut test_env, "eth", dec!(1700), dec!(10), dec!(20000));
-    let pool_states = HashMap::new();
+    let mut pool_states = HashMap::new();
+    pool_states.insert(44280, StepState::from(Decimal::ZERO, Decimal::ZERO, dec!(1700), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO));
+
     pool_usd_eth.assert_state_is(
         dec!("1.000115989063276095"),
         44280,
@@ -181,6 +179,7 @@ fn add_liquidity_at_step_no_position() {
         Decimal::ZERO,
     );
     let mut pool_states = HashMap::new();
+    pool_states.insert(50266, StepState::from(Decimal::ZERO, Decimal::ZERO, dec!(20000), Decimal::ZERO, Decimal::ZERO, Decimal::ZERO, Decimal::ZERO));
     pool_states.insert(30000, pool_state);
     pool_usd_btc.assert_state_is(
         dec!("1.000105411144423293"),

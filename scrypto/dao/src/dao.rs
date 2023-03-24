@@ -157,13 +157,13 @@ mod dao {
                 .create_with_no_initial_supply();
 
             let proposal_receipt_address = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Stoichiometric DAO proposal receipt")
+                .metadata("name", "Stoichiometric proposal receipt")
                 .mintable(
-                    rule!(require(protocol_admin_badge.resource_address())),
+                    rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,
                 )
                 .burnable(
-                    rule!(require(protocol_admin_badge.resource_address())),
+                    rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,
                 )
                 .create_with_no_initial_supply();
@@ -313,6 +313,7 @@ mod dao {
                 voter_card_updater,
                 self.protocol_admin_badge.resource_address(),
             );
+
             self.proposals.insert(self.proposal_id, proposal_comp);
 
             let receipt_data = ProposalReceipt {
@@ -368,6 +369,18 @@ mod dao {
                 None => None,
                 Some(changes) => self.execute_proposed_change(changes),
             }
+        }
+
+        #[inline]
+        pub fn put_in_reserves(&mut self, bucket: Bucket) {
+            match self.reserves.get_mut(&bucket.resource_address()) {
+                Some(vault) => vault.put(bucket),
+                None => {
+                    let new_vault = Vault::with_bucket(bucket);
+                    self.reserves
+                        .insert(new_vault.resource_address(), new_vault);
+                }
+            };
         }
 
         fn execute_proposed_change(
@@ -551,18 +564,6 @@ mod dao {
                 borrow_resource_manager!(self.voter_card_address)
                     .update_non_fungible_data(id, data);
             });
-        }
-
-        #[inline]
-        fn put_in_reserves(&mut self, bucket: Bucket) {
-            match self.reserves.get_mut(&bucket.resource_address()) {
-                Some(vault) => vault.put(bucket),
-                None => {
-                    let new_vault = Vault::with_bucket(bucket);
-                    self.reserves
-                        .insert(new_vault.resource_address(), new_vault);
-                }
-            };
         }
 
         #[inline]

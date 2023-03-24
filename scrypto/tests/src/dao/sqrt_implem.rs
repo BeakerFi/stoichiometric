@@ -1,10 +1,7 @@
 use crate::utils::{PROPOSAL_RECEIPT, VOTER_CARD_NAME};
 use scrypto::prelude::Decimal;
 use sqrt::blueprint::{AdminBadge, Blueprint};
-use sqrt::method::Arg::{
-    ComponentAddressArg, DecimalArg, NonFungibleBucketArg, ResourceAddressArg, StringArg, VecArg,
-    I64,
-};
+use sqrt::method::Arg::{ComponentAddressArg, DecimalArg, NonFungibleBucketArg, ResourceAddressArg, StringArg, VecArg, I64, FungibleBucketArg};
 use sqrt::method::{Arg, Method};
 use sqrt::{enum_arg, method_args, tuple_arg};
 
@@ -26,6 +23,7 @@ impl Blueprint for DaoBlueprint {
 
 pub enum DaoMethods {
     Unlock(String),
+    Gift(String, Decimal),
     MakeChangeVotePeriodProposal(i64),
     MakeMinimumVoteThresholdProposal(Decimal),
     MakeGrantIssuingRightProposal,
@@ -52,6 +50,7 @@ impl Method for DaoMethods {
     fn name(&self) -> &str {
         match self {
             DaoMethods::Unlock(_) => "unlock",
+            DaoMethods::Gift(_, _) => "put_in_reserves",
             DaoMethods::MakeChangeVotePeriodProposal(_)
             | DaoMethods::MakeGrantIssuingRightProposal
             | DaoMethods::MakeMinimumVoteThresholdProposal(_)
@@ -73,6 +72,15 @@ impl Method for DaoMethods {
                     vec![voter_card_id.clone()]
                 ))
             }
+            DaoMethods::Gift(token, amount) => {
+                method_args!(
+                    FungibleBucketArg(
+                        token.clone(),
+                        amount.clone()
+                    )
+                )
+            }
+
             DaoMethods::MakeChangeVotePeriodProposal(vote_period) => {
                 method_args!(enum_arg!(0, I64(vote_period.clone())))
             }
@@ -86,11 +94,11 @@ impl Method for DaoMethods {
                 let mut vec_arg = vec![];
                 for (resource, amount) in resources {
                     vec_arg.push(tuple_arg!(
-                        StringArg(resource.clone()),
+                        ResourceAddressArg(resource.clone()),
                         DecimalArg(amount.clone())
                     ))
                 }
-                method_args!(enum_arg!(3, VecArg(vec_arg)))
+                method_args!(enum_arg!(4, VecArg(vec_arg)))
             }
             DaoMethods::MakeAddNewCollateralToken(
                 token,
@@ -104,7 +112,7 @@ impl Method for DaoMethods {
                 oracle,
             ) => {
                 method_args!(enum_arg!(
-                    4,
+                    5,
                     ResourceAddressArg(token.clone()),
                     DecimalArg(loan_to_value.clone()),
                     DecimalArg(interest_rate.clone()),
@@ -124,7 +132,7 @@ impl Method for DaoMethods {
                 liquidation_penalty,
             ) => {
                 method_args!(enum_arg!(
-                    5,
+                    6,
                     ResourceAddressArg(lender.clone()),
                     DecimalArg(loan_to_value.clone()),
                     DecimalArg(interest_rate.clone()),
@@ -134,7 +142,7 @@ impl Method for DaoMethods {
             }
             DaoMethods::MakeChangeLenderOracle(lender, oracle) => {
                 method_args!(enum_arg!(
-                    6,
+                    7,
                     ResourceAddressArg(lender.clone()),
                     ComponentAddressArg(oracle.clone())
                 ))
@@ -147,7 +155,7 @@ impl Method for DaoMethods {
                         DecimalArg(amount.clone())
                     ))
                 }
-                method_args!(enum_arg!(7, VecArg(vec_arg)))
+                method_args!(enum_arg!(8, VecArg(vec_arg)))
             }
             DaoMethods::ExecuteProposal(proposal_receipt_id) => {
                 method_args!(NonFungibleBucketArg(
@@ -168,6 +176,7 @@ impl Method for DaoMethods {
     fn custom_manifest_name(&self) -> Option<&str> {
         match self {
             DaoMethods::Unlock(_) => None,
+            DaoMethods::Gift(_, _) => None,
             DaoMethods::MakeChangeVotePeriodProposal(_) => Some("make_change_vote_period_proposal"),
             DaoMethods::MakeMinimumVoteThresholdProposal(_) => {
                 Some("make_minimum_vote_threshold_proposal")

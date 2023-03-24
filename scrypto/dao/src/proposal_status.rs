@@ -1,3 +1,5 @@
+//!
+
 use scrypto::prelude::*;
 
 #[derive(ScryptoCategorize, LegacyDescribe, ScryptoEncode, ScryptoDecode, Clone)]

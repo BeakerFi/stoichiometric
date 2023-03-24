@@ -1,4 +1,3 @@
-
 use scrypto::blueprint;
 
 external_component! {
@@ -74,7 +73,7 @@ mod issuer {
 
             // Creates the NFR FlashMint address
             let flash_mint_address = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Stoichiometric FlashMint")
+                .metadata("name", "Stoichiometric Flash Mint")
                 .mintable(
                     rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,
@@ -100,12 +99,15 @@ mod issuer {
                     AccessRule::DenyAll,
                 )
                 .method("liquidate", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("clear_bad_debt", AccessRule::AllowAll, AccessRule::DenyAll)
+                .method("burn_fully_liquidated_loans", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method("flash_mint", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method(
                     "repay_flash_mint",
                     AccessRule::AllowAll,
                     AccessRule::DenyAll,
                 )
+                .method("give_tokens", AccessRule::AllowAll, AccessRule::DenyAll)
                 .method(
                     "get_lender_state",
                     AccessRule::AllowAll,
@@ -138,28 +140,12 @@ mod issuer {
             loan_to_value: Decimal,
             interest_rate: Decimal,
             liquidation_threshold: Decimal,
-            liquidation_incentive: Decimal,
+            protocol_liquidation_share: Decimal,
             oracle: ComponentAddress,
         ) {
             assert!(
                 self.lenders.get(&collateral_address).is_none(),
                 "There is already a lender for the given token"
-            );
-            assert!(
-                loan_to_value.is_positive() && loan_to_value < Decimal::ONE,
-                "LTV should be such that 0<LTV<1"
-            );
-            assert!(
-                interest_rate.is_positive() && interest_rate < Decimal::ONE,
-                "The daily interest rate should be such that 0<DIR<1"
-            );
-            assert!(
-                liquidation_threshold > Decimal::ONE,
-                "The liquidation threshold should be greater than one"
-            );
-            assert!(
-                liquidation_incentive.is_positive(),
-                "The liquidation incentive should be positive"
             );
 
             let new_lender = LenderComponent::new(
@@ -167,7 +153,7 @@ mod issuer {
                 loan_to_value,
                 interest_rate,
                 liquidation_threshold,
-                liquidation_incentive,
+                protocol_liquidation_share,
                 oracle,
             );
 
@@ -261,10 +247,10 @@ mod issuer {
         pub fn liquidate(
             &mut self,
             mut repayment: Bucket,
-            non_fungible_id: NonFungibleLocalId,
+            loan_id: NonFungibleLocalId,
         ) -> (Bucket, Bucket) {
             let loan: Loan =
-                borrow_resource_manager!(self.loan_address).get_non_fungible_data(&non_fungible_id);
+                borrow_resource_manager!(self.loan_address).get_non_fungible_data(&loan_id);
 
             let mut lender = self.get_lender(&loan.collateral_token);
 
@@ -274,14 +260,61 @@ mod issuer {
             let bucket_to_burn = repayment.take(amount_to_burn);
             self.burn_bucket(bucket_to_burn);
 
-            self.put_in_reserves(reserve_bucket);
+            match reserve_bucket {
+                Some(buck) => self.put_in_reserves(buck),
+                None => {}
+            }
+
 
             self.resource_minter.authorize(|| {
                 borrow_resource_manager!(self.loan_address)
-                    .update_non_fungible_data(&non_fungible_id, new_loan_data);
+                    .update_non_fungible_data(&loan_id, new_loan_data);
             });
 
             (repayment, liquidator_bucket)
+        }
+
+        pub fn clear_bad_debt(
+            &mut self,
+            loan_id: NonFungibleLocalId,
+        ) {
+            // Get the information about the bad debt from the lender
+            let loan: Loan =
+                borrow_resource_manager!(self.loan_address).get_non_fungible_data(&loan_id);
+            let lender = self.get_lender(&loan.collateral_token);
+            let (amount_to_clear, collateral, new_loan_data) = lender.clear_bad_debt(loan);
+
+            // Try to repay bad debt from reserves
+            match self.reserves.get_mut(&self.stablecoin_address)
+            {
+                Some(vault) => {
+                    if vault.amount() < amount_to_clear {
+                        panic!("Not enough stablecoin reserves to clear debt");
+                    }
+                    let reserves_input = vault.take(amount_to_clear);
+                    self.burn_bucket(reserves_input);
+
+                    self.update_loan_data_from_id(&loan_id, new_loan_data);
+                    self.put_in_reserves(collateral);
+                }
+                None => {
+                    panic!("Cannot clear debt");
+                }
+            }
+        }
+
+        pub fn burn_fully_liquidated_loans(&self, loans: Bucket) {
+            assert!(loans.resource_address() == self.loan_address,
+                    "Please provide loans to liquidate");
+
+            for loan in loans.non_fungibles::<Loan>() {
+                let loan_data = self.get_loan_data(&loan);
+
+                assert!(loan_data.amount_lent.is_zero() && loan_data.collateral_amount.is_zero(),
+                        "One of the supplied loans is not fully liquidated");
+            }
+
+            self.burn_bucket(loans);
         }
 
         pub fn flash_mint(&mut self, amount_to_mint: Decimal) -> (Bucket, Bucket) {
@@ -330,6 +363,16 @@ mod issuer {
             self.burn_bucket(repayment.take(amount_due));
 
             repayment
+        }
+
+        pub fn give_tokens(&mut self, tokens: Vec<Bucket>) {
+            for bucket in tokens {
+                self.put_in_reserves(bucket);
+            }
+        }
+
+        pub fn take_tokens(&mut self, token: ResourceAddress, amount: Decimal) -> Bucket {
+            self.reserves.get_mut(&token).unwrap().take(amount)
         }
 
         pub fn change_lender_parameters(
@@ -429,6 +472,13 @@ mod issuer {
         fn update_loan_data(&self, loan_nfr: NonFungible<Loan>, new_data: Loan) {
             self.resource_minter
                 .authorize(|| loan_nfr.update_data(new_data));
+        }
+
+        #[inline]
+        fn update_loan_data_from_id(&self, loan_id: &NonFungibleLocalId, new_data: Loan) {
+            self.resource_minter.authorize(|| {
+                borrow_resource_manager!(self.loan_address).update_non_fungible_data(loan_id, new_data);
+            });
         }
 
         #[inline]

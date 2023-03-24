@@ -189,6 +189,26 @@ fn test_new_lender_liquidation_threshold_smaller_than_one_fails() {
 }
 
 #[test]
+fn test_new_lender_liquidation_threshold_ltv_product_greater_than_one_fails() {
+    let (mut test_env, _) = instantiate();
+
+    new_default_lender(&mut test_env, "btc");
+    test_env
+        .call_method(IssuerMethods::NewLender(
+            "radix".to_string(),
+            dec!("0.7"),
+            dec!("0.7"),
+            dec!("2"),
+            Decimal::ONE,
+            "issuer_comp".to_string(),
+        ))
+        .should_panic(Error::AssertFailed(
+            "The LTV-liquidation threshold product should be smaller than one".to_string(),
+        ))
+        .run();
+}
+
+#[test]
 fn test_new_lender_liquidation_incentive_non_positive_fails() {
     let (mut test_env, _) = instantiate();
 
@@ -250,7 +270,6 @@ fn test_take_loan() {
         dec!(3),
         dec!(42000),
         0,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
@@ -343,7 +362,6 @@ fn test_repay_single_loan() {
         dec!(1),
         dec!(10000),
         2678400,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
@@ -458,7 +476,6 @@ fn test_repay_multiple_loans() {
         dec!(1),
         dec!(10000),
         2678400,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
@@ -513,7 +530,6 @@ fn test_add_collateral() {
         dec!(7),
         dec!(42000),
         0,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
@@ -564,10 +580,10 @@ fn test_remove_collateral() {
         ))
         .run();
 
-    // We should be able to remove 1 btc of collateral
+    // We should be able to remove 1.18 *2000btc of collateral
     test_env
         .call_method(IssuerMethods::RemoveCollateral(
-            Decimal::ONE,
+            dec!("1.18"),
             "#0#".to_string(),
         ))
         .run();
@@ -576,7 +592,7 @@ fn test_remove_collateral() {
     issuer_state.update();
     let mut lenders = HashMap::new();
     let btc_lender = LenderState::from(
-        dec!(2),
+        dec!("1.82"),
         dec!("0.7"),
         dec!("0.0001"),
         dec!("1.3"),
@@ -589,10 +605,9 @@ fn test_remove_collateral() {
         &test_env,
         "#0#",
         "btc",
-        dec!(2),
+        dec!("1.82"),
         dec!(28000),
         2678400,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
@@ -613,14 +628,14 @@ fn test_remove_collateral_too_much_fails() {
         ))
         .run();
 
-    // We should be able to remove 1 btc of collateral
+    // We can remove a maximum of 1.18 btc of collateral
     test_env
         .call_method(IssuerMethods::RemoveCollateral(
-            dec!("1.000000000000000001"),
+            dec!("1.180000000000000001"),
             "#0#".to_string(),
         ))
         .should_panic(Error::AssertFailed(
-            "The new collateral amount should be at least 2".to_string(),
+            "Cannot remove 1.180000000000000001 because it would make the loan liquidatable".to_string(),
         ))
         .run();
 }
@@ -645,31 +660,32 @@ fn test_remove_collateral_after_time_fails() {
     let new_time = Instant::new(0).add_days(31).unwrap();
     test_env.set_current_time(new_time);
 
-    // Now removing 1 btc collateral does not work because of accrued interests
+    // Now removing 1.18 btc collateral does not work because of accrued interests
     test_env
         .call_method(IssuerMethods::RemoveCollateral(dec!(1), "#0#".to_string()))
         .should_panic(Error::AssertFailed(
-            "The new collateral amount should be at least 2.00664285714285714".to_string(),
+            "Cannot remove 1.18 because it would make the loan liquidatable".to_string(),
         ));
 }
 
 #[test]
-fn test_liquidate() {
+fn test_partial_liquidation() {
     let (mut test_env, mut issuer_state) = instantiate();
 
     new_default_lender(&mut test_env, "btc");
-    set_oracle_price(&mut test_env, "btc", dec!(15000));
+    set_oracle_price(&mut test_env, "btc", dec!(10000));
 
     test_env
         .call_method(IssuerMethods::TakeLoan(
             "btc".to_string(),
             dec!(1),
-            dec!(10000),
+            dec!(6000),
         ))
         .run();
 
-    // Liquidation threshold is at 13000
-    set_oracle_price(&mut test_env, "btc", dec!(12000));
+    // Liquidation threshold is at 1.3 hence the loan can be partially liquidated at 1*price/6000 = 1.3
+    // => price = 7800
+    set_oracle_price(&mut test_env, "btc", dec!(7000));
 
     // Take loan to liquidate first one
     test_env
@@ -679,37 +695,33 @@ fn test_liquidate() {
             dec!(10000),
         ))
         .run();
+
     test_env
-        .call_method(IssuerMethods::Liquidate(dec!(7334), "#0#".to_string()))
+        .call_method(IssuerMethods::Liquidate(dec!(616), "#0#".to_string()))
         .run();
 
     // Check that the issuer has the right state
     issuer_state.update();
     let mut lenders = HashMap::new();
-    // After partially liquidating this loan, the collateral left comes from the remaining liquidity of the loan and the second loan
     let btc_lender = LenderState::from(
-        dec!("10.28888888888888889"),
+        dec!("10.906892382103990327"),
         dec!("0.7"),
         dec!("0.0001"),
         dec!("1.3"),
         dec!("0.1"),
     );
     lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
-    let mut reserves = HashMap::new();
-    reserves.insert(
-        test_env.get_resource("btc").clone(),
-        dec!("0.071111111111111111"),
-    );
+
+    let reserves = HashMap::new();
     issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
 
     assert_current_has_loan(
         &test_env,
         "#0#",
         "btc",
-        dec!("0.28888888888888889"),
-        dec!("2666.666666666666666666"),
+        dec!("0.906892382103990327"),
+        dec!("5384"),
         0,
-        dec!("0.7"),
         dec!("0.0001"),
     );
     assert_current_has_loan(
@@ -719,23 +731,91 @@ fn test_liquidate() {
         dec!(10),
         dec!(10000),
         0,
-        dec!("0.7"),
         dec!("0.0001"),
     );
 }
 
 #[test]
-fn test_liquidate_after_time() {
+fn test_partial_liquidation_too_much_sent() {
     let (mut test_env, mut issuer_state) = instantiate();
 
     new_default_lender(&mut test_env, "btc");
-    set_oracle_price(&mut test_env, "btc", dec!(15000));
+    set_oracle_price(&mut test_env, "btc", dec!(10000));
 
     test_env
         .call_method(IssuerMethods::TakeLoan(
             "btc".to_string(),
             dec!(1),
+            dec!(6000),
+        ))
+        .run();
+
+    // Liquidation threshold is at 1.3 hence the loan can be partially liquidated at 1*price/6000 = 1.3
+    // => liquidation price is 7800
+    set_oracle_price(&mut test_env, "btc", dec!(7000));
+
+    // Take loan to liquidate first one
+    test_env
+        .call_method(IssuerMethods::TakeLoan(
+            "btc".to_string(),
+            dec!(10),
             dec!(10000),
+        ))
+        .run();
+
+    // The maximum amount that we can liquidate is ~0.25 btc
+    // We check that we cannot liquidate more
+    test_env
+        .call_method(IssuerMethods::Liquidate(dec!(10000), "#0#".to_string()))
+        .run();
+
+    // Check that the issuer has the right state
+    issuer_state.update();
+    let mut lenders = HashMap::new();
+    let btc_lender = LenderState::from(
+        dec!("10.757428685805805817"),
+        dec!("0.7"),
+        dec!("0.0001"),
+        dec!("1.3"),
+        dec!("0.1"),
+    );
+    lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
+
+    let reserves = HashMap::new();
+    issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
+
+    assert_current_has_loan(
+        &test_env,
+        "#0#",
+        "btc",
+        dec!("0.757428685805805817"),
+        dec!("4078.462154338954392"),
+        0,
+        dec!("0.0001"),
+    );
+    assert_current_has_loan(
+        &test_env,
+        "#1#",
+        "btc",
+        dec!(10),
+        dec!(10000),
+        0,
+        dec!("0.0001"),
+    );
+}
+
+#[test]
+fn test_partial_liquidation_after_time() {
+    let (mut test_env, mut issuer_state) = instantiate();
+
+    new_default_lender(&mut test_env, "btc");
+    set_oracle_price(&mut test_env, "btc", dec!(10000));
+
+    test_env
+        .call_method(IssuerMethods::TakeLoan(
+            "btc".to_string(),
+            dec!(1),
+            dec!(6000),
         ))
         .run();
 
@@ -743,8 +823,8 @@ fn test_liquidate_after_time() {
     let new_time = Instant::new(0).add_days(31).unwrap();
     test_env.set_current_time(new_time);
 
-    // Liquidation threshold is at 13120.9 because we have 93$ as interests
-    set_oracle_price(&mut test_env, "btc", dec!(12000));
+    // Interests are at 18.6$ therefore liquidation threshold price is at 1.3*6018.6 = 7824.18
+    set_oracle_price(&mut test_env, "btc", dec!(7824));
 
     // Take loan to liquidate first one
     test_env
@@ -755,36 +835,31 @@ fn test_liquidate_after_time() {
         ))
         .run();
     test_env
-        .call_method(IssuerMethods::Liquidate(dec!(7737), "#0#".to_string()))
+        .call_method(IssuerMethods::Liquidate(dec!(1), "#0#".to_string()))
         .run();
 
     // Check that the issuer has the right state
     issuer_state.update();
     let mut lenders = HashMap::new();
-    // After partially liquidating this loan, the collateral left comes from the remaining liquidity of the loan and the second loan
     let btc_lender = LenderState::from(
-        dec!("10.277694444444444446"),
+        dec!("10.99983387600505017"),
         dec!("0.7"),
         dec!("0.0001"),
         dec!("1.3"),
         dec!("0.1"),
     );
     lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
-    let mut reserves = HashMap::new();
-    reserves.insert(
-        test_env.get_resource("btc").clone(),
-        dec!("0.072230555555555555"),
-    );
+    let reserves = HashMap::new();
     issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
+
 
     assert_current_has_loan(
         &test_env,
         "#0#",
         "btc",
-        dec!("0.277694444444444446"),
-        dec!("2263.666666666666666666"),
+        dec!("0.99983387600505017"),
+        dec!("5999"),
         0,
-        dec!("0.7"),
         dec!("0.0001"),
     );
     assert_current_has_loan(
@@ -793,11 +868,83 @@ fn test_liquidate_after_time() {
         "btc",
         dec!(10),
         dec!(10000),
-        0,
-        dec!("0.7"),
+        2678400,
         dec!("0.0001"),
     );
 }
+
+
+#[test]
+fn test_full_liquidation_after_time() {
+
+    let (mut test_env, mut issuer_state) = instantiate();
+
+    new_default_lender(&mut test_env, "btc");
+    set_oracle_price(&mut test_env, "btc", dec!(10000));
+
+    test_env
+        .call_method(IssuerMethods::TakeLoan(
+            "btc".to_string(),
+            dec!(1),
+            dec!(6000),
+        ))
+        .run();
+
+
+    // Change time
+    let new_time = Instant::new(0).add_days(31).unwrap();
+    test_env.set_current_time(new_time);
+
+    // Interests are at 18.6$ therefore, full liquidation price happens for price < 6018.6
+    set_oracle_price(&mut test_env, "btc", dec!(6018));
+
+    // Take loan to liquidate first one
+    test_env
+        .call_method(IssuerMethods::TakeLoan(
+            "btc".to_string(),
+            dec!(10),
+            dec!(10000),
+        ))
+        .run();
+    test_env
+        .call_method(IssuerMethods::Liquidate(dec!(10000), "#0#".to_string()))
+        .run();
+
+    // Check that the issuer has the right state
+    issuer_state.update();
+    let mut lenders = HashMap::new();
+    let btc_lender = LenderState::from(
+        dec!("10"),
+        dec!("0.7"),
+        dec!("0.0001"),
+        dec!("1.3"),
+        dec!("0.1"),
+    );
+    lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
+    let mut reserves = HashMap::new();
+    reserves.insert(test_env.get_resource("btc").clone(), dec!("0.000299102691924227"));
+    issuer_state.assert_state_is(&reserves, &lenders, 2, 0);
+
+    assert_current_has_loan(
+        &test_env,
+        "#0#",
+        "btc",
+        dec!("0"),
+        dec!("0"),
+        0,
+        dec!("0.0001"),
+    );
+    assert_current_has_loan(
+        &test_env,
+        "#1#",
+        "btc",
+        dec!(10),
+        dec!(10000),
+        2678400,
+        dec!("0.0001"),
+    );
+}
+
 
 #[test]
 fn test_liquidate_threshold_not_hit_fails() {
@@ -828,45 +975,11 @@ fn test_liquidate_threshold_not_hit_fails() {
     test_env
         .call_method(IssuerMethods::Liquidate(dec!(10000), "#0#".to_string()))
         .should_panic(Error::AssertFailed(
-            "Cannot liquidate this loan because liquidation threshold was not hit".to_string(),
+            "Cannot liquidate this loan: the collateralization ratio is 1.3001 >= 1.3".to_string(),
         ))
         .run();
 }
 
-#[test]
-fn test_liquidate_not_enough_provided_to_liquidate() {
-    let (mut test_env, _) = instantiate();
-
-    new_default_lender(&mut test_env, "btc");
-    set_oracle_price(&mut test_env, "btc", dec!(15000));
-
-    test_env
-        .call_method(IssuerMethods::TakeLoan(
-            "btc".to_string(),
-            dec!(1),
-            dec!(10000),
-        ))
-        .run();
-
-    // Liquidation threshold is at 13000
-    set_oracle_price(&mut test_env, "btc", dec!(12000));
-
-    // Take loan to liquidate first one
-    test_env
-        .call_method(IssuerMethods::TakeLoan(
-            "btc".to_string(),
-            dec!(10),
-            dec!(10000),
-        ))
-        .run();
-    test_env
-        .call_method(IssuerMethods::Liquidate(dec!(7332), "#0#".to_string()))
-        .should_panic(Error::AssertFailed(
-            "You need to provide 7333.333333333333333333 stablecoins to liquidate this loan"
-                .to_string(),
-        ))
-        .run();
-}
 
 #[test]
 fn test_change_lender_parameter() {
@@ -897,3 +1010,4 @@ fn test_change_lender_parameter() {
     lenders.insert(test_env.get_resource("btc").clone(), btc_lender);
     issuer_state.assert_state_is(&HashMap::new(), &lenders, 0, 0);
 }
+
