@@ -6,7 +6,7 @@ import { UserContext } from "contexts/UserContext";
 
 import { ResponsiveContext } from "contexts/ResponsiveContext";
 
-export interface Props {};
+export interface Props { };
 
 const ConnectWallet: React.FC<Props> = () => {
     const { connectUser, user, connectionLoading } = useContext(UserContext);
@@ -44,7 +44,7 @@ const ConnectWallet: React.FC<Props> = () => {
                 color: 'white'
             }
         },
-    
+
         buttonLoading: {
             background: 'primary',
             cursor: 'default !important',
@@ -62,38 +62,38 @@ const ConnectWallet: React.FC<Props> = () => {
                 animation: 'rotating 1s linear infinite',
             }
         },
-    
+
         buttonConnected: {
             background: 'primary'
         },
-    
+
         iconLogin: {
             transform: 'scaleX(-1)',
-    
+
             background: 'text',
             height: '22px',
             aspectRatio: '1',
             opacity: '.3',
-    
+
             margin: '0',
             padding: '0',
-            "-webkit-mask":`url('/pages/wallet.svg') center/contain no-repeat`,
-                mask:`url('/pages/wallet.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/pages/wallet.svg') center/contain no-repeat`,
+            mask: `url('/pages/wallet.svg') center/contain no-repeat`,
         },
-    
+
         iconProfile: {
-    
+
             background: 'white',
             height: '22px',
             aspectRatio: '1',
             opacity: '1',
-    
+
             margin: '0',
             padding: '0',
-            "-webkit-mask":`url('/pages/wallet.svg') center/contain no-repeat`,
-                mask:`url('/pages/wallet.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/pages/wallet.svg') center/contain no-repeat`,
+            mask: `url('/pages/wallet.svg') center/contain no-repeat`,
         },
-    
+
         loading: {
             position: 'absolute' as 'absolute',
         },
@@ -108,13 +108,13 @@ const ConnectWallet: React.FC<Props> = () => {
             opacity: `${user.address ? 1 : '.3'}`,
         }
     };
-    
+
 
     return (
-        <button sx={connectionLoading ? {...style.button, ...style.buttonLoading} : user.address ? {...style.button, ...style.buttonConnected} : style.button } onClick={connectUser}>
-            <div sx={connectionLoading ? style.loading : user.address ? style.iconProfile : style.iconLogin } ></div>
-            { !connectionLoading ?
-                <p sx={style.phrase}>{user.address ? user.address.slice(0,10)+"..."+user.address.slice(user.address.length - 5, user.address.length) : "Connect wallet"}</p>
+        <button sx={connectionLoading ? { ...style.button, ...style.buttonLoading } : user.address ? { ...style.button, ...style.buttonConnected } : style.button} onClick={connectUser}>
+            <div sx={connectionLoading ? style.loading : user.address ? style.iconProfile : style.iconLogin} ></div>
+            {!connectionLoading ?
+                <p sx={style.phrase}>{user.address ? user.address.slice(0, 10) + "..." + user.address.slice(user.address.length - 5, user.address.length) : "Connect wallet"}</p>
                 : null
             }
         </button>

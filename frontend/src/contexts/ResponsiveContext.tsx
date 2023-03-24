@@ -19,15 +19,15 @@ const ResponsiveCtx: React.FC<Props> = (props) => {
         if (windowSize.width <= 768) { setDevice("mobile"); return; }
         if (windowSize.width <= 1024) { setDevice("tablet"); return; }
         if (windowSize.width <= 1200) { setDevice("laptop"); return }
-        setDevice ("desktop");
+        setDevice("desktop");
     }, [windowSize]);
 
     return (
-        <ResponsiveContext.Provider value={{windowSize, device}}>
+        <ResponsiveContext.Provider value={{ windowSize, device }}>
             {props.children}
         </ResponsiveContext.Provider>
     )
 
 };
 
-export {ResponsiveContext, ResponsiveCtx};
+export { ResponsiveContext, ResponsiveCtx };

@@ -23,23 +23,23 @@ import { addLiquidityNoPosition, addLiquidityToPosition, claimFees, removeAllLiq
 
 import styleFunction from "./style";
 
-import {token, position} from "types";
+import { token, position } from "types";
 
 function Liquidity() {
 
     let [searchParams, setSearchParams] = useSearchParams();
 
-    const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
+    const [stars, setStars] = useState(Array.from({ length: 10 }, (_, i) => [randomIntFromInterval(0, 1), randomIntFromInterval(10, 90), randomIntFromInterval(10, 90), randomIntFromInterval(0, 1)]));
 
     const { addAlert } = useContext(SnackbarContext);
-    
+
     const { device } = useContext(ResponsiveContext);
 
     const { tokens, pools } = useContext(TokensContext);
 
     const { user, tokensOwned, setNbTokens, positions } = useContext(UserContext);
 
-    const [tokensList, setTokensList] = useState(tokens.filter((x:token) => x.address != stable.address));
+    const [tokensList, setTokensList] = useState(tokens.filter((x: token) => x.address != stable.address));
 
     const [price, setPrice] = useState<number>(0);
 
@@ -94,8 +94,8 @@ function Liquidity() {
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
 
-        if (!tk1) {
-            setSearchParams({tk1: token_default.symb})
+        if (!tk1) {
+            setSearchParams({ tk1: token_default.symb })
         }
     }, [])
 
@@ -117,17 +117,17 @@ function Liquidity() {
         if (tokens) {
             var tk1 = searchParams.get('tk1');
 
-            if (tk1 ) {
+            if (tk1) {
                 tk1 = tk1.toLowerCase();
             }
 
-            if (tk1 && tokens.map((x:token) => x.symb.toLowerCase()).includes(tk1)) {
-                var tok1 = tokens.filter((x:token) => x.symb.toLowerCase() == tk1)[0]
-                setToken1({name:tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url});
-                setSearchParams({tk1: tk1!.toUpperCase()})
+            if (tk1 && tokens.map((x: token) => x.symb.toLowerCase()).includes(tk1)) {
+                var tok1 = tokens.filter((x: token) => x.symb.toLowerCase() == tk1)[0]
+                setToken1({ name: tok1!.name, symb: tok1!.symb, address: tok1!.address, icon_url: tok1!.icon_url });
+                setSearchParams({ tk1: tk1!.toUpperCase() })
             } else {
                 setToken1(token_default);
-                setSearchParams({tk1: token_default.symb})
+                setSearchParams({ tk1: token_default.symb })
             }
         }
 
@@ -140,12 +140,12 @@ function Liquidity() {
     function findRatio(x: number) {
         var currentStep = pools[token1.address]["current_step"];
 
-        let stableRatio: number; 
+        let stableRatio: number;
         for (var i = 0; i < pools[token1.address]["steps"].length; ++i) {
             const step = pools[token1.address]["steps"][i];
 
             if (step.step_id == currentStep) {
-                stableRatio = parseFloat(step.stablecoin_amount)/(parseFloat(step.stablecoin_amount) + parseFloat(step.rate)*parseFloat(step.other_token_amount));
+                stableRatio = parseFloat(step.stablecoin_amount) / (parseFloat(step.stablecoin_amount) + parseFloat(step.rate) * parseFloat(step.other_token_amount));
 
                 console.log(parseFloat(step.stablecoin_amount));
                 console.log(parseFloat(step.other_token_amount));
@@ -158,35 +158,35 @@ function Liquidity() {
     }
 
 
-    function calculateGet(x: number) { 
+    function calculateGet(x: number) {
         var result = findRatio(x);
         var stableRatio = result[0];
         var price = result[1];
         var currentStep = pools[token1.address]["current_step"];
-        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
-        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
 
-        if (currentStep > maxStep) {setSent(0); return 10;}
+        if (currentStep > maxStep) { setSent(0); return 10; }
         if (currentStep < minStep) return 0;
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return x*price;
-        return ((currentStep - minStep + 1)*(x/(maxStep - currentStep + 1) * price)*stableRatio/(1 - stableRatio))
+        if (stableRatio == 1) return x * price;
+        return ((currentStep - minStep + 1) * (x / (maxStep - currentStep + 1) * price) * stableRatio / (1 - stableRatio))
     }
 
 
-    function calculateSent(x: number) { 
+    function calculateSent(x: number) {
         var result = findRatio(x);
         var stableRatio = result[0];
         var price = result[1];
         var currentStep = pools[token1.address]["current_step"];
-        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
-        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
 
-        if (currentStep > maxStep) {return 0;}
-        if (currentStep < minStep) {setGet(0); return 10;}
+        if (currentStep > maxStep) { return 0; }
+        if (currentStep < minStep) { setGet(0); return 10; }
         if (stableRatio == 0) return 0;
-        if (stableRatio == 1) return x/price;
-        return ((maxStep - currentStep + 1)*(x/(currentStep - minStep + 1)/ price)*(1 - stableRatio)/(stableRatio))
+        if (stableRatio == 1) return x / price;
+        return ((maxStep - currentStep + 1) * (x / (currentStep - minStep + 1) / price) * (1 - stableRatio) / (stableRatio))
     }
 
     const range1Change = (event: any) => {
@@ -220,7 +220,7 @@ function Liquidity() {
     }
 
 
-    useEffect(() => {if (pools[token1.address]) setGet(calculateGet(sent))}, [price1, price2]);
+    useEffect(() => { if (pools[token1.address]) setGet(calculateGet(sent)) }, [price1, price2]);
 
     const sentChange = (event: any) => {
         var s = event.target.value;
@@ -267,8 +267,8 @@ function Liquidity() {
     useEffect(() => {
         async function getPoolInfos() {
             setPrice(0);
-            if(token1.address && stable.address && pools[token1.address]) {
-                setPrice((parseFloat(pools[token1.address]["min_rate"])*(parseFloat(pools[token1.address]["rate_step"])**parseFloat(pools[token1.address]["current_step"]))));
+            if (token1.address && stable.address && pools[token1.address]) {
+                setPrice((parseFloat(pools[token1.address]["min_rate"]) * (parseFloat(pools[token1.address]["rate_step"]) ** parseFloat(pools[token1.address]["current_step"]))));
             }
         }
         getPoolInfos();
@@ -286,7 +286,7 @@ function Liquidity() {
     function selectToken(token: token) {
         if (token1Select) {
             setToken1(token)
-            setSearchParams({tk1: token.symb.toUpperCase()})
+            setSearchParams({ tk1: token.symb.toUpperCase() })
         }
         resetSelect();
         resetValues();
@@ -363,21 +363,21 @@ function Liquidity() {
         setSwapLoading(true);
         var flag;
         var steps: number[][] = [];
-        var currentStep= parseFloat(pools[token1.address]["current_step"]);
-        var minStep = Math.ceil(Math.log(Math.min(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
-        var maxStep = Math.floor(Math.log(Math.max(price1, price2)/parseFloat(pools[token1.address]["min_rate"]))/Math.log(pools[token1.address]["rate_step"]));
+        var currentStep = parseFloat(pools[token1.address]["current_step"]);
+        var minStep = Math.ceil(Math.log(Math.min(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
+        var maxStep = Math.floor(Math.log(Math.max(price1, price2) / parseFloat(pools[token1.address]["min_rate"])) / Math.log(pools[token1.address]["rate_step"]));
 
         console.log(minStep, maxStep);
 
-        for (var i = minStep; i<Math.min(currentStep, maxStep); ++i) { steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), 0]);}
-        if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get/(Math.min(currentStep, maxStep) - minStep + 1), sent/(maxStep - Math.max(currentStep, minStep) + 1)])
-        for (var i = Math.max(currentStep + 1, minStep); i<=maxStep; ++i) {steps.push([i, 0, sent/(maxStep - Math.max(currentStep, minStep) + 1)])}
+        for (var i = minStep; i < Math.min(currentStep, maxStep); ++i) { steps.push([i, get / (Math.min(currentStep, maxStep) - minStep + 1), 0]); }
+        if (maxStep >= currentStep && minStep <= currentStep) steps.push([i, get / (Math.min(currentStep, maxStep) - minStep + 1), sent / (maxStep - Math.max(currentStep, minStep) + 1)])
+        for (var i = Math.max(currentStep + 1, minStep); i <= maxStep; ++i) { steps.push([i, 0, sent / (maxStep - Math.max(currentStep, minStep) + 1)]) }
 
         if (!nftId) flag = await addLiquidityNoPosition(user.address, token1.address, get, sent, steps)
         else flag = await addLiquidityToPosition(user.address, token1.address, get, sent, steps, nftId)
         setNbTokens();
         resetValues();
-        if (flag) {
+        if (flag) {
             addAlert("check", "You have provided liquidity!");
         } else {
             addAlert("error", "An error occured");
@@ -391,14 +391,14 @@ function Liquidity() {
         var flag;
         if (nftId) {
             flag = await claimFees(user.address, nftId);
-            if (flag) {
+            if (flag) {
                 addAlert("check", "Your fees have been claimed!");
             } else {
                 addAlert("error", "An error occured");
             }
             setFeesLoading(false);
         }
-        else {addAlert("error", "You don't have a position"); return false;}
+        else { addAlert("error", "You don't have a position"); return false; }
     }
 
 
@@ -407,34 +407,34 @@ function Liquidity() {
         var flag;
         if (nftId) {
             flag = await removeAllLiquidity(user.address, nftId);
-            if (flag) {
+            if (flag) {
                 addAlert("check", "Your liquidity has been removed!");
             } else {
                 addAlert("error", "An error occured");
             }
             setRemoveLoading(false);
         }
-        else {addAlert("error", "You don't have a position"); return false;}
+        else { addAlert("error", "You don't have a position"); return false; }
     }
 
     function setPriceMin(x: number) {
         if (isNaN(x)) {
-            if (price1 <= price2) {setPrice1(minPrice);}
+            if (price1 <= price2) { setPrice1(minPrice); }
             else setPrice2(minPrice);
             return
         }
-        if (x > Math.max(price1, price2)) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return}
-        if (price1 <= price2) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice));}
+        if (x > Math.max(price1, price2)) { setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return }
+        if (price1 <= price2) { setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); }
         else setPrice2(Math.max(Math.min(x, maxPrice), minPrice));
     }
 
     function setPriceMax(x: number) {
         if (isNaN(x)) {
-            if (price1 > price2) {setPrice1(minPrice);}
+            if (price1 > price2) { setPrice1(minPrice); }
             else setPrice2(minPrice);
             return
         }
-        if (x < Math.min(price1, price2)) {setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return}
+        if (x < Math.min(price1, price2)) { setPrice1(Math.max(Math.min(x, maxPrice), minPrice)); setPrice2(Math.max(Math.min(x, maxPrice), minPrice)); return }
         if (price1 > price2) setPrice1(Math.max(Math.min(x, maxPrice), minPrice));
         else setPrice2(Math.max(Math.min(x, maxPrice), minPrice));
     }
@@ -449,9 +449,11 @@ function Liquidity() {
         <Dashboard page="liquidity">
             <Snackbar />
 
-            {stars.map((x, index) => { return (
-                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
-            )})}
+            {stars.map((x, index) => {
+                return (
+                    <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"} />
+                )
+            })}
 
             <div sx={style.main}>
 
@@ -460,30 +462,30 @@ function Liquidity() {
                     <div sx={style.container}>
 
                         <div sx={style.buttons}>
-                            <span sx={myPosition && user.address ? style.inactive : style.active} onClick={() => {setMyPosition(false); setChosePosition(false); }}>Provide Liquidity</span>
-                            { user.address ?
-                                <span sx={myPosition ? style.active : style.inactive} onClick={() => {setMyPosition(true); resetSelect(); }}>My Position</span>
-                            : 
+                            <span sx={myPosition && user.address ? style.inactive : style.active} onClick={() => { setMyPosition(false); setChosePosition(false); }}>Provide Liquidity</span>
+                            {user.address ?
+                                <span sx={myPosition ? style.active : style.inactive} onClick={() => { setMyPosition(true); resetSelect(); }}>My Position</span>
+                                :
                                 null
                             }
                         </div>
 
-                        { myPosition && user.address ? 
+                        {myPosition && user.address ?
 
                             <div sx={style.myPositionColumn}>
-                            
+
                                 <div sx={style.chosePositionContainer}>
 
                                     <div sx={style.chosePositionZone}>
 
-                                        <h2><div sx={style.close} onClick={() => setChosePosition(false)}/>Your positions</h2>
+                                        <h2><div sx={style.close} onClick={() => setChosePosition(false)} />Your positions</h2>
                                         <div sx={style.inputBar}>
-                                            <input type="text" id="searchPosition" required={true} placeholder=" " autoComplete="off" onChange={searchPositionChange}/>
+                                            <input type="text" id="searchPosition" required={true} placeholder=" " autoComplete="off" onChange={searchPositionChange} />
                                             <label htmlFor="searchPosition">Search for a position</label>
                                         </div>
 
                                         <div sx={style.poolsList}>
-                                            {  positionsList.map((position: position, index: number) => {
+                                            {positionsList.map((position: position, index: number) => {
                                                 return (
                                                     <div key={"position" + index} sx={style.poolChoice} onClick={() => {
                                                         setChosePosition(false);
@@ -491,8 +493,8 @@ function Liquidity() {
                                                         setNftId(position.id);
                                                         setPositionInfos(position);
                                                     }}>
-                                                        <img src={position.token!.icon_url}/>
-                                                        <img src={stable.icon_url}/>
+                                                        <img src={position.token!.icon_url} />
+                                                        <img src={stable.icon_url} />
                                                         <p>{position.token!.symb} - {stable.symb}</p>
                                                     </div>
                                                 )
@@ -502,11 +504,11 @@ function Liquidity() {
 
                                 </div>
 
-                                <div sx={style.chosePosition}  onClick={() => setChosePosition(true)}>
-                                    <img src={token1.icon_url}/>
-                                    <img src={stable.icon_url}/>
+                                <div sx={style.chosePosition} onClick={() => setChosePosition(true)}>
+                                    <img src={token1.icon_url} />
+                                    <img src={stable.icon_url} />
                                     <p>{token1.symb} - {stable.symb}</p>
-                                    <div sx={style.expand2}/>
+                                    <div sx={style.expand2} />
                                 </div>
 
                                 <div sx={style.swapZone}>
@@ -514,9 +516,9 @@ function Liquidity() {
                                     <div sx={style.swapInfos}>
                                         <span sx={style.swapInfoMain}><span>Total Locked</span><div>? {token1.symb} + ? {stable.symb}</div></span>
                                         <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
-                                        <span sx={style.swapInfo}><span>Fees</span>{positionInfos.x_fees == "?" ? "?" : formatToString2(positionInfos.x_fees)} {token1.symb} + {positionInfos.y_fees == "?" ? "?" : formatToString2(positionInfos.y_fees)} {stable.symb}</span>                                            
+                                        <span sx={style.swapInfo}><span>Fees</span>{positionInfos.x_fees == "?" ? "?" : formatToString2(positionInfos.x_fees)} {token1.symb} + {positionInfos.y_fees == "?" ? "?" : formatToString2(positionInfos.y_fees)} {stable.symb}</span>
                                     </div>
-                                    <button sx={feesLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
+                                    <button sx={feesLoading ? { ...style.swapButton, ...style.swapButtonLoading } : style.swapButton} onClick={() => feesLoading ? null : claimF()}>{feesLoading ? "" : "Claim Fees"}</button>
                                 </div>
 
                                 <div sx={style.swapZone}>
@@ -525,84 +527,84 @@ function Liquidity() {
                                         <span sx={style.swapInfoMain}><span>Removing</span><div>? {token1.symb} + ? {stable.symb}</div></span>
                                         <span sx={style.swapInfo}><span>Value</span>${positionInfos.value_locked == "?" ? "?" : formatToString(positionInfos.value_locked)}</span>
                                     </div>
-                                    <button sx={removeLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
+                                    <button sx={removeLoading ? { ...style.swapButton, ...style.swapButtonLoading } : style.swapButton} onClick={() => removeLoading ? null : removeL('1')}>{removeLoading ? "" : "Remove Liquidity"}</button>
                                 </div>
 
                             </div>
-                            
-                        : 
+
+                            :
                             <div sx={style.swapZone}>
 
                                 <h1>🌱 Provide Liquidity</h1>
                                 <div sx={style.inputBar}>
-                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
+                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent} />
                                     <label htmlFor="send">You lock</label>
                                     <div sx={style.token} onClick={() => setToken1Select(true)}>
-                                        <img src={token1.icon_url}/>
+                                        <img src={token1.icon_url} />
                                         <p>{token1.symb}</p>
-                                        <div sx={style.expand}/>
+                                        <div sx={style.expand} />
                                     </div>
                                 </div>
 
-                                <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
-                                
+                                <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0, 5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
+
                                 <div sx={style.inputBar}>
-                                    <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={getChange} value={get}/>
+                                    <input type="text" id="get" required={true} placeholder=" " autoComplete="off" onChange={getChange} value={get} />
                                     <label htmlFor="get">You lock</label>
                                     <div sx={style.token2}>
-                                        <img src={stable.icon_url}/>
+                                        <img src={stable.icon_url} />
                                         <p>{stable.symb}</p>
                                     </div>
                                 </div>
 
-                                <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
-                                
+                                <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0, 5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
+
                                 <div sx={style.rangeInput}>
                                     <p>Price Range ({stable.symb + "/" + token1.symb})</p>
                                     <div sx={style.ranges}>
                                         <div sx={style.rangeBar}>
-                                            <div/>
+                                            <div />
                                         </div>
-                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price1 - minPrice)/(maxPrice - minPrice))} step={1/100} onChange={(e: any) => { setPrice1(twoDecimals(minPrice + parseFloat(e.target.value)**2*(maxPrice - minPrice))) }}/>
-                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price2 - minPrice)/(maxPrice - minPrice))} step={1/100} onChange={(e) => {setPrice2(twoDecimals(minPrice + parseFloat(e.target.value)**2*(maxPrice - minPrice))) }}/>
-                                        <input type="range" sx={style.range2} min="0" max="1000" step="10"/>
+                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price1 - minPrice) / (maxPrice - minPrice))} step={1 / 100} onChange={(e: any) => { setPrice1(twoDecimals(minPrice + parseFloat(e.target.value) ** 2 * (maxPrice - minPrice))) }} />
+                                        <input type="range" sx={style.range2} min={0} max={1} value={Math.sqrt((price2 - minPrice) / (maxPrice - minPrice))} step={1 / 100} onChange={(e) => { setPrice2(twoDecimals(minPrice + parseFloat(e.target.value) ** 2 * (maxPrice - minPrice))) }} />
+                                        <input type="range" sx={style.range2} min="0" max="1000" step="10" />
                                     </div>
                                     <div sx={style.rangeInputs}>
                                         <div sx={style.inputBar2}>
-                                            <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range1Change(e);}} value={Math.min(price1, price2)}/>
+                                            <input type="text" id="range1" required={true} placeholder=" " autoComplete="off" onChange={(e) => { range1Change(e); }} value={Math.min(price1, price2)} />
                                             <label htmlFor="range1">Price min</label>
                                         </div>
                                         <div sx={style.inputBar2}>
-                                            <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => {range2Change(e);}} value={Math.max(price1,price2)}/>
+                                            <input type="text" id="range2" required={true} placeholder=" " autoComplete="off" onChange={(e) => { range2Change(e); }} value={Math.max(price1, price2)} />
                                             <label htmlFor="range2">Price max</label>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div sx={style.swapInfos}>
-                                    <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
+                                    <span sx={style.swapInfoMain}><span>Providing</span><div>{typeof (sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb} + {typeof (get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {stable.symb}</div></span>
                                     <span sx={style.swapInfo}><span>Current Price</span>1 {token1.symb} = {price == 0 ? "?" : formatToString(price)} {stable.symb}</span>
                                 </div>
 
-                                { user.address ? 
-                                    <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Provide Liquidity"}</button>
-                                : 
+                                {user.address ?
+                                    <button sx={swapLoading ? { ...style.swapButton, ...style.swapButtonLoading } : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Provide Liquidity"}</button>
+                                    :
                                     <ConnectWallet2 />
                                 }
 
 
                                 <div sx={style.selectToken}>
-                                    <h2><div sx={style.close} onClick={resetSelect}/>Select Currency</h2>
+                                    <h2><div sx={style.close} onClick={resetSelect} />Select Currency</h2>
                                     <div sx={style.inputBar}>
-                                        <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
+                                        <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search} />
                                         <label htmlFor="search">Search for a token</label>
                                     </div>
 
                                     <div sx={style.tokensList}>
-                                        {   tokensList.map((token: token, index: number) => {
+                                        {tokensList.map((token: token, index: number) => {
                                             return (
                                                 <div key={"token" + index} sx={style.tokenChoice} onClick={() => selectToken(token)}>
-                                                    <img src={token.icon_url}/>
+                                                    <img src={token.icon_url} />
                                                     <p>{token.name}<span>{token.symb}</span></p>
                                                 </div>
                                             )
@@ -611,14 +613,14 @@ function Liquidity() {
                                 </div>
 
                             </div>
-                        
+
                         }
                     </div>
 
                 </div>
 
             </div>
-            
+
         </Dashboard>
     )
 }

@@ -2,7 +2,7 @@ function styleFunction(device: string, themeStyle: string, accountSelect: boolea
     return {
         main: {
             display: 'flex',
-            flexDirection: `${device == "mobile" || device == "tablet" ? "column-reverse" : 'row'}`as 'row',
+            flexDirection: `${device == "mobile" || device == "tablet" ? "column-reverse" : 'row'}` as 'row',
             alignItems: 'center',
             justifyContent: `${device == "mobile" || device == "tablet" ? "flex-end" : 'space-evenly'}`,
             position: 'absolute' as 'absolute',
@@ -75,7 +75,7 @@ function styleFunction(device: string, themeStyle: string, accountSelect: boolea
                 height: '50px',
                 fontFamily: 'primary',
                 fontSize: 2,
-                cursor: 'pointer', 
+                cursor: 'pointer',
                 zIndex: '1000',
                 '&:hover': {
                     opacity: '.8'
@@ -90,8 +90,8 @@ function styleFunction(device: string, themeStyle: string, accountSelect: boolea
             background: 'text',
             opacity: '.6',
             cursor: 'pointer',
-            "-webkit-mask":`${themeStyle == "dark" ? "url('/icons/moon.svg') center/contain no-repeat" : "url('/icons/sun.svg') center/contain no-repeat"}`,
-                mask:`${themeStyle == "dark" ? "url('/icons/moon.svg') center/contain no-repeat" : "url('/icons/sun.svg') center/contain no-repeat"}`,
+            "-webkit-mask": `${themeStyle == "dark" ? "url('/icons/moon.svg') center/contain no-repeat" : "url('/icons/sun.svg') center/contain no-repeat"}`,
+            mask: `${themeStyle == "dark" ? "url('/icons/moon.svg') center/contain no-repeat" : "url('/icons/sun.svg') center/contain no-repeat"}`,
             '&:hover': {
                 opacity: '1'
             }
@@ -140,8 +140,8 @@ function styleFunction(device: string, themeStyle: string, accountSelect: boolea
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
         },
 
         accountSelectorContainer: {
@@ -226,8 +226,8 @@ function styleFunction(device: string, themeStyle: string, accountSelect: boolea
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(180deg)',
             zIndex: '25',
             cursor: 'pointer',

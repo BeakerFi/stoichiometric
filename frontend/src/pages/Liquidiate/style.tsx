@@ -22,7 +22,7 @@ function styleFunction(device: string, liquidateLoading: boolean) {
             position: 'relative' as 'relative',
             borderRadius: '5px',
 
-            '& p': {
+            '& p': {
                 color: 'text2',
                 fontFamily: 'primary',
                 fontSize: 1,
@@ -153,7 +153,7 @@ function styleFunction(device: string, liquidateLoading: boolean) {
             height: '50px',
             fontFamily: 'primary',
             fontSize: 2,
-            cursor: 'pointer', 
+            cursor: 'pointer',
             '&:hover': {
                 opacity: `${liquidateLoading ? '1' : '.8'}`
             }

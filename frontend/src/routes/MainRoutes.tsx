@@ -14,16 +14,16 @@ const MainRoutes = [
     {
         path: '/',
         element: <Home />
-    },{
+    }, {
         path: '/swap',
         element: <Swap />
-    },{
+    }, {
         path: '/liquidity',
         element: <Liquidity />
-    },{
+    }, {
         path: '/lend',
         element: <Lend />
-    }, {
+    }, {
         path: '/liquidate',
         element: <Liquidate />
     }, {

@@ -75,11 +75,11 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 background: 'background2',
                 borderRadius: '5px',
                 color: 'text',
-    
+
                 '&:focus': {
                     outline: 'none',
                     borderColor: 'text',
-    
+
                     '& ~ label': {
                         left: '10px',
                         top: '0',
@@ -88,7 +88,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                         color: 'text'
                     }
                 },
-    
+
                 '&:not(:placeholder-shown) ~ label': {
                     left: '10px',
                     top: '0',
@@ -96,7 +96,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                     transform: 'TranslateY(-50%)',
                 }
             },
-    
+
             '& label': {
                 position: 'absolute' as 'absolute',
                 left: '20px',
@@ -111,7 +111,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 cursor: 'text',
                 background: 'background2',
                 color: 'text2',
-            }, 
+            },
         },
 
 
@@ -178,8 +178,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             opacity: '.3',
             transform: 'Rotate(90deg)',
             background: '',
-            "-webkit-mask":`url('/icons/swap.svg') center/contain no-repeat`,
-                        mask:`url('/icons/swap.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/swap.svg') center/contain no-repeat`,
+            mask: `url('/icons/swap.svg') center/contain no-repeat`,
             '&:hover': {
                 opacity: '1'
             }
@@ -251,8 +251,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%)',
             position: 'absolute' as 'absolute',
             right: '0',
@@ -264,8 +264,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%)',
             position: 'absolute' as 'absolute',
             right: '20px',
@@ -277,8 +277,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(180deg)',
             zIndex: '25',
             cursor: 'pointer',
@@ -357,8 +357,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 transform: 'Rotate(90deg)',
                 margin: '0 5px',
                 aspectRatio: '1',
-                background: 'text',"-webkit-mask":`url('/icons/smallArrow.svg') center/contain no-repeat`,
-                mask:`url('/icons/smallArrow.svg') center/contain no-repeat`,
+                background: 'text', "-webkit-mask": `url('/icons/smallArrow.svg') center/contain no-repeat`,
+                mask: `url('/icons/smallArrow.svg') center/contain no-repeat`,
             }
         },
 
@@ -372,7 +372,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             justifyContent: 'space-between',
             marginTop: '5px',
         },
-        
+
         swapButton: {
             background: 'primary',
             border: 'none',
@@ -382,7 +382,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             height: '50px',
             fontFamily: 'primary',
             fontSize: 2,
-            cursor: 'pointer', 
+            cursor: 'pointer',
             '&:hover': {
                 opacity: `${swapLoading ? '1' : '.8'}`
             }
@@ -412,7 +412,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             padding: '20px',
             background: 'background2',
             position: 'absolute' as 'absolute',
-            left: `${token1Select? '0' : '100%'}`,
+            left: `${token1Select ? '0' : '100%'}`,
             transition: '.2s',
             top: '0',
             zIndex: '20',
@@ -621,7 +621,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             }
         },
 
-        chosePositionContainer: {
+        chosePositionContainer: {
             height: '100%',
             width: '100%',
             position: 'absolute' as 'absolute',
@@ -674,7 +674,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 background: 'background3',
                 borderRadius: '50px',
                 border: 'none',
-              },
+            },
 
             '&::-webkit-slider-thumb': {
                 boxShadow: '0px 1px 4px',
@@ -686,7 +686,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 cursor: 'pointer',
                 '-webkit-appearance': 'none',
                 marginTop: '-7.5px',
-              }
+            }
         },
 
 
@@ -726,7 +726,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             '&::-webkit-slider-runnable-track': {
                 height: '0',
                 width: '100%',
-              },
+            },
 
             '&::-webkit-slider-thumb': {
                 boxShadow: '0px 1px 4px',
@@ -738,19 +738,19 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
                 cursor: 'pointer',
                 '-webkit-appearance': 'none',
                 marginTop: '-7.5px',
-              },
-            
-              '&:nth-of-type(1)': {
+            },
+
+            '&:nth-of-type(1)': {
                 transform: 'TranslateY(35px)',
-              },
+            },
 
-              '&:nth-of-type(2)': {
+            '&:nth-of-type(2)': {
                 transform: 'TranslateY(17px)',
-              },
+            },
 
-              '&:nth-of-type(3)::-webkit-slider-thumb': {
+            '&:nth-of-type(3)::-webkit-slider-thumb': {
                 display: 'none'
-              }
+            }
         },
 
         rangeBar: {
@@ -769,8 +769,8 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
 
             '& div': {
                 position: 'absolute' as 'absolute',
-                left: `Calc(2.5px + ${100*Math.sqrt((Math.min(price1, price2) - minPrice)/(maxPrice - minPrice))}%)`,
-                width: `${100*Math.abs(Math.sqrt((price1 -minPrice)/(maxPrice - minPrice)) - Math.sqrt((price2 -minPrice)/(maxPrice - minPrice)))}%`,
+                left: `Calc(2.5px + ${100 * Math.sqrt((Math.min(price1, price2) - minPrice) / (maxPrice - minPrice))}%)`,
+                width: `${100 * Math.abs(Math.sqrt((price1 - minPrice) / (maxPrice - minPrice)) - Math.sqrt((price2 - minPrice) / (maxPrice - minPrice)))}%`,
                 height: '100%',
                 boxShadow: 'none',
                 background: 'primary',
@@ -793,7 +793,7 @@ function styleFunction(device: string, swapLoading: boolean, token1Select: boole
             width: '100%',
             marginBottom: '25px'
         }
-    }  
+    }
 }
 
 export default styleFunction;

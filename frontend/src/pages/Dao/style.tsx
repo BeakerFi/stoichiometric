@@ -1,4 +1,4 @@
-function styleFunction(device: string, expand:boolean) { 
+function styleFunction(device: string, expand: boolean) {
     return {
         main: {
             display: 'flex',
@@ -68,7 +68,7 @@ function styleFunction(device: string, expand:boolean) {
                 fontSize: 3,
                 fontFamily: 'primary',
                 fontWeight: '600'
-        }
+            }
         },
 
         voteButtons: {
@@ -76,7 +76,7 @@ function styleFunction(device: string, expand:boolean) {
             flexDirection: 'column' as 'column',
             justifyContent: 'space-between',
             padding: '20px 0',
-            
+
             '& button': {
                 background: 'primary',
                 color: 'white',
@@ -198,8 +198,8 @@ function styleFunction(device: string, expand:boolean) {
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(90deg)',
             position: 'absolute' as 'absolute',
             right: '10px',
@@ -211,8 +211,8 @@ function styleFunction(device: string, expand:boolean) {
             aspectRatio: '1',
             background: 'text',
             opacity: '.3',
-            "-webkit-mask":`url('/icons/expand.svg') center/contain no-repeat`,
-                        mask:`url('/icons/expand.svg') center/contain no-repeat`,
+            "-webkit-mask": `url('/icons/expand.svg') center/contain no-repeat`,
+            mask: `url('/icons/expand.svg') center/contain no-repeat`,
             transform: 'TranslateY(-50%) Rotate(-90deg)',
             position: 'absolute' as 'absolute',
             right: '10px',
@@ -226,7 +226,7 @@ function styleFunction(device: string, expand:boolean) {
             fontFamily: 'primary',
             fontSize: 1,
             color: 'text2',
-            
+
             '& span': {
                 fontWeight: '600',
                 color: 'text'
@@ -257,7 +257,7 @@ function styleFunction(device: string, expand:boolean) {
                 margin: '0',
                 padding: '0',
                 marginBottom: '5px',
-                cursor: 'pointer', 
+                cursor: 'pointer',
                 opacity: '.7',
                 '&: hover': {
                     opacity: 1

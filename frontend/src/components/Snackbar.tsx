@@ -47,8 +47,8 @@ function Snackbar() {
                 minWidth: '20px',
                 background: 'black',
                 marginRight: '20px',
-                "-webkit-mask":`url('/icons/check.svg') center/contain no-repeat`,
-                    mask:`url('/icons/check.svg') center/contain no-repeat`,
+                "-webkit-mask": `url('/icons/check.svg') center/contain no-repeat`,
+                mask: `url('/icons/check.svg') center/contain no-repeat`,
             }
         },
 
@@ -61,8 +61,8 @@ function Snackbar() {
                 minWidth: '20px',
                 background: 'black',
                 marginRight: '20px',
-                "-webkit-mask":`url('/icons/error.svg') center/contain no-repeat`,
-                    mask:`url('/icons/error.svg') center/contain no-repeat`,
+                "-webkit-mask": `url('/icons/error.svg') center/contain no-repeat`,
+                mask: `url('/icons/error.svg') center/contain no-repeat`,
             }
         },
 
@@ -75,19 +75,20 @@ function Snackbar() {
                 minWidth: '20px',
                 background: 'black',
                 marginRight: '20px',
-                "-webkit-mask":`url('/icons/error.svg') center/contain no-repeat`,
-                    mask:`url('/icons/error.svg') center/contain no-repeat`,
+                "-webkit-mask": `url('/icons/error.svg') center/contain no-repeat`,
+                mask: `url('/icons/error.svg') center/contain no-repeat`,
             }
         }
     }
 
     return (
         <div sx={style.container}>
-            {alerts.map((x: any, index: number) => {return (
-                <div key={"snackbar"+index} sx={x.type == "check" ? {...style.snackbar, ...style.check} : x.type == "error" ? {...style.snackbar, ...style.error} : {...style.snackbar, ...style.warning}}>
-                    <div/>
-                    <span>{x.message}</span>
-                </div>)
+            {alerts.map((x: any, index: number) => {
+                return (
+                    <div key={"snackbar" + index} sx={x.type == "check" ? { ...style.snackbar, ...style.check } : x.type == "error" ? { ...style.snackbar, ...style.error } : { ...style.snackbar, ...style.warning }}>
+                        <div />
+                        <span>{x.message}</span>
+                    </div>)
             })}
         </div>
     )

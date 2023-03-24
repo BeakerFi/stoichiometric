@@ -1,5 +1,5 @@
-import {position_address, router_address, stablecoin_address} from "../general/constants";
-import {rdt} from "../connectToWallet";
+import { position_address, router_address, stablecoin_address } from "../general/constants";
+import { rdt } from "../connectToWallet";
 
 import { step } from "types";
 
@@ -89,7 +89,7 @@ async function addLiquidityNoPosition(account: string, other_token: string, stab
     }
     steps_string = steps_string.slice(0, -2);
 
-    let manifest= `
+    let manifest = `
     CALL_METHOD
         ComponentAddress("${account}")
         "withdraw_by_amount"
@@ -148,7 +148,7 @@ async function addLiquidityToPosition(account: string, other_token: string, stab
 
     steps_string = steps_string.slice(0, -2);
 
-    let manifest= `
+    let manifest = `
                 CALL_METHOD
                     ComponentAddress("${account}")
                     "withdraw_by_amount"
@@ -194,7 +194,7 @@ async function addLiquidityToPosition(account: string, other_token: string, stab
                     ComponentAddress("${account}")
                     "deposit_batch"
                     Expression("ENTIRE_WORKTOP");`;
-                    
+
     console.log(manifest);
 
     const result = await rdt.sendTransaction({

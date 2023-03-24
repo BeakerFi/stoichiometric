@@ -8,40 +8,40 @@ function styleFunction(device: string) {
             position: 'absolute' as 'absolute',
             left: '0',
             top: '0',
-    
+
             padding: `0 ${device == "mobile" ? "20px" : "50px"}`,
             width: `calc(100% - ${device == "mobile" ? "40px" : "100px"})`,
             height: `${device == "mobile" ? "70px" : "100px"}`,
-    
+
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
         },
-    
+
         beaker: {
             fontFamily: 'primary',
             fontSize: 5,
             color: 'text',
             fontWeight: '600',
-    
+
             margin: '0',
             padding: '0'
         },
-    
+
         fi: {
             fontFamily: 'primary',
             fontSize: 2,
             color: 'primary',
-    
+
             margin: '0',
             padding: '0'
         },
-    
+
         right: {
             display: 'flex',
             alignItems: 'center'
         },
-    
+
         social: {
             height: '20px',
             aspectRatio: '1',
@@ -56,22 +56,22 @@ function styleFunction(device: string) {
                 marginRight: '40px'
             }
         },
-    
+
         telegram: {
-            "-webkit-mask":"url('/social/telegram.svg') center/contain",
-            mask:"url('/social/telegram.svg') center/contain",
+            "-webkit-mask": "url('/social/telegram.svg') center/contain",
+            mask: "url('/social/telegram.svg') center/contain",
         },
-    
+
         twitter: {
-            "-webkit-mask":"url('/social/twitter.svg') center/contain",
-            mask:"url('/social/twitter.svg') center/contain",
+            "-webkit-mask": "url('/social/twitter.svg') center/contain",
+            mask: "url('/social/twitter.svg') center/contain",
         },
-    
+
         discord: {
-            "-webkit-mask":"url('/social/discord.svg') center/contain",
-            mask:"url('/social/discord.svg') center/contain",
+            "-webkit-mask": "url('/social/discord.svg') center/contain",
+            mask: "url('/social/discord.svg') center/contain",
         },
-    
+
         link: {
             color: 'text',
             marginRight: '40px',
@@ -84,7 +84,7 @@ function styleFunction(device: string) {
                 opacity: 1
             }
         },
-    
+
         center: {
             width: 'calc(100% - 40px)',
             padding: "0 20px",
@@ -94,7 +94,7 @@ function styleFunction(device: string) {
             flexDirection: 'column' as 'column',
             alignItems: `${device == "mobile" ? "start" : "center"}`
         },
-    
+
         catchphrase: {
             fontFamily: 'primary',
             fontSize: `${device == "mobile" ? 7 : 9}`,
@@ -102,18 +102,18 @@ function styleFunction(device: string) {
             fontWeight: '600',
             textTransform: 'capitalize' as 'capitalize',
             width: `${device == "mobile" ? "80%" : "auto"}`,
-    
+
             margin: '0',
             padding: '0'
         },
-    
+
         subtitle: {
             fontFamily: 'primary',
             fontSize: `${device == "mobile" ? 2 : 10}`,
             width: `${device == "mobile" ? "70%" : "auto"}`,
             color: 'text',
             fontWeight: '300',
-    
+
             margin: '0',
             padding: '0',
         },
@@ -123,11 +123,11 @@ function styleFunction(device: string) {
             alignItems: 'center',
             marginTop: '15px',
         },
-    
+
         highlight: {
             color: 'primary'
         },
-    
+
         bitcoin: {
             height: '150px',
             aspectRatio: '1',
@@ -139,7 +139,7 @@ function styleFunction(device: string) {
             opacity: '.15',
             animation: 'oscilate 10s ease-in-out infinite'
         },
-    
+
         ethereum: {
             height: '150px',
             aspectRatio: '1',

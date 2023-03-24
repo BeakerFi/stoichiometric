@@ -22,14 +22,14 @@ import { stable_coin as stable, stable_coin, token_default } from "utils/general
 
 import styleFunction from "./style";
 
-import {token, position} from "types";
+import { token, position } from "types";
 
 function Card() {
 
-    const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
+    const [stars, setStars] = useState(Array.from({ length: 10 }, (_, i) => [randomIntFromInterval(0, 1), randomIntFromInterval(10, 90), randomIntFromInterval(10, 90), randomIntFromInterval(0, 1)]));
 
     const { addAlert } = useContext(SnackbarContext);
-    
+
     const { device } = useContext(ResponsiveContext);
 
     const { tokens } = useContext(TokensContext);
@@ -139,7 +139,7 @@ function Card() {
         let flag: boolean = true;
         setNbTokens();
         resetValues();
-        if (flag) {
+        if (flag) {
             addAlert("check", "Transaction submitted!");
         } else {
             addAlert("error", "An error occured");
@@ -157,9 +157,11 @@ function Card() {
 
             <Snackbar />
 
-            {stars.map((x, index) => { return (
-                <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"}/>
-            )})}
+            {stars.map((x, index) => {
+                return (
+                    <Star key={"star" + index} left={x[1].toString()} top={x[2].toString()} height={x[0] ? "15" : "20"} color={x[3] ? "text" : "text2"} />
+                )
+            })}
 
             <div sx={style.main}>
 
@@ -173,38 +175,38 @@ function Card() {
                             <h1>💳 Add Voting Power</h1>
 
 
-                            { isToken ?
+                            {isToken ?
                                 <div sx={style.inputBar}>
-                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
-                                    <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? 0 : formatToString(token1Owned)} ${token1.symb}`: "You lock"}</label>
+                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent} />
+                                    <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN(token1Owned) ? 0 : formatToString(token1Owned)} ${token1.symb}` : "You lock"}</label>
                                     <div sx={style.token} onClick={() => setToken1Select(true)}>
-                                        <img src={token1.icon_url}/>
+                                        <img src={token1.icon_url} />
                                         <p>{token1.symb}</p>
-                                        <div sx={style.expand}/>
+                                        <div sx={style.expand} />
                                     </div>
                                 </div>
-                            : 
+                                :
                                 <div sx={style.inputBar}>
-                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" disabled value={1}/>
+                                    <input type="text" id="send" required={true} placeholder=" " autoComplete="off" disabled value={1} />
                                     <label htmlFor="send">You lock</label>
                                     <div sx={style.token3} onClick={() => setToken1Select(true)}>
-                                        <img src={position.token ? position.token.icon_url: token_default.icon_url}/>
+                                        <img src={position.token ? position.token.icon_url : token_default.icon_url} />
                                         <p>Position</p>
-                                        <div sx={style.expand}/>
+                                        <div sx={style.expand} />
                                     </div>
-                                </div> 
+                                </div>
                             }
 
 
-                            { isToken ?
-                                <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
-                            :   
+                            {isToken ?
+                                <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0, 5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
+                                :
                                 <span sx={style.tokenAddress}><span>Position ID</span>{position.id}</span>
                             }
 
 
                             <div sx={style.inputBar}>
-                                <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get}/>
+                                <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get} />
                                 <label htmlFor="get">You get</label>
                                 <div sx={style.token2}>
                                     <p>Voting Power</p>
@@ -213,53 +215,54 @@ function Card() {
 
 
                             <div sx={style.swapInfos}>
-                                <span sx={style.swapInfoMain}><span>Lock</span><div>{isToken ? typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent) : 1} {isToken ? token1.symb : "Position"}<div/>{typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} Voting Power</div></span>
+                                <span sx={style.swapInfoMain}><span>Lock</span><div>{isToken ? typeof (sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent) : 1} {isToken ? token1.symb : "Position"}<div />{typeof (get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} Voting Power</div></span>
                                 <span sx={style.swapInfo}><span>Total Voting Power</span>{voterCard.voting_power + get}</span>
                             </div>
 
-                            { user.address ? 
+                            {user.address ?
                                 <div>
-                                    <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Lock"}</button>
-                                    <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Unlock All"}</button>
+                                    <button sx={swapLoading ? { ...style.swapButton, ...style.swapButtonLoading } : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Lock"}</button>
+                                    <button sx={swapLoading ? { ...style.swapButton, ...style.swapButtonLoading } : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Unlock All"}</button>
                                 </div>
-                            : 
+                                :
                                 <ConnectWallet2 />
                             }
 
 
                             <div sx={style.selectToken}>
 
-                                <h2><div sx={style.close} onClick={resetSelect}/>Select Currency or Position</h2>
+                                <h2><div sx={style.close} onClick={resetSelect} />Select Currency or Position</h2>
 
                                 <div sx={style.inputBar}>
-                                    <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
+                                    <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search} />
                                     <label htmlFor="search">Search for a position</label>
                                 </div>
 
                                 <div sx={style.tokensList}>
 
-                                    {   [stable_coin].map((token: token, index: number) => {
+                                    {[stable_coin].map((token: token, index: number) => {
                                         return (
                                             <div key={"token" + index} sx={style.tokenChoice} onClick={() => {
-                                                    selectToken(token);
-                                                    setIsToken(true);
-                                                }}>
-                                                <img src={token.icon_url}/>
+                                                selectToken(token);
+                                                setIsToken(true);
+                                            }}>
+                                                <img src={token.icon_url} />
                                                 <p>{token.name}<span>{token.symb}</span></p>
                                             </div>
                                         )
                                     })}
 
-                                    {   tokensList.map((position: position, index: number) => { if(position.token) 
-                                        return (
-                                            <div key={"token" + index} sx={style.tokenChoice} onClick={() => {
+                                    {tokensList.map((position: position, index: number) => {
+                                        if (position.token)
+                                            return (
+                                                <div key={"token" + index} sx={style.tokenChoice} onClick={() => {
                                                     selectPosition(position);
                                                     setIsToken(false);
                                                 }}>
-                                                <img src={position.token.icon_url}/>
-                                                <p>{position.token.name}<span>{position.token.symb}</span></p>
-                                            </div>
-                                        ); else return null;
+                                                    <img src={position.token.icon_url} />
+                                                    <p>{position.token.name}<span>{position.token.symb}</span></p>
+                                                </div>
+                                            ); else return null;
                                     })}
 
                                 </div>

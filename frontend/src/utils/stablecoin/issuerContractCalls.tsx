@@ -1,5 +1,5 @@
-import {issuer_address, loan_address, stablecoin_address} from "../general/constants";
-import {rdt} from "../connectToWallet";
+import { issuer_address, loan_address, stablecoin_address } from "../general/constants";
+import { rdt } from "../connectToWallet";
 
 async function takeLoan(account: string, collateral_token: string, collateral_amount: string, amount_to_loan: string) {
     const manifest = `
