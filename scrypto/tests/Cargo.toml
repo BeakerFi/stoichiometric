@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 sbor = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
 scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v0.8.0" }
-sqrt = { path = "../../../sqrt" }
+sqrt = { git = "https://github.com/PointSquare/sqrt", branch = "stoichiometric_needs" }
 regex = "1"
 lazy_static = "1.4.0"
 

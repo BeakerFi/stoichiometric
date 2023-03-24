@@ -177,8 +177,8 @@ mod lender {
 
                 //In the other case, we compute the maximum amount that can be liquidated
                 let virtual_collateral = (Decimal::ONE - self.liquidation_penalty)*loan.collateral_amount;
-
-                let max_input = total_lent*(Decimal::ONE - collateralization_ratio/self.liquidation_threshold).sqrt().unwrap();
+                let virtual_collateralization_ratio = virtual_collateral*collateral_price/total_lent;
+                let max_input = total_lent*(Decimal::ONE - virtual_collateralization_ratio/self.liquidation_threshold).sqrt().unwrap();
 
                 let actual_input = max_input.min(stabelcoin_input);
                 let collateral_output = loan.collateral_amount*actual_input/(total_lent + actual_input);
