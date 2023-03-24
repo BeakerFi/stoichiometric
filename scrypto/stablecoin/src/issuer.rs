@@ -50,7 +50,7 @@ mod issuer {
 
             // Creates the NFR FlashMint address
             let flash_mint_address = ResourceBuilder::new_integer_non_fungible()
-                .metadata("name", "Stoichiometric FlashMint")
+                .metadata("name", "Stoichiometric Flash Mint")
                 .mintable(
                     rule!(require(resource_minter.resource_address())),
                     AccessRule::DenyAll,

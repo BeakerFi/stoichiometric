@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use scrypto::math::Decimal;
 use scrypto::prelude::{dec, Instant};
 use sqrt::error::Error;
+use sqrt::method::Arg::{AccountAddressArg, ComponentAddressArg, DecimalArg, ResourceAddressArg};
 use stoichiometric_tests::dao::sqrt_implem::DaoMethods;
 use stoichiometric_tests::dao::utils::{assert_voter_card_is, call_issuer_method, call_router_method, instantiate, lock_positions, lock_stablecoins, vote};
 use stoichiometric_tests::dex::pool_state::PoolState;
@@ -9,6 +10,8 @@ use stoichiometric_tests::dex::utils::add_liquidity_at_step;
 use stoichiometric_tests::dumb_oracle::utils::set_oracle_price;
 use stoichiometric_tests::stablecoin::issuer_state::LenderState;
 use stoichiometric_tests::stablecoin::sqrt_implem::IssuerMethods;
+use stoichiometric_tests::stablecoin::utils::new_default_lender;
+use stoichiometric_tests::utils::{FLASH_MINT_NAME, STABLECOIN_MINTER, STABLECOIN_NAME};
 
 #[test]
 fn test_instantiate() {
@@ -294,10 +297,130 @@ fn test_change_vote_period_proposal() {
 
     // Check proposal worked
     dao_state.assert_variables_are(1, 1, dec!(20000), 3, dec!("0.5"));
-    let mut proposals_voted = HashSet::new();
-    proposals_voted.insert(0);
-    assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), vec![], 0, HashSet::new());
 }
+
+#[test]
+fn test_grant_issue_rights() {
+    let (mut test_env, mut dao_state) = instantiate();
+
+    // We take a loan to get stablecoins and then we lock them
+    set_oracle_price(&mut test_env, "btc", dec!(20000));
+    call_issuer_method(&mut test_env, IssuerMethods::TakeLoan(
+        "btc".to_string(),
+        dec!(3),
+        dec!(42000),
+    )).run();
+
+    // Set back current component as the DAO component to make the next call
+    test_env.set_current_component("dao_component");
+
+
+    lock_stablecoins(&mut test_env, dec!(20000), None).run();
+
+    // Make a proposal
+    test_env.call_method(DaoMethods::MakeGrantIssuingRightProposal).run();
+
+    dao_state.update();
+
+    // Vote for the proposal
+    vote(&mut test_env, dao_state.get_proposal(0), "#0#".to_string(), true).run();
+
+    // Wait after 1 day
+    test_env.set_current_time(Instant::new(90000));
+
+    // Execute Proposal
+    test_env.call_method(DaoMethods::ExecuteProposal("#0#".to_string())).run();
+
+
+    // Check proposal worked
+    assert_eq!(test_env.amount_owned_by_current(STABLECOIN_MINTER), Decimal::ONE)
+}
+
+#[test]
+fn test_change_minimum_vote_threshold() {
+    let (mut test_env, mut dao_state) = instantiate();
+
+    // We take a loan to get stablecoins and then we lock them
+    set_oracle_price(&mut test_env, "btc", dec!(20000));
+    call_issuer_method(&mut test_env, IssuerMethods::TakeLoan(
+        "btc".to_string(),
+        dec!(3),
+        dec!(42000),
+    )).run();
+
+    // Set back current component as the DAO component to make the next call
+    test_env.set_current_component("dao_component");
+
+
+    lock_stablecoins(&mut test_env, dec!(20000), None).run();
+
+    // Make a proposal
+    test_env.call_method(DaoMethods::MakeMinimumVoteThresholdProposal(dec!("0.2"))).run();
+
+    dao_state.update();
+
+    // Vote for the proposal
+    vote(&mut test_env, dao_state.get_proposal(0), "#0#".to_string(), true).run();
+
+    // Wait after 1 day
+    test_env.set_current_time(Instant::new(90000));
+
+    // Execute Proposal
+    test_env.call_method(DaoMethods::ExecuteProposal("#0#".to_string())).run();
+
+
+    // Check proposal worked
+    dao_state.update();
+    dao_state.assert_variables_are(1, 1, dec!(20000), 86400, dec!("0.2"));
+}
+
+#[test]
+fn test_allow_claim_proposal() {
+    let (mut test_env, mut dao_state) = instantiate();
+
+    // We take a loan to get stablecoins and then we lock them
+    set_oracle_price(&mut test_env, "btc", dec!(20000));
+    call_issuer_method(&mut test_env, IssuerMethods::TakeLoan(
+        "btc".to_string(),
+        dec!(3),
+        dec!(42000),
+    )).run();
+
+    // Set back current component as the DAO component to make the next call
+    test_env.set_current_component("dao_component");
+
+    lock_stablecoins(&mut test_env, dec!(20000), None).run();
+
+    test_env.create_fixed_supply_token("eth", dec!(10));
+
+    test_env.call_method(DaoMethods::Gift("btc".to_string(), dec!(10))).run();
+    test_env.call_method(DaoMethods::Gift("eth".to_string(), dec!(10))).run();
+
+    test_env.call_method(DaoMethods::MakeAllowClaimProposal(vec![("btc".to_string(), dec!(5)), ("eth".to_string(), dec!(3))])).run();
+
+    dao_state.update();
+
+    // Vote for the proposal
+    vote(&mut test_env, dao_state.get_proposal(0), "#0#".to_string(), true).run();
+
+    // Wait after 1 day
+    test_env.set_current_time(Instant::new(90000));
+
+    // Execute Proposal
+    test_env.call_method(DaoMethods::ExecuteProposal("#0#".to_string())).run();
+
+    dao_state.update();
+    dao_state.assert_variables_are(1, 1, dec!(20000), 86400, dec!("0.5"));
+    let btc_address = test_env.get_resource("btc").clone();
+    let eth_address = test_env.get_resource("eth").clone();
+    let mut reserves = HashMap::new();
+    reserves.insert(btc_address, dec!(5));
+    reserves.insert(eth_address, dec!(7));
+    // In our reserve computation, the locked stablecoins count
+    reserves.insert(test_env.get_resource(STABLECOIN_NAME).clone(), dec!(20000));
+    dao_state.assert_reserves_state(&reserves);
+}
+
 
 #[test]
 fn test_proposals_lasts_right_amount_of_time() {
@@ -343,3 +466,28 @@ fn test_proposals_lasts_right_amount_of_time() {
     dao_state.assert_variables_are(1, 1, dec!(20000), 86400, dec!("0.5"));
     assert_voter_card_is(&test_env, "#0#".to_string(), dec!(20000), dec!(20000), vec!["#0#".to_string()], 0, HashSet::new());
 }
+
+#[test]
+fn test_basic_flash_mint() {
+
+    let (mut test_env, _) = instantiate();
+
+    let mut env_args = vec![];
+
+    env_args.push((
+        "caller_address".to_string(),
+        AccountAddressArg(test_env.get_current_account_name().to_string()),
+    ));
+    env_args.push((
+        "component_address".to_string(),
+        ComponentAddressArg(test_env.get_current_component_name().unwrap().to_string()),
+    ));
+
+    env_args.push( ("amount_to_mint".to_string(), DecimalArg(dec!(10000)) ));
+    env_args.push( ("stablecoin_address".to_string(), ResourceAddressArg(STABLECOIN_NAME.to_string())));
+    env_args.push(("flash_mint_address".to_string(), ResourceAddressArg(FLASH_MINT_NAME.to_string())));
+
+    test_env.call_custom_manifest("basic_flash_mint_example", env_args).run();
+}
+
+

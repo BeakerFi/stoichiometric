@@ -299,7 +299,7 @@ mod dao {
             let current_time = get_current_time();
             let vote_end = current_time + self.vote_period;
             let vote_threshold = self.total_voting_power * self.vote_validity_threshold;
-            info!("enter");
+
             let voter_card_updater = self.protocol_admin_badge.authorize(|| {
                 borrow_resource_manager!(self.resource_minter.resource_address()).mint(Decimal::ONE)
             });
@@ -313,7 +313,7 @@ mod dao {
                 voter_card_updater,
                 self.protocol_admin_badge.resource_address(),
             );
-            info!("ok");
+
             self.proposals.insert(self.proposal_id, proposal_comp);
 
             let receipt_data = ProposalReceipt {
@@ -369,6 +369,18 @@ mod dao {
                 None => None,
                 Some(changes) => self.execute_proposed_change(changes),
             }
+        }
+
+        #[inline]
+        pub fn put_in_reserves(&mut self, bucket: Bucket) {
+            match self.reserves.get_mut(&bucket.resource_address()) {
+                Some(vault) => vault.put(bucket),
+                None => {
+                    let new_vault = Vault::with_bucket(bucket);
+                    self.reserves
+                        .insert(new_vault.resource_address(), new_vault);
+                }
+            };
         }
 
         fn execute_proposed_change(
@@ -552,18 +564,6 @@ mod dao {
                 borrow_resource_manager!(self.voter_card_address)
                     .update_non_fungible_data(id, data);
             });
-        }
-
-        #[inline]
-        fn put_in_reserves(&mut self, bucket: Bucket) {
-            match self.reserves.get_mut(&bucket.resource_address()) {
-                Some(vault) => vault.put(bucket),
-                None => {
-                    let new_vault = Vault::with_bucket(bucket);
-                    self.reserves
-                        .insert(new_vault.resource_address(), new_vault);
-                }
-            };
         }
 
         #[inline]
