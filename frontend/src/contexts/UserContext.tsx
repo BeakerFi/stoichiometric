@@ -69,6 +69,7 @@ const UserCtx: React.FC<Props> = (props) => {
 
     const [tokensOwned, setTokensOwned] = useState<any[]>([]);
 
+
     async function setNbTokens(address?: string) {
         if (address == undefined) {
             if (user.address) {
@@ -178,6 +179,7 @@ const UserCtx: React.FC<Props> = (props) => {
         setTokensOwned([]);
         addAlert("check", "Your are logged out");
     }
+    
 
     return (
         <UserContext.Provider value={{user, accountsList, connectUser, logoutUser, connectionLoading, tokensOwned, positions, setNbTokens, achievements, setUser, myLoans, voterCard}}>
