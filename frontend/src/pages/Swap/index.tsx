@@ -15,7 +15,7 @@ import ConnectWallet2 from "components/ConnectWalletLarge";
 import Snackbar from "components/Snackbar";
 import { TokensContext } from "contexts/TokensContext";
 
-import { formatToString, formatToString2, randomIntFromInterval } from "utils/general/generalMaths";
+import { formatToString, randomIntFromInterval } from "utils/general/generalMaths";
 
 
 import { stable_coin as stable, token_default } from "utils/general/constants";
@@ -51,14 +51,27 @@ function Swap() {
     const [get, setGet] = useState<number>(0);
     const [intermediateGet, setIntermediateGet] = useState<number>(0);
 
+    const [token1, setToken1] = useState(stable);
+    const [token2, setToken2] = useState(token_default);
+
+    const [token1Select, setToken1Select] = useState(false);
+    const [token2Select, setToken2Select] = useState(false);
+
+    const [swapLoading, setSwapLoading] = useState(false);
+
+    const [search, setSearch] = useState("");
+
+    const token1AddressRef = useRef(token1.address)
+    token1AddressRef.current = token1.address
+
+    const token2AddressRef = useRef(token2.address)
+    token2AddressRef.current = token2.address
+
     function resetValues() {
         setSent(0);
         setGet(0);
         setIntermediateGet(0);
     }
-
-    const [token1, setToken1] = useState(stable);
-    const [token2, setToken2] = useState(token_default);
 
     useEffect(() => {
         var tk1 = searchParams.get('tk1');
@@ -93,15 +106,6 @@ function Swap() {
         }
 
     }, [tokens])
-
-    const token1AddressRef = useRef(token1.address)
-    token1AddressRef.current = token1.address
-
-    const token2AddressRef = useRef(token2.address)
-    token2AddressRef.current = token2.address
-
-    const [token1InPool, setToken1InPool] = useState(0);
-    const [token2InPool, setToken2InPool] = useState(0);
 
     function findIndex(n:number, list: step[]) {
         for (var i = 0; i < list.length; ++i) if (list[i].step_id == n) return i
@@ -248,17 +252,6 @@ function Swap() {
         return recieved;
     }
 
-    function calculateMax(x: number | string) {
-        if (typeof(x) == "string") return "?"
-        if (isNaN(x)) return "?"
-        if (price == 0) return "?"
-        else {
-            var s = calculateGet(x)
-            if (isNaN(s)) return "?"
-            else return formatToString(s)
-        }
-    }
-
     const sentChange = (event: any) => {
         var s = event.target.value;
         if (!isNaN(s)) {
@@ -340,9 +333,6 @@ function Swap() {
         resetValues();
     }, [token1, token2])
 
-    const [token1Select, setToken1Select] = useState(false);
-    const [token2Select, setToken2Select] = useState(false);
-
     function resetSelect() {
         setSearch('');
         setToken1Select(false);
@@ -374,8 +364,6 @@ function Swap() {
         resetValues();
     }
 
-    const [search, setSearch] = useState("");
-
     function getSearch(list: any[]) {
         return list.filter(x => {
             var flag = (search.length == 0);
@@ -394,8 +382,6 @@ function Swap() {
         setTokensList(getSearch(tokens));
     }, [tokens, search])
 
-    const [swapLoading, setSwapLoading] = useState(false);
-
     async function sendSwap() {
         setSwapLoading(true);
         let flag: boolean;
@@ -412,6 +398,7 @@ function Swap() {
     }
 
 
+
     const style = styleFunction(device, swapLoading, token1Select, token2Select);
 
 
@@ -424,16 +411,23 @@ function Swap() {
             )})}
 
             <div sx={style.main}>
+
                 <div sx={style.top}>
+
                     <div sx={style.container}>
+
                         <div sx={style.swapZone}>
+
                             <h1>🏛 Swap Tokens</h1>
+
                             { alert ? 
                                 <div sx={style.alert}>
                                     <p>There is not enough token in the pool for you to swap everything</p>
                                 </div> 
-                                : null 
+                            :
+                                null 
                             }
+
                             <div sx={style.inputBar}>
                                 <input type="text" id="send" required={true} placeholder=" " autoComplete="off" onChange={sentChange} value={sent}/>
                                 <label htmlFor="send">{user.address ? `You have ${token1Owned == "?" ? "?" : isNaN (token1Owned) ? 0 : formatToString(token1Owned)} ${token1.symb}`: "You send"}</label>
@@ -443,8 +437,11 @@ function Swap() {
                                     <div sx={style.expand}/>
                                 </div>
                             </div>
+
                             <span sx={style.tokenAddress}><span>Token Address</span>{token1.address.slice(0,5) + "..." + token1.address.slice(token1.address.length - 10, token1.address.length)}</span>
+                            
                             {(token1.address!=stable.address && token2.address!=stable.address) ?
+                                
                                 <div sx={style.stableBarContainer}>
                                     <div sx={style.swapIcon2} onClick={invert}/>
                                     <div sx={style.stableBar}>
@@ -459,9 +456,11 @@ function Swap() {
                                         <span sx={style.tokenAddress}><span>Token Address</span>{stable.address.slice(0,5) + "..." + stable.address.slice(stable.address.length - 10, stable.address.length)}</span>
                                     </div>
                                 </div>
-                                : <div sx={style.swapIcon} onClick={invert}/>
+                            : 
+                                <div sx={style.swapIcon} onClick={invert}/>
 
                             }
+                            
                             <div sx={style.inputBar}>
                                 <input type="text" id="get" required={true} placeholder=" " autoComplete="off" disabled value={get}/>
                                 <label htmlFor="get">You get</label>
@@ -471,6 +470,7 @@ function Swap() {
                                     <div sx={style.expand}/>
                                 </div>
                             </div>
+                            
                             <span sx={style.tokenAddress}><span>Token Address</span>{token2.address.slice(0,5) + "..." + token2.address.slice(token2.address.length - 10, token2.address.length)}</span>
                             <div sx={style.swapInfos}>
                                 <span sx={style.swapInfoMain}><span>Purchase</span><div>{typeof(sent) == "string" ? formatToString(parseFloat(sent)) : formatToString(sent)} {token1.symb}<div/>{typeof(get) == "string" ? formatToString(parseFloat(get)) : formatToString(get)} {token2.symb}</div></span>
@@ -478,15 +478,15 @@ function Swap() {
                                 <span sx={style.swapInfo}><span>Pool Fees</span>0.3%</span>
                             </div>
 
-                            {
-                                user.address ? 
+                            { user.address ? 
                                 <button sx={swapLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => swapLoading ? null : sendSwap()}>{swapLoading ? "" : "Swap"}</button>
-                                : 
+                            : 
                                 <ConnectWallet2 />
                             }
 
 
                             <div sx={style.selectToken}>
+
                                 <h2><div sx={style.close} onClick={resetSelect}/>Select Currency</h2>
                                 <div sx={style.inputBar}>
                                     <input type="text" id="search" required={true} placeholder=" " autoComplete="off" onChange={searchChange} value={search}/>
@@ -494,6 +494,7 @@ function Swap() {
                                 </div>
 
                                 <div sx={style.tokensList}>
+
                                     {   tokensList.map((token: token, index: number) => {
                                         return (
                                             <div key={"token" + index} sx={style.tokenChoice} onClick={() => selectToken(token)}>
@@ -502,12 +503,20 @@ function Swap() {
                                             </div>
                                         )
                                     })}
+
                                 </div>
+
+
                             </div>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </div>
+            
         </Dashboard>
     )
 }

@@ -28,6 +28,7 @@ function Profile() {
     const [stars, setStars] = useState(Array.from({length: 10}, (_, i) => [randomIntFromInterval(0,1), randomIntFromInterval(10,90), randomIntFromInterval(10,90), randomIntFromInterval(0,1)]));
     
     const [accountSelect, setAccountSelect] = useState(false);
+    
 
     const style = styleFunction(device, themeStyle, accountSelect);
 

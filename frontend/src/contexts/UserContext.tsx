@@ -78,6 +78,7 @@ const UserCtx: React.FC<Props> = (props) => {
                 if (result && result.length) setTokensOwned(result[0]);
 
                 const voter:voterCard = await getVoterCard(user.address);
+
                 setVoterCard(voter);
             } else return
         }

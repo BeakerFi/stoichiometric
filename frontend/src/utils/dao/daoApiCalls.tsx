@@ -159,24 +159,24 @@ async function getVoterCard(account: string): Promise<voterCard> {
     const responseData = tmp_data as NonFungibleDataResponse
 
     const mutable_hex = responseData.mutable_data_hex;
+    const immutable_hex = responseData.immutable_data_hex;
 
-    return voterCardDataFromHex(mutable_hex);
+    return await voterCardDataFromHex(mutable_hex, immutable_hex);
 }
 
-async function voterCardDataFromHex(mutable_hex: string): Promise<voterCard> {
+async function voterCardDataFromHex(mutable_hex: string, immutable_hex: string): Promise<voterCard> {
 
     const params = new URLSearchParams();
-    params.append('mutable_data_hex', mutable_hex);
+    params.append('mutable_data_hex', immutable_hex);
+    params.append('immutable_data_hex', mutable_hex);
 
     const request = new Request( `${backend_api_url}/voter_cards?${params}`, {
         method: 'GET',
         headers: new Headers({ 'Content-Type': 'application/json; charset=UTF-8',})
     });
 
-    const res = await fetch(request);
-
-    console.log(res);
-    return res.json();
+    const res = await (await fetch(request)).json();
+    return {voting_power: res.votingPower, stablecoins_locked: res.stablecoinsLocked, positions_ids_locked: res.positionsLockedIds, proposals_voted: res.proposalsVoted};
 }
 
 export {getDao, getVoterCard}

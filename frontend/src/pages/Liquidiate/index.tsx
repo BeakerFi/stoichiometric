@@ -18,11 +18,10 @@ import styleFunction from "./style";
 import { TokensContext } from "contexts/TokensContext";
 import { loan } from "types";
 
-import { stable_coin as stable, token_default } from "utils/general/constants";
+import { stable_coin as stable} from "utils/general/constants";
 import { liquidate } from "utils/stablecoin/issuerContractCalls";
 
 function Liquidate() {
-    const navigate = useNavigate();
 
     const { addAlert } = useContext(SnackbarContext);
 
@@ -33,22 +32,6 @@ function Liquidate() {
     const { device, windowSize } = useContext(ResponsiveContext);
 
     const {loans, pools} = useContext(TokensContext);
-
-
-    useEffect(() => {
-        console.log("loanssss", loans);
-    }, [loans])
-
-    const [loansList, setLoansList] = useState<any[]>([]);
-    const [onlyMine, setOnlyMine] = useState<boolean>(false);
-
-    function toggleOnlyMine() {
-        setOnlyMine(!onlyMine);
-    }
-
-    useEffect(() => {
-        setLoansList(user.address && onlyMine ? loans.filter((x: loan) => x) : loans);
-    }, [onlyMine, loans])
 
     const [liquidateLoading, setLiquidateLoading] = useState(false);
 
@@ -64,6 +47,7 @@ function Liquidate() {
         setLiquidateLoading(false);
     }
 
+
     const style = styleFunction(device, liquidateLoading);
 
     return (
@@ -78,24 +62,23 @@ function Liquidate() {
 
             <div sx={style.main}>
 
-
-                {user.address ? <div sx={style.check}>
-                    <input type="checkbox" onChange={toggleOnlyMine} id="myLends"/>
-                    <label htmlFor="myLends">Hide my loans</label>
-                </div> : null}
-
-
                 <div sx={style.lendContainer}>
+
                     <div sx={style.lendColumn}>   
-                        {Array.apply(null, Array(Math.ceil(loansList.length/(windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)))).map((x, index) => {return (
+
+                        {   Array.apply(null, Array(Math.ceil(loans.length/(windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)))).map((x, index) => {return (
+
                             <div key={"loanRow" + index} sx={style.lendRow}>
-                                {loansList.slice((windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*index, (windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*(index+1)).map((x: loan, index: number) => {
+
+                                {loans.slice((windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*index, (windowSize.width > 1200 ? 3 : device == "mobile" ? 1 : 2)*(index+1)).map((x: loan, index: number) => {
                                     const cur_price = pools[x.collateral_token.address] ? pools[x.collateral_token.address].min_rate * (1 + pools[x.collateral_token.address].rate_step**pools[x.collateral_token.address].current_step) : 1;
                                     return (
+
                                         <div key={"loan" + index} sx={style.lend}>
-                                                <p>Collateral <span>{formatToString(x.collateral_amount)} {x.collateral_token.symb} <img src={x.collateral_token.icon_url}/></span></p>
-                                                <p>Borrowed <span>{formatToString(x.amount_lent)} {stable.symb} <img src={stable.icon_url}/></span></p>
-                                                { cur_price - x.liquidation_price > 0 || !user.address ? 
+
+                                            <p>Collateral <span>{formatToString(x.collateral_amount)} {x.collateral_token.symb} <img src={x.collateral_token.icon_url}/></span></p>
+                                            <p>Borrowed <span>{formatToString(x.amount_lent)} {stable.symb} <img src={stable.icon_url}/></span></p>
+                                            { cur_price - x.liquidation_price > 0 || !user.address ? 
                                                 <div sx={style.barContainer}>
 
                                                     <div sx={style.bar}>
@@ -112,15 +95,20 @@ function Liquidate() {
                                                     </div>
                                                     
                                                 </div> 
-                                                : 
+                                            : 
                                                 <button sx={liquidateLoading ? {...style.swapButton, ...style.swapButtonLoading} : style.swapButton} onClick={() => liquidateLoading ? null : sendLiquidate(x.amount_to_liquidate.toString() ,x.id)}>{liquidateLoading ? "" : "Liquidate"}</button>
                                             }
+
                                         </div>
+
                                     )
                                 })}
+
                             </div>
+                        
                         )})}
                     </div>
+
                 </div>
 
                 
